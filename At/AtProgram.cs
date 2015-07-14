@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +12,11 @@ namespace At
         static void Main(string[] args)
         {
             
+        }
+
+        public static Assembly CompileString(string input) 
+        {
+            return null;
         }
     }
 }

@@ -21,6 +21,11 @@ public partial class TestData : IDisposable
       Init();
    }
 
+   public string Identifier() 
+   {
+        return "X";
+   }
+
    static internal void Init()
    {
       if (initialized) return;
