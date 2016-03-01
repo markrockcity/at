@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -14,9 +15,25 @@ namespace At
             
         }
 
-        public static Assembly CompileString(string input) 
+        internal static Assembly compileStringToAssembly(string input) 
         {
-            return null;
+            Assembly assembly = null;
+
+            var tree = AtSyntaxTree.ParseText(input);
+            var compilation = AtCompilation.Create(trees: new[] {tree});
+
+            using (var ms = new MemoryStream())
+            {
+                var result = compilation.Emit(ms);
+
+                if (result.Success)
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    assembly = Assembly.Load(ms.ToArray());
+                }
+            }
+
+            return assembly;
         }
     }
 }

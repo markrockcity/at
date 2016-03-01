@@ -19,7 +19,7 @@ namespace At.Tests
    //ctor
    protected Test()
    {
-      TestData.Init();
+      At.Tests.TestData.Init();
    }
 
    //Stopwatch
