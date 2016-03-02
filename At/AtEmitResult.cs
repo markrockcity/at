@@ -5,18 +5,20 @@ namespace At
 {
 public class AtEmitResult 
 {
-        private ImmutableArray<Diagnostic> diagnostics;
-        bool success = false;
+    bool success = false;
 
-        public AtEmitResult(bool success,ImmutableArray<Diagnostic> diagnostics)
-        {
-            this.success = success;
-            this.diagnostics = diagnostics;
-        }
+    public AtEmitResult(bool success,ImmutableArray<Diagnostic> diagnostics)
+    {
+        this.success     = success;
+        this.Diagnostics = diagnostics;
+    }
 
-        public bool Success
+    public bool Success
     {
         get { return this.success; }
     }
+
+    public ImmutableArray<Diagnostic> Diagnostics {get;}
+
 }
 }

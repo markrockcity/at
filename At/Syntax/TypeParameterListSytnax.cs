@@ -4,6 +4,9 @@ namespace At.Syntax
 {
 public class TypeParameterListSytnax : AtSyntaxNode
 {
-    public SeparatedSyntaxList<TypeParameterSyntax> Parameters {get;set;}
+    internal TypeParameterListSytnax() : base(null) {}
+
+    public SeparatedSyntaxList<TypeParameterSyntax> Parameters {get;}
+        = new SeparatedSyntaxList<TypeParameterSyntax>();
 }
 }

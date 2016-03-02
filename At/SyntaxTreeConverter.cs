@@ -95,7 +95,8 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.ClassDeclarationSyntax classDecl)
     {
-        var csClass = CSharp.SyntaxFactory.ClassDeclaration(classDecl.Name);
+        var csId = CSharp.SyntaxFactory.Identifier(classDecl.Name);
+        var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId);
         var csTypeParams = classDecl.TypeParameterList.Parameters.Nodes().Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
@@ -14,12 +15,13 @@ public class AtCompilation
     readonly string assemblyName;
     readonly SyntaxAndDeclarationManager _syntaxAndDeclarations;
 
-    AtCompilation(//string assemblyName,
+    AtCompilation(string assemblyName = null,
                   //...
                   SyntaxAndDeclarationManager syntaxAndDeclarations = null)
     {
+        this.assemblyName = assemblyName;
         this._syntaxAndDeclarations = syntaxAndDeclarations ?? 
-                                      new SyntaxAndDeclarationManager(new ImmutableArray<AtSyntaxTree>());
+                                      new SyntaxAndDeclarationManager(ImmutableArray<AtSyntaxTree>.Empty);
     }
 
     public static AtCompilation Create(AtSyntaxTree[] trees)
@@ -27,7 +29,7 @@ public class AtCompilation
         var compilation = new AtCompilation();
 
         if (trees != null)
-            compilation = compilation.AddSyntaxTrees(new ImmutableArray<AtSyntaxTree>().AddRange(trees));
+            compilation = compilation.AddSyntaxTrees(ImmutableArray<AtSyntaxTree>.Empty.AddRange(trees));
 
         return compilation;
     }
@@ -49,7 +51,7 @@ public class AtCompilation
 
     private AtCompilation Update(SyntaxAndDeclarationManager syntaxAndDeclarations)
     {
-        return new AtCompilation(syntaxAndDeclarations);
+        return new AtCompilation(assemblyName,syntaxAndDeclarations);
     }
 
     public AtEmitResult Emit(Stream peStream, CancellationToken cancellationToken = default(CancellationToken)) 
@@ -66,7 +68,7 @@ public class AtCompilation
  
         var cSharpCompilation = CSharpCompilation.Create(  assemblyName
                                                           ,csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees)
-                                                          ,references: null
+                                                          ,references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)}
                                                           ,options: null);
 
         var result = cSharpCompilation.Emit(peStream, cancellationToken: cancellationToken);

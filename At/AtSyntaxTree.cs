@@ -8,7 +8,7 @@ public class AtSyntaxTree
     CompilationUnitSyntax compilationUnit;
     AtSourceText text;
 
-    public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
+        public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
     {
         this.text = text;
         this.compilationUnit = compilationUnit;
@@ -18,6 +18,12 @@ public class AtSyntaxTree
     public static AtSyntaxTree ParseText(string text)
     {
          return ParseText(AtSourceText.From(text));
+    }
+
+    //GetRoot()
+    public CompilationUnitSyntax GetRoot()
+    {
+        return this.compilationUnit;
     }
 
     //ParseText(AtSourceText)
@@ -35,10 +41,7 @@ public class AtSyntaxTree
         }
     }
 
-    internal CompilationUnitSyntax GetRoot()
-    {
-        throw new NotImplementedException();
-    }
+
 
 }
 }

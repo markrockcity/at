@@ -74,7 +74,7 @@ namespace At
         {
             skipWhiteSpace();
 
-            if (isCurrent(TokenKind.At)) return atExpression();
+            if (isCurrent(TokenKind.At)) return declarationExpression();
 
             var x = tokens.Current;
 
@@ -84,83 +84,88 @@ namespace At
                                                     : new ExpressionSyntax("string literal",x);*/
         }
 
-         ExpressionClusterSyntax expressionCluster()
-   {
-       throw new NotImplementedException();
-   }
+    ExpressionClusterSyntax expressionCluster()
+    {
+        throw new NotImplementedException();
+    }
 
-       //atExpression "@TokenCluster[<>][;]"
-    ExpressionSyntax atExpression()
+    //declarationExpression "@TokenCluster[<>][;]"
+    ExpressionSyntax declarationExpression()
     {
         Debug.Assert(tokens.Current.Kind==TokenKind.At);
-        var at = tokens.Current;
+        var atToken = tokens.Current;
         var isClass = false;
         AtToken afterColon = null;
         ExpressionSyntax body = null;
         
         if (tokens.LookAhead(1).Kind==TokenKind.TokenCluster)
         {
-           tokens.MoveNext();
-           var tc = tokens.Current;
+            tokens.MoveNext();
+            var tc = tokens.Current;
 
-           //<>
-           skipWhiteSpace();
-           if (tokens.LookAhead(1).Kind==TokenKind.LessThan)
-           {
-              skip(TokenKind.LessThan,TokenKind.GreaterThan);
-              isClass = true; 
-           }
+            //<>
+            skipWhiteSpace();
+            if (tokens.LookAhead(1).Kind==TokenKind.LessThan)
+            {
+                skip(TokenKind.LessThan,TokenKind.GreaterThan);
+                isClass = true; 
+            }
 
-           //: className<>
-           skipWhiteSpace();
-           if (isNext(TokenKind.Colon))
-           {
-              skip(TokenKind.Colon);
-              skipWhiteSpace();
-              if (isNext(TokenKind.TokenCluster))
-              {
-                   tokens.MoveNext();
-                   afterColon = tokens.Current;
+            //: className<>
+            skipWhiteSpace();
+            if (isNext(TokenKind.Colon))
+            {
+                skip(TokenKind.Colon);
+                skipWhiteSpace();
+                if (isNext(TokenKind.TokenCluster))
+                {
+                    tokens.MoveNext();
+                    afterColon = tokens.Current;
                    
-                   //<>
-                   skipWhiteSpace();
-                   if (tokens.LookAhead(1).Kind==TokenKind.LessThan)
-                   {
-                      skip(TokenKind.LessThan,TokenKind.GreaterThan);
-                   }             
+                    //<>
+                    skipWhiteSpace();
+                    if (tokens.LookAhead(1).Kind==TokenKind.LessThan)
+                    {
+                        skip(TokenKind.LessThan,TokenKind.GreaterThan);
+                    }             
 
-                   skipWhiteSpace();
-                   if (isNext(TokenKind.LeftBrace))
-                   {
-                      body = curlyBlock();
-                   }
-              }
-              else
-              {
-                 return error();
-                 //return error(diagnostics,DiagnosticIds.UnexpectedToken,"{0}:unexpected: {1}",tokens.Current.Position+1,tokens.LookAhead(1));
-              }
-           }
+                    skipWhiteSpace();
+                    if (isNext(TokenKind.LeftBrace))
+                    {
+                        body = curlyBlock();
+                    }
+                }
+                else
+                {
+                    return error();
+                    //return error(diagnostics,DiagnosticIds.UnexpectedToken,"{0}:unexpected: {1}",tokens.Current.Position+1,tokens.LookAhead(1));
+                }
+            }
 
 
-           //; |{...}
-           skipWhiteSpace();
-           if (isNext(TokenKind.SemiColon))
-           {
-              skip(TokenKind.SemiColon);
-           }
-           else if (isNext(TokenKind.LeftBrace))
-           {
-              //...
-           }
+            //; |{...}
+            skipWhiteSpace();
+            if (isNext(TokenKind.SemiColon))
+            {
+                skip(TokenKind.SemiColon);
+            }
+            else if (isNext(TokenKind.LeftBrace))
+            {
+                //...
+            }
 
-           //throw new NotImplementedException();
-           //return new ExpressionSyntax(isClass?"@class":"@obj",tc,afterColon ?? new Token());
-           return new ExpressionSyntax();
+            //TODO: expression text
+            if (isClass)
+               return new ClassDeclarationSyntax(tc.Text, $"@{tc.Text}<>");
+
+            throw new NotImplementedException("non-class declaration expresssion");
+
+            //return new ExpressionSyntax(isClass?"@class":"@obj",tc,afterColon ?? new Token());
+            //return new ExpressionSyntax();
         }
         else
         {
-            string msg = string.Format("character {1}: expected TokenCluster after '{0}'", at.Text, at.Position);            
+            string msg = string.Format("character {1}: expected TokenCluster after '{0}'", atToken.Text, atToken.Position);            
             return error();
             //return  error(diagnostics,DiagnosticIds.UnexpectedToken, msg);
         }
@@ -183,6 +188,8 @@ namespace At
                contents.Add(expression());
             }
             tokens.MoveNext();
+
+            //TODO: ?
             return new CurlyBlockSyntax("curly", new AtToken(TokenKind.LeftBrace,p,string.Join("; ",contents)));
         }
 

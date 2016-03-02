@@ -4,6 +4,10 @@ namespace At.Syntax
 {
 public class SeparatedSyntaxList<TNode> where TNode : AtSyntaxNode
 {
-    public IEnumerable<TNode> Nodes() {return null;}
+    //TODO: implement
+    public IEnumerable<TNode> Nodes() 
+    {
+        return new TNode[0];
+    }
 }
 }

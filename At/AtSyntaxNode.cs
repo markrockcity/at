@@ -4,12 +4,7 @@ namespace At
 {
 public abstract class AtSyntaxNode
 {
-    public virtual string Text
-    {
-        get
-        {
-            throw new NotImplementedException();
-        }
-    }
+    protected AtSyntaxNode(string text) { Text = text;}
+    public virtual string Text {get;}
 }
 }

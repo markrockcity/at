@@ -2,9 +2,9 @@
 {
 public class ExpressionSyntax : AtSyntaxNode
 {
-internal ExpressionSyntax()
-{
+    protected ExpressionSyntax(string text) : base(text)
+    {
     
-}
+    }
 }
 }

@@ -21,7 +21,7 @@ public class AtToken
         get;
     }
 
-    public object Text
+    public string Text
     {
         get;
     }
