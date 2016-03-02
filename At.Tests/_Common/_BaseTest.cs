@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
-
+using System.Collections.ObjectModel;
 
 namespace At.Tests
 {
@@ -194,68 +194,97 @@ namespace At.Tests
 
 
  
-  //exprString() 
-  string exprStr(Expression e)
-  {
-     if (e==null) return "<null expression>";
+    //exprString() 
+    string exprStr(Expression e)
+    {
+        if (e==null) return "<null expression>";
 
-     switch(e.NodeType)
-     {
-        //case ExpressionType.Lambda: return exprString(((LambdaExpression)e).Body);
-
-
-        //Call
-        case ExpressionType.Call:
+        switch(e.NodeType)
         {
-          var mce = (MethodCallExpression) e;
-          var m   = mce.Method;
 
-          return   (m.Name=="get_Item") ? exprStr(mce.Object)+"."+"["+exprStr(mce.Arguments[0])+"]"
-                 : (m.IsStatic ? m.DeclaringType.Name : exprStr(mce.Object))+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
+            //AndAlso (&&)
+            case ExpressionType.AndAlso: return binaryStr(e,"&&");
+
+
+            //Call
+            case ExpressionType.Call:
+            {
+                var mce = (MethodCallExpression) e;
+                var m   = mce.Method;
+
+                return   (m.Name=="get_Item") ? 
+                            exprStr(mce.Object)+"."+"["+exprStr(mce.Arguments[0])+"]" : 
+                         (m.DeclaringType==typeof(Enumerable) ?
+                            $"{exprStr(mce.Arguments[0])}.{mce.Method.Name}({string.Join(",",mce.Arguments.Skip(1).Select(exprStr))})" :
+                         (m.IsStatic) 
+                            ? m.DeclaringType.Name 
+                            : exprStr(mce.Object))+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
         
+            }
+
+            //Constant
+            case ExpressionType.Constant: 
+            {
+                var ce = (ConstantExpression) e;
+                var t  = ce.Value.GetType();
+                var v  = ce.Value;
+
+                return    (t==typeof(int))                  ? v.ToString()
+                        : (t==typeof(string))               ? "\"" + v.ToString().Replace("\"","\\\"") + "\""
+                        : (t.Name.Contains("DisplayClass")) ? ""
+                        : "["+ce.Type+" "+ce.Value.ToString()+"]";
+            }
+
+            //Convert
+            case ExpressionType.Convert:
+            {
+                var ue = (UnaryExpression) e;
+                return "(("+ue.Type.Name+") "+exprStr(ue.Operand)+")";
+            }
+
+            //Equal (==)
+            case ExpressionType.Equal: return binaryStr(e,"==");
+            
+
+            //Lambda
+            case ExpressionType.Lambda:
+            {
+                var le = (LambdaExpression) e;
+                var ps = le.Parameters.Count==1 ? 
+                            le.Parameters[0].Name : 
+                            $"({string.Join(", ",le.Parameters.Select(_=>_.Name))})";
+                return $"{ps} => {exprStr(le.Body)}";
+            }
+
+            //Member
+            case ExpressionType.MemberAccess:
+            {
+                var mae = (MemberExpression) e;
+                var m   = mae.Member;
+                return  exprStr(mae.Expression)+"."+m.Name;
+            }
+
+            //Parameter
+            case ExpressionType.Parameter: return ((ParameterExpression)e).Name;
+
+            //DEFAULT
+            default: Write("exprString(): "+e.NodeType) ; return e.ToString();
         }
+    }
 
-        //Constant
-        case ExpressionType.Constant: 
-        {
-           var ce = (ConstantExpression) e;
-           var t  = ce.Value.GetType();
-           var v  = ce.Value;
+    string binaryStr(Expression e, string op)
+    {
+        var be = (BinaryExpression) e;
+        return $"{exprStr(be.Left)} {op} {exprStr(be.Right)}";
+    }
 
-           return   (t==typeof(int))                  ? v.ToString()
-                  : (t==typeof(string))               ? "\"" + v.ToString().Replace("\"","\\\"") + "\""
-                  : (t.Name.Contains("DisplayClass")) ? ""
-                  : "["+ce.Type+" "+ce.Value.ToString()+"]";
+    //testEmailAddress()
+    public string testEmailAddress 
+    { get 
+        { if (m_testEmailAddress == null)  m_testEmailAddress = "test@example.com";
+            return m_testEmailAddress; 
         }
-
-        //Convert
-        case ExpressionType.Convert:
-        {
-           var ue = (UnaryExpression) e;
-           return "(("+ue.Type.Name+") "+exprStr(ue.Operand)+")";
-        }
-
-        //Member
-        case ExpressionType.MemberAccess:
-        {
-           var mae = (MemberExpression) e;
-           var m   = mae.Member;
-           return  exprStr(mae.Expression)+"."+m.Name;
-        }
-
-        //DEFAULT
-        default: Write("exprString(): "+e.NodeType) ; return e.ToString();
-     }
-  } 
-
-   //testEmailAddress()
-   public string testEmailAddress 
-   { get 
-      { if (m_testEmailAddress == null)  m_testEmailAddress = "test@example.com";
-         return m_testEmailAddress; 
-      }
-   } string m_testEmailAddress;
-
+    } string m_testEmailAddress;
 
 }
 
