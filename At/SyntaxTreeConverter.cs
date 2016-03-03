@@ -35,7 +35,7 @@ class SyntaxTreeConverter
        var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
        var statements = new List<CSharp.Syntax.StatementSyntax>();
 
-       foreach(var node in atRoot.nodes)
+       foreach(var node in atRoot.Nodes())
        {
           var d = node as DeclarationSyntax;
           if (d != null)

@@ -36,7 +36,7 @@ namespace At
               parsing = false;   
            }
 
-           diagnostics.AddRange (compilationUnitSyntax.nodes
+           diagnostics.AddRange (compilationUnitSyntax.Nodes()
                                                       .OfType<ExpressionClusterSyntax>()
                                                       .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,"Compiler","Expression cluster: "+_,DiagnosticSeverity.Error,0,true)));   
           return compilationUnitSyntax;
@@ -112,9 +112,10 @@ namespace At
             nodes.Add(tc);
 
             //<>
-            skipWhiteSpace();
             AtToken lessThan = null;
             AtToken greaterThan = null;
+            TypeParameterListSyntax typeParams = null;
+            skipWhiteSpace();
             if (tokens.LookAhead(1).Kind==TokenKind.LessThan)
             {
                 tokens.MoveNext();
@@ -124,6 +125,8 @@ namespace At
                 greaterThan = tokens.Current;
 
                 Debug.Assert(greaterThan.Kind == TokenKind.GreaterThan);
+                typeParams = SyntaxFactory.TypeParameterList(lessThan,greaterThan);
+                nodes.Add(typeParams);
                 isClass = true; 
             }
 
@@ -164,9 +167,9 @@ namespace At
             //";" | "{...}"
             skipWhiteSpace();
             if (isNext(TokenKind.SemiColon))
-            {
-                //TODO: add semicolon to nodes list
-                skip(TokenKind.SemiColon);
+            {                
+                moveNext();
+                nodes.Add(current);
             }
             else if (isNext(TokenKind.LeftBrace))
             {
@@ -176,11 +179,7 @@ namespace At
 
 
             if (isClass)
-            {
-                var typeParams = SyntaxFactory.TypeParameterList(lessThan,greaterThan);
-                nodes.Add(typeParams);
                 return SyntaxFactory.ClassDeclaration(atSymbol,tc,typeParams,nodes);
-            }
 
             throw new NotImplementedException("non-class declaration expresssion");
 
@@ -194,6 +193,12 @@ namespace At
             //return  error(diagnostics,DiagnosticIds.UnexpectedToken, msg);
         }
     }
+        AtToken current {get{return tokens.Current;}}
+
+        private void moveNext()
+        {
+            tokens.MoveNext();
+        }
 
         private ExpressionSyntax error() 
         {

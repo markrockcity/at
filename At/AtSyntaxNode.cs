@@ -7,7 +7,7 @@ namespace At
 //SyntaxNode + CSharpSyntaxNode + GreenNode
 public abstract class AtSyntaxNode
 {
-    internal readonly AtSyntaxList<AtSyntaxNode> nodes;
+    readonly AtSyntaxList<AtSyntaxNode> nodes;
 
     protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes) 
     { 
@@ -43,5 +43,10 @@ public abstract class AtSyntaxNode
         }
     } 
     string _text;
+
+    public IEnumerable<AtSyntaxNode> Nodes(bool includeTokens = false)
+    {
+        return includeTokens ? nodes : nodes.Where(_=>!_.IsToken);
+    }
 }
 }

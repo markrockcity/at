@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace At.Syntax
 {
-public class TypeParameterListSytnax : AtSyntaxNode
+public class TypeParameterListSyntax : AtSyntaxNode
 {
-    internal TypeParameterListSytnax(AtToken lessThan, IEnumerable<AtSyntaxNode> list, AtToken greaterThan) : 
+    internal TypeParameterListSyntax(AtToken lessThan, IEnumerable<AtSyntaxNode> list, AtToken greaterThan) : 
         base(new AtSyntaxNode[] {lessThan}.Concat(list).Concat(new[] {greaterThan}))
     {
         Parameters = new SeparatedSyntaxList<TypeParameterSyntax>(this,list);

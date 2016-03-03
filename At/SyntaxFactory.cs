@@ -21,15 +21,15 @@ internal class SyntaxFactory
     public static ExpressionSyntax ClassDeclaration(
                                                 AtToken                   atSymbol, 
                                                 AtToken                   identifier, 
-                                                TypeParameterListSytnax   typeParameterList,
+                                                TypeParameterListSyntax   typeParameterList,
                                                 IEnumerable<AtSyntaxNode> nodes)
     {
         return new ClassDeclarationSyntax(atSymbol,identifier,typeParameterList,nodes);
     }
 
-    public static TypeParameterListSytnax TypeParameterList(AtToken lessThan,AtToken greaterThan)
+    public static TypeParameterListSyntax TypeParameterList(AtToken lessThan,AtToken greaterThan)
     {
-        return new TypeParameterListSytnax(lessThan,new AtSyntaxNode[0],greaterThan);
+        return new TypeParameterListSyntax(lessThan,new AtSyntaxNode[0],greaterThan);
     }
 
     public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace)

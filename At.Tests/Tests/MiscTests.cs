@@ -27,7 +27,9 @@ namespace At.Tests
             foreach(var input in inputs)
             {
                 var tree = AtSyntaxTree.ParseText(input);
-                verifyOutput(tree,className);
+
+                //TODO: verify that no ErrorNodes exist
+                verifyOutput(input, tree,className);
             }
         }
     }
@@ -51,12 +53,14 @@ namespace At.Tests
         assert_true(()=>assembly.GetTypes().Any(_=>_.Name==className&&_.IsClass));
     }
 
-    void verifyOutput(AtSyntaxTree tree,string className)
+    void verifyOutput(string input, AtSyntaxTree tree,string className)
     {
         assert_not_null(()=>tree);
 
         var root = tree.GetRoot();
-        var classDecl = (ClassDeclarationSyntax) root.nodes[0];
+        assert_equals(()=>input,()=>root.Text);
+
+        var classDecl = (ClassDeclarationSyntax) root.Nodes().First();
         assert_equals(()=>className, ()=>classDecl.Identifier.Text);
         
     }
