@@ -1,27 +1,36 @@
-﻿namespace At
+﻿using System;
+
+namespace At
 {
-public class AtToken 
+//SyntaxToken 
+public class AtToken : AtSyntaxNode
 {
     private TokenKind _kind;
 
 
-    public AtToken(TokenKind kind, int position, string text = null) 
+    public AtToken(TokenKind kind, int position, string text=null) : base(new AtSyntaxNode[0])
     {
-        this._kind = kind;
         this.Text = text;
         this.Position = position;
+        this._kind = kind;
+    }
 
+    public override bool IsToken
+    {
+        get
+        {
+            return true;
+        }
     }
 
     public TokenKind Kind => _kind;
 
-
-    public int Position
+    public override int Position
     {
         get;
     }
 
-    public string Text
+    public override string Text
     {
         get;
     }

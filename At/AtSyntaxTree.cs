@@ -3,12 +3,13 @@ using At.Syntax;
 
 namespace At
 {
+//SyntaxTree + ParsedSyntaxTree
 public class AtSyntaxTree
 {
     CompilationUnitSyntax compilationUnit;
     AtSourceText text;
 
-        public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
+    public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
     {
         this.text = text;
         this.compilationUnit = compilationUnit;

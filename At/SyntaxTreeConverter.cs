@@ -35,7 +35,7 @@ class SyntaxTreeConverter
        var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
        var statements = new List<CSharp.Syntax.StatementSyntax>();
 
-       foreach(var node in atRoot.Nodes)
+       foreach(var node in atRoot.nodes)
        {
           var d = node as DeclarationSyntax;
           if (d != null)
@@ -76,7 +76,7 @@ class SyntaxTreeConverter
     CSharp.Syntax.ExpressionSyntax ExpressionSyntax(At.Syntax.ExpressionSyntax expr)
     {
         var id = expr as IdentifierSyntax;
-        if (id != null) return CSharp.SyntaxFactory.IdentifierName(id.Identifier);
+        if (id != null) return CSharp.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
         throw new NotImplementedException(expr.ToString());
     }
@@ -95,9 +95,9 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.ClassDeclarationSyntax classDecl)
     {
-        var csId = CSharp.SyntaxFactory.Identifier(classDecl.Name);
+        var csId = CSharp.SyntaxFactory.Identifier(classDecl.Identifier.Text);
         var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId);
-        var csTypeParams = classDecl.TypeParameterList.Parameters.Nodes().Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
+        var csTypeParams = classDecl.TypeParameterList.Parameters.Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());
         if (classDecl.BaseClass != null) 

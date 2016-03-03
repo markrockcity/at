@@ -4,7 +4,7 @@ public class TypeParameterSyntax : AtSyntaxNode
 {
     AtSyntaxNode identifier;
 
-    TypeParameterSyntax(AtSyntaxNode identifier) : base(identifier.Text)
+    TypeParameterSyntax(AtToken identifier) : base(new[] {identifier})
     {
         this.identifier = identifier;
     }

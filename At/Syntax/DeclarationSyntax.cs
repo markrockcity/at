@@ -1,11 +1,15 @@
-﻿namespace At.Syntax
+﻿using System.Collections.Generic;
+
+namespace At.Syntax
 {
 public abstract class DeclarationSyntax : ExpressionSyntax
 {
-    protected DeclarationSyntax(string name, string exprText) : base(exprText)
+    protected DeclarationSyntax(AtToken atSymbol, AtToken identifier, IEnumerable<AtSyntaxNode> nodes) : 
+        base(nodes)
     {
-        this.Name = name;
+        this.Identifier = identifier;
     }
-    public string Name {get; internal set;}
+
+    public AtToken Identifier {get;}
 }
 }

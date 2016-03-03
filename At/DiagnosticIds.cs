@@ -1,11 +1,8 @@
-﻿namespace At {
-    internal class DiagnosticIds {
-        internal static readonly object UnexpectedToken;
-
-        public static object ExpressionCluster
-        {
-            get;
-            internal set;
-        }
-    }
+﻿namespace At 
+{
+internal class DiagnosticIds 
+{
+    public static readonly string UnexpectedToken;
+    public static readonly string ExpressionCluster;
+}
 }

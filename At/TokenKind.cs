@@ -13,7 +13,7 @@ namespace At
         EndOfFile,
         NewLine,
         Space,
-        At,
+        AtSymbol,
         TokenCluster,
         SemiColon,
         LessThan,

@@ -108,9 +108,10 @@
     <Compile Include="AtCompilation.cs" />
     <Compile Include="AtSourceText.cs" />
     <Compile Include="AtSyntaxNode.cs" />
+    <Compile Include="AtSyntaxList.cs" />
+    <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
     <Compile Include="Syntax\ClassDeclarationSyntax.cs" />
-    <Compile Include="Syntax\IdentifierSyntax.cs" />
     <Compile Include="SyntaxAndDeclarationManager.cs" />
     <Compile Include="SyntaxTreeConverter.cs" />
     <Compile Include="Syntax\CurlyBlockSyntax.cs" />
@@ -129,6 +130,7 @@
     <Compile Include="Buffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Syntax\ExpressionClusterSyntax.cs" />
+    <Compile Include="Syntax\IdentifierSyntax.cs" />
     <Compile Include="Syntax\SeparatedSyntaxList.cs" />
     <Compile Include="Syntax\TypeParameterListSytnax.cs" />
     <Compile Include="Syntax\TypeParameterSyntax.cs" />

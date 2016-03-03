@@ -23,7 +23,7 @@ public class AtLexer : IDisposable
     Buffer<char> chars;
 
     Dictionary<char,TokenKind> singleCharTokens = new Dictionary<char,TokenKind> 
-                                                    { {'@',TokenKind.At}
+                                                    { {'@',TokenKind.AtSymbol}
                                                      ,{';',TokenKind.SemiColon}
                                                      ,{'<',TokenKind.LessThan}
                                                      ,{'>',TokenKind.GreaterThan}

@@ -2,12 +2,11 @@
 {
 public class IdentifierSyntax : ExpressionSyntax
 {
-    internal IdentifierSyntax(string text) : base(text) {}
-
-    public string Identifier
+    internal IdentifierSyntax(AtToken token) : base(token)
     {
-        get;
-        internal set;
+        Identifier = token;
     }
+
+    public AtToken Identifier {get;}
 }
 }

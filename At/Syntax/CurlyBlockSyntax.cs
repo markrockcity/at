@@ -1,16 +1,17 @@
-﻿using At.Syntax;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using At.Syntax;
 
 namespace At 
 {
-internal class CurlyBlockSyntax : ExpressionSyntax 
+//"{ ... }"
+public class CurlyBlockSyntax : ExpressionSyntax 
 {
-    private AtToken atToken;
-    private string v;
 
-    public CurlyBlockSyntax(string v, AtToken atToken, string text=null) : base(text) 
+    internal CurlyBlockSyntax(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace) : 
+        base(new AtSyntaxNode[] {leftBrace}.Concat(contents).Concat(new[] {rightBrace})) 
     {
-        this.v = v; //"curly" ???
-        this.atToken = atToken;
     }
 }
 }

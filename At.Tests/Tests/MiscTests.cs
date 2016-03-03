@@ -12,12 +12,23 @@ namespace At.Tests
     [TestMethod]
     public void ParseTextTest()
     {
+
         using (var testData = new TestData(this))
         {
-            var className = testData.Identifier();  
-            var input = $"@{className}<>"; // @X<>   
-            var tree = AtSyntaxTree.ParseText(input);
-            verifyOutput(tree,className);
+            var className = testData.Identifier();
+
+            var inputs = new[] 
+            {
+                $"@{className}<>",
+                $"@{className}<>;",
+                $"@{className}<>{{}}",
+            };
+              
+            foreach(var input in inputs)
+            {
+                var tree = AtSyntaxTree.ParseText(input);
+                verifyOutput(tree,className);
+            }
         }
     }
 
@@ -45,8 +56,8 @@ namespace At.Tests
         assert_not_null(()=>tree);
 
         var root = tree.GetRoot();
-        var classDecl = (ClassDeclarationSyntax) root.Nodes[0];
-        assert_equals(()=>className, ()=>classDecl.Name);
+        var classDecl = (ClassDeclarationSyntax) root.nodes[0];
+        assert_equals(()=>className, ()=>classDecl.Identifier.Text);
         
     }
 }
