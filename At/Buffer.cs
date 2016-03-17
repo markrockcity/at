@@ -18,8 +18,8 @@ class Buffer<T> : IEnumerator<T>
         enumerator = input.GetEnumerator();
     }
 
-    public T   Current  {get {return current;}}
-    public bool End     {get; private set; }   
+    public T    Current  {get {return current;}}
+    public bool End      {get; private set; }   
     public int  Position {get {return position;}}
 
     public bool MoveNext()
@@ -51,7 +51,9 @@ class Buffer<T> : IEnumerator<T>
 
        while (k > buffer.Count) 
        {
-          if (!enumerator.MoveNext()) return default(T);
+          if (!enumerator.MoveNext()) 
+            return default(T);
+
           buffer.Add(enumerator.Current);
        }
 

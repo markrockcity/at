@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using At.Syntax;
 
 namespace At
@@ -15,16 +17,23 @@ public class AtSyntaxTree
         this.compilationUnit = compilationUnit;
     }
 
-    //ParseText(string)
-    public static AtSyntaxTree ParseText(string text)
+
+    //GetDiagnostics()
+    public IEnumerable<AtDiagnostic> GetDiagnostics()
     {
-         return ParseText(AtSourceText.From(text));
+       return GetRoot().Nodes(true).OfType<ErrorNode>().SelectMany(_=>_.Diagnostics);
     }
 
     //GetRoot()
     public CompilationUnitSyntax GetRoot()
     {
         return this.compilationUnit;
+    }
+
+    //ParseText(string)
+    public static AtSyntaxTree ParseText(string text)
+    {
+         return ParseText(AtSourceText.From(text));
     }
 
     //ParseText(AtSourceText)
@@ -41,8 +50,5 @@ public class AtSyntaxTree
             }
         }
     }
-
-
-
 }
 }

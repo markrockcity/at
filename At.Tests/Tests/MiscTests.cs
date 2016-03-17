@@ -22,6 +22,7 @@ namespace At.Tests
                 $"@{className}<>",
                 $"@{className}<>;",
                 $"@{className}<>{{}}",
+                $"@{className}<  > {{ \r\n }}",
             };
               
             foreach(var input in inputs)
@@ -41,7 +42,7 @@ namespace At.Tests
         using (var testData = new TestData(this))
         {
             var className = testData.Identifier();
-            var input = $"@{className}<>"; // @X<>
+            var input = $"@{className}<  > {{ \r\n }}"; // @X<>
             var output = AtProgram.compileStringToAssembly(input);
             verifyOutput(output, className);
         }
@@ -56,6 +57,8 @@ namespace At.Tests
     void verifyOutput(string input, AtSyntaxTree tree,string className)
     {
         assert_not_null(()=>tree);
+
+        assert_equals(()=>0,()=>tree.GetDiagnostics().Count());
 
         var root = tree.GetRoot();
         assert_equals(()=>input,()=>root.Text);

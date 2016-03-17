@@ -232,7 +232,7 @@ namespace At.Tests
                 return    (t==typeof(int))                  ? v.ToString()
                         : (t==typeof(string))               ? "\"" + v.ToString().Replace("\"","\\\"") + "\""
                         : (t.Name.Contains("DisplayClass")) ? ""
-                        : "["+ce.Type+" "+ce.Value.ToString()+"]";
+                        : $"[{ce.Type} {ce.Value.ToString()}]";
             }
 
             //Convert
@@ -261,7 +261,8 @@ namespace At.Tests
             {
                 var mae = (MemberExpression) e;
                 var m   = mae.Member;
-                return  exprStr(mae.Expression)+"."+m.Name;
+                var o   = exprStr(mae.Expression);
+                return  o.Length == 0 ? m.Name : $"{o}.{m.Name}";
             }
 
             //Parameter

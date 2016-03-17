@@ -30,12 +30,20 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(At.Syntax.CompilationUnitSyntax atRoot)
     {
+       //160316: this is mainly for making tests fail
+       var error = atRoot.Nodes().OfType<ErrorNode>().FirstOrDefault();
+       if (error != null)
+       {
+            throw new Exception(error.Message);
+       }
+    
        var csharpSyntax = CSharp.SyntaxFactory.CompilationUnit();
        
        var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
        var statements = new List<CSharp.Syntax.StatementSyntax>();
 
-       foreach(var node in atRoot.Nodes())
+       //TODO: recursion
+       foreach(var node in atRoot.Nodes().Where(_=>_.Parent==atRoot))
        {
           var d = node as DeclarationSyntax;
           if (d != null)
