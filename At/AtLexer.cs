@@ -32,7 +32,7 @@ public class AtLexer : IDisposable
                                                      ,{'}',TokenKind.RightBrace}
                                                     };    
     
-     internal IEnumerable<AtToken> Lex()
+    public IEnumerable<AtToken> Lex()
     {   
         lock(@lock)          
         {
@@ -46,7 +46,7 @@ public class AtLexer : IDisposable
 
         while (!chars.End)
         {
-           var c = chars.LookAhead(1);
+           var c = lookAhead(1);
            if (c=='\0') break;
 
            yield return   isSpaceChar(c)                  ? token(TokenKind.Space,chars,isSpaceChar)
@@ -63,7 +63,7 @@ public class AtLexer : IDisposable
                                 ,b=>!isWhiteSpace(b) && !singleCharTokens.ContainsKey(b));
         }  
 
-        yield return new AtToken(TokenKind.EndOfFile, chars.Position);
+        yield return new AtToken(TokenKind.EndOfFile, position());
 
         lock(@lock)          
         {
@@ -75,16 +75,16 @@ public class AtLexer : IDisposable
     // . | .. | ...
     AtToken dot()
     {
-        chars.MoveNext();
+        moveNext();
         assertCurrent('.');
-        var p = chars.Position;
+        var p = position();
        
         if (isNext('.'))
         {
-           chars.MoveNext();
+           moveNext();
            if (isNext('.')) 
            {
-              chars.MoveNext();
+              moveNext();
               return new AtToken(TokenKind.Ellipsis,p,"...");
            }
 
@@ -98,32 +98,32 @@ public class AtLexer : IDisposable
 
     void assertCurrent(char c)
     {
-       Debug.Assert(chars.Current==c);
+       Debug.Assert(current()==c);
     }
 
     AtToken stringLiteral(char delimiter)
     {
-        chars.MoveNext();       
-        var p = chars.Position;
-        var sb  = new StringBuilder().Append(delimiter);
+        moveNext();       
+        var p  = position();
+        var sb = new StringBuilder().Append(delimiter);
                 
-        while (!chars.End && chars.LookAhead(1) != delimiter) 
+        while (!END() && lookAhead(1) != delimiter) 
         {
-           if (chars.LookAhead(1)=='\\' && chars.LookAhead(2)==delimiter)
+           if (lookAhead(1)=='\\' && lookAhead(2)==delimiter)
            {
-              chars.MoveNext();
-              chars.MoveNext();
-              sb.Append('\\').Append(delimiter);
+                moveNext();
+                moveNext();
+                sb.Append('\\').Append(delimiter);
            }
            else
            {
-               chars.MoveNext();
-               sb.Append(chars.Current);           
+                chars.MoveNext();
+                sb.Append(current());           
            }
         }
 
-        chars.MoveNext();
-        var text = sb.Append(chars.Current).ToString();
+        moveNext();
+        var text = sb.Append(current()).ToString();
         return new AtToken(TokenKind.StringLiteral,p,text);    
     }
 
@@ -177,10 +177,12 @@ public class AtLexer : IDisposable
         return new AtToken(kind,pos,text);
     }
 
-    bool isNext(char c, int i = 1)
-    {
-       return chars.LookAhead(i)==c;
-    }
+    bool isNext(char c, int i = 1) => chars.LookAhead(i)==c; 
+    bool moveNext()                => chars.MoveNext();
+    char lookAhead(int k)          => chars.LookAhead(k);
+    char current()                 => chars.Current;
+    bool END()                     => chars.End;
+    int  position()                => chars.Position;
 
 }
 }
