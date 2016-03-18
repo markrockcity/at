@@ -56,7 +56,7 @@ namespace At
                     case StartOfFile:
                     case EndOfFile  :
                     case Space:
-                    case NewLine:  continue;  
+                    case EndOfLine:  continue;  
 
                     case AtSymbol: 
                     case StringLiteral:
@@ -262,7 +262,7 @@ namespace At
         static bool isWhiteSpace(AtToken token)
         {
             return      (token != null)
-                    &&  (token.Kind==Space  || token.Kind==NewLine);
+                    &&  (token.Kind==Space  || token.Kind==EndOfLine);
         }
 
         bool isNext(TokenKind kind, int k = 1)

@@ -135,11 +135,11 @@ public class AtLexer : IDisposable
         if (c == '\r' && buffer.LookAhead(1) == '\n')
         {
             buffer.MoveNext();
-            return new AtToken(TokenKind.NewLine, p, "\r\n");
+            return new AtToken(TokenKind.EndOfLine, p, "\r\n");
         }
         else
         {
-            return new AtToken(TokenKind.NewLine, p, c.ToString());
+            return new AtToken(TokenKind.EndOfLine, p, c.ToString());
         }
     }
 

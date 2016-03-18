@@ -11,7 +11,7 @@ namespace At
         Any = 0,
         StartOfFile,
         EndOfFile,
-        NewLine,
+        EndOfLine,
         Space,
         AtSymbol,
         TokenCluster,
