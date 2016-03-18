@@ -8,6 +8,15 @@ namespace At.Tests
 {
 [TestClass] public class MiscTests : Test
 {
+    [TestMethod]
+    public void LexerTest()
+    {
+        var lexer  = new AtLexer(new AtSourceText("<>"));
+        var tokens = lexer.Lex().ToList();
+        var count  = 4; //<StartOfFile> + "<" + ">" + <EOF>
+        assert_equals(count,()=>tokens.Count);
+    }
+
 
     [TestMethod]
     public void ParseTextTest()
