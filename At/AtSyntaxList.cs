@@ -47,6 +47,16 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
         }
     }
 
+    public static AtSyntaxList<TNode> Empty
+    {
+        get
+        {
+            if (_Empty == null)
+                _Empty = new AtSyntaxList<TNode>(null, new TNode[0]);
+            return _Empty;
+        }
+    } static AtSyntaxList<TNode> _Empty = null;
+
     public IEnumerator<TNode> GetEnumerator()
     {
         return nodes.GetEnumerator();
