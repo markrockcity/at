@@ -9,6 +9,7 @@ using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace At.Tests
 {
@@ -55,29 +56,29 @@ namespace At.Tests
    { 
    }
 
-  //assert_equals(expected,actual)
-  public void assert_equals<T>(Expression<Func<T>> expected, Expression<Func<T>> actual) 
+    //assert_equals()
+    public void assert_equals<T>(T expected, T actual, string f = null, params object[] a)
+    {
+        assert_equals(()=>expected,()=>actual,f,a);
+    }
+    public void assert_equals<T>(T expected, Expression<Func<T>> actual, string f = null, params object[] a)
+    {
+        assert_equals(()=>expected,actual,f,a);
+    }
+    public void assert_equals<T>( Expression<Func<T>> expected
+                                 ,Expression<Func<T>> actual
+                                 ,string              format = null
+                                 ,params object[]     args) 
    { Write("assert EQUAL: {0} == {1}",exprStr(expected.Body),exprStr(actual.Body));
      var f = expected.Compile();
      var g = actual.Compile();
      var x = f();
      var y = g();
-     Assert.AreEqual(x,y);
-   }
 
-
-   
-  //assert_equals(expected,actual,message)
-  public void assert_equals<T>( Expression<Func<T>> expected
-                               ,Expression<Func<T>> actual
-                               ,string              format
-                               ,params object[]     args) 
-   { Write("assert EQUAL: {0} == {1}",exprStr(expected.Body),exprStr(actual.Body));
-     var f = expected.Compile();
-     var g = actual.Compile();
-     var x = f();
-     var y = g();
-     Assert.AreEqual(x,y,string.Format(format,args));
+     if (format == null)
+        Assert.AreEqual(x,y);
+     else
+        Assert.AreEqual(x,y,string.Format(format,args));
    } 
 
   //assert_true()
@@ -214,11 +215,11 @@ namespace At.Tests
 
                 return   (m.Name=="get_Item") ? 
                             exprStr(mce.Object)+"."+"["+exprStr(mce.Arguments[0])+"]" : 
-                         (m.DeclaringType==typeof(Enumerable) ?
+                         (m.DeclaringType==typeof(Enumerable)) ?
                             $"{exprStr(mce.Arguments[0])}.{mce.Method.Name}({string.Join(",",mce.Arguments.Skip(1).Select(exprStr))})" :
                          (m.IsStatic) 
                             ? m.DeclaringType.Name 
-                            : exprStr(mce.Object))+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
+                            : exprStr(mce.Object)+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
         
             }
 
@@ -262,7 +263,11 @@ namespace At.Tests
                 var mae = (MemberExpression) e;
                 var m   = mae.Member;
                 var o   = exprStr(mae.Expression);
-                return  o.Length == 0 ? m.Name : $"{o}.{m.Name}";
+
+                if (m.Name=="expected" || m.Name=="actual")
+                    return getValue(mae).ToString();
+                else
+                    return  o.Length == 0 ? m.Name : $"{o}.{m.Name}";
             }
 
             //Parameter
@@ -271,6 +276,19 @@ namespace At.Tests
             //DEFAULT
             default: Write("exprString(): "+e.NodeType) ; return e.ToString();
         }
+    }
+
+    object getValue(MemberExpression me)
+    {
+        var m = me.Member;
+        var p = m as PropertyInfo;
+        var o = Expression.Lambda(me.Expression).Compile().DynamicInvoke();
+
+        return
+            (p != null) ? 
+                p.GetValue(o) :
+
+            ((FieldInfo)m).GetValue(o);
     }
 
     string binaryStr(Expression e, string op)
