@@ -109,6 +109,7 @@
     <Compile Include="AtSourceText.cs" />
     <Compile Include="AtSyntaxNode.cs" />
     <Compile Include="AtSyntaxList.cs" />
+    <Compile Include="AtSyntaxTrivia.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
     <Compile Include="Syntax\ClassDeclarationSyntax.cs" />

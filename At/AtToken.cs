@@ -5,7 +5,10 @@ namespace At
 //SyntaxToken 
 public class AtToken : AtSyntaxNode
 {
-    private TokenKind _kind;
+    TokenKind _kind;
+    
+    internal AtSyntaxList<AtToken> leadingTrivia  = AtSyntaxList<AtToken>.Empty;
+    internal AtSyntaxList<AtToken> trailingTrivia = AtSyntaxList<AtToken>.Empty;
 
 
     public AtToken(TokenKind kind, int position, string text=null) : base(new AtSyntaxNode[0])
@@ -33,6 +36,26 @@ public class AtToken : AtSyntaxNode
     public override string Text
     {
         get;
+    }
+
+    public override string FullText
+    {
+        get
+        {
+            return 
+                string.Concat(
+                    string.Concat(leadingTrivia),
+                    Text,
+                    string.Concat(trailingTrivia));
+        }
+    }
+
+    public override string ToString()
+    {
+        return 
+            _kind==TokenKind.EndOfFile ? "<EOF>" :
+            _kind==TokenKind.StartOfFile ? "<StartOfFile>" :
+            Text;
     }
 }
 }

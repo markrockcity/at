@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using static At.TokenKind;
 
 namespace At
 {
@@ -21,54 +22,93 @@ public class AtLexer : IDisposable
     object @lock = new object();
     bool tokenizing;
     Buffer<char> chars;
+    List<AtToken> leadingTrivia = new List<AtToken>();
+    List<AtToken> trailingTrivia = new List<AtToken>();
 
-    Dictionary<char,TokenKind> singleCharTokens = new Dictionary<char,TokenKind> 
-                                                    { {'@',TokenKind.AtSymbol}
-                                                     ,{';',TokenKind.SemiColon}
-                                                     ,{'<',TokenKind.LessThan}
-                                                     ,{'>',TokenKind.GreaterThan}
-                                                     ,{':',TokenKind.Colon}
-                                                     ,{'{',TokenKind.LeftBrace}
-                                                     ,{'}',TokenKind.RightBrace}
-                                                    };    
+    Dictionary<char,TokenKind> 
+    singleCharTokens = new Dictionary<char,TokenKind> 
+    { 
+        {'@',AtSymbol},
+        {';',SemiColon},
+        {'<',LessThan},
+        {'>',GreaterThan},
+        {':',Colon},
+        {'{',LeftBrace},
+        {'}',RightBrace},
+    };    
     
     public IEnumerable<AtToken> Lex()
     {   
         lock(@lock)          
         {
-           if (this.tokenizing) throw new Exception("ALREADY TOKENIZING");
-           this.tokenizing = true;
+            if (this.tokenizing) throw new Exception("ALREADY TOKENIZING");
+            this.tokenizing = true;
         }
 
         this.chars = new Buffer<char>(text.Source);
 
-        yield return new AtToken(TokenKind.StartOfFile,0);
+        yield return new AtToken(StartOfFile,0);
 
-        while (!chars.End)
+        AtToken _token = null;
+        while (!END())
         {
-           var c = lookAhead(1);
-           if (c=='\0') break;
+            var c = lookAhead(1);
 
-           yield return   isSpaceChar(c)                  ? token(TokenKind.Space,chars,isSpaceChar)
+            if (c=='\0') 
+            {
+               moveNext(); 
+               goto end;
+            }
 
-                        : isNewLineChar(c)                ? lineBreak(chars, c)
+            var trivia = (_token==null) ? leadingTrivia : trailingTrivia;
 
-                        : singleCharTokens.ContainsKey(c) ? token(singleCharTokens[c],chars)
+            if (isSpaceChar(c))
+            {
+                trivia.Add(token(Space,chars,isSpaceChar));
+                continue;
+            } 
+            
+            if (isNewLineChar(c))
+            {
+                trivia.Add(lineBreak(chars, c));
+                continue;
+            }
 
-                        : c == '\"'                       ? stringLiteral(c)
+            if (_token == null)
+            {
+                _token =      singleCharTokens.ContainsKey(c) ? token(singleCharTokens[c],chars)
 
-                        : c == '.'                        ? dot()
+                            : c == '\"'                       ? stringLiteral(c)
 
-                        : token( TokenKind.TokenCluster,chars
-                                ,b=>!isWhiteSpace(b) && !singleCharTokens.ContainsKey(b));
+                            : c == '.'                        ? dot()
+
+                            : token( TokenKind.TokenCluster,chars
+                                    ,b=>!isWhiteSpace(b) && !singleCharTokens.ContainsKey(b));
+                continue;            
+            }
+
+            end:
+            {
+                if (leadingTrivia.Count > 0)
+                    _token.leadingTrivia = new AtSyntaxList<AtToken>(_token,leadingTrivia);
+                
+                if (trailingTrivia.Count > 0)
+                    _token.trailingTrivia = new AtSyntaxList<AtToken>(_token,trailingTrivia);
+                
+                yield return _token;
+            
+                _token = null;
+                leadingTrivia.Clear();
+                trailingTrivia.Clear();            
+            }
         }  
 
-        yield return new AtToken(TokenKind.EndOfFile, position());
+        yield return new AtToken(EndOfFile, position());
 
         lock(@lock)          
         {
-          this.tokenizing = false;
-          this.chars = null;
+            this.tokenizing = false;
+            this.chars = null;
         }
     }
 
@@ -159,7 +199,7 @@ public class AtLexer : IDisposable
         return c==' ' || c=='\t';
     }
 
-    AtToken token(TokenKind kind, Buffer<char> buffer, Func<char,bool> predicate=null)
+    static AtToken token(TokenKind kind, Buffer<char> buffer, Func<char,bool> predicate=null)
     {
         buffer.MoveNext();
         if (predicate==null) predicate = c => false;     
