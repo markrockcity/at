@@ -32,17 +32,25 @@ public abstract class AtSyntaxNode
         }
     }
 
-    public virtual string Text
+    public virtual string FullText
     {
         get
         {
             if (_text == null)
-                _text = string.Concat(nodes.Select(_=>_.Text));
+                _text = string.Concat(nodes.Select(_=>_.FullText));
 
             return _text;
         }
+    } string _text;
+
+    public virtual string Text
+    {
+        get
+        {
+            return FullText.Trim();
+        }
     } 
-    string _text;
+
 
     public IEnumerable<AtSyntaxNode> Nodes(bool includeTokens = false)
     {

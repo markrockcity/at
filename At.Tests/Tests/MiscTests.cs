@@ -32,6 +32,7 @@ namespace At.Tests
                 $"@{className}<>;",
                 $"@{className}<>{{}}",
                 $"@{className}<  > {{ \r\n }}",
+                $"\r\n  @{className}<  > {{ \r\n }}\r\n\r\n  ",
             };
               
             foreach(var input in inputs)
@@ -70,7 +71,7 @@ namespace At.Tests
         assert_equals(()=>0,()=>tree.GetDiagnostics().Count());
 
         var root = tree.GetRoot();
-        assert_equals(()=>input,()=>root.Text);
+        assert_equals(()=>input,()=>root.FullText);
 
         var classDecl = (ClassDeclarationSyntax) root.Nodes().First();
         assert_equals(()=>className, ()=>classDecl.Identifier.Text);
