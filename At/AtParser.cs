@@ -100,7 +100,7 @@ namespace At
     //declarationExpression "@TokenCluster[<>][; | { ... }]"
     ExpressionSyntax declarationExpression()
     {
-        //TODO: include trivia (whitespace, etc.) in nodes
+        
         var nodes = new List<AtSyntaxNode>();
         Debug.Assert(current().Kind==AtSymbol);
         var atSymbol = current();
@@ -127,7 +127,7 @@ namespace At
                 lessThan = current();
                 skipWhiteSpace();
 
-                //TODO: parameters
+                //TODO: type parameters
 
                 assertCurrent(GreaterThan);
                 greaterThan = current();
