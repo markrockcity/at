@@ -24,7 +24,8 @@ namespace At.Tests
 
         using (var testData = new TestData(this))
         {
-            var className = testData.Identifier();
+            var className = testData.Identifier(0);
+            var baseClass = testData.Identifier(1);
 
             var inputs = new[] 
             {
@@ -35,7 +36,10 @@ namespace At.Tests
                 $"\r\n  @{className}<  > {{ \r\n }}\r\n\r\n  ",
                 $"@{className}<T>",
                 $"@{className}< T >",
-                $"@{className}< T, U>"
+                $"@{className}< T, U>",
+                $"@{className}< T, U>",
+                $"@{className}<T,U> : {baseClass}",
+                $"@{className}<T,U> : {baseClass}<T>",
             };
               
             foreach(var input in inputs)
@@ -54,8 +58,11 @@ namespace At.Tests
     {
         using (var testData = new TestData(this))
         {
-            var className = testData.Identifier();
-            var input = $"@{className}< T , U > {{ \r\n }}"; // @X<>
+            var className = testData.Identifier(0);
+            var baseClass = testData.Identifier(1);
+
+            var input = $"@{className}< T , U > : {baseClass}<T>{{ \r\n }}"+ // @X<>
+                        $"@{baseClass}<X>;"; 
             var output = AtProgram.compileStringToAssembly(input);
             verifyOutput(output, className+"`2");
         }
