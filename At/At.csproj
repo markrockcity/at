@@ -131,9 +131,9 @@
     <Compile Include="Buffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Syntax\ExpressionClusterSyntax.cs" />
-    <Compile Include="Syntax\IdentifierSyntax.cs" />
+    <Compile Include="Syntax\NameSyntax.cs" />
     <Compile Include="Syntax\SeparatedSyntaxList.cs" />
-    <Compile Include="Syntax\TypeParameterListSytnax.cs" />
+    <Compile Include="Syntax\TypeParameterListSyntax.cs" />
     <Compile Include="Syntax\TypeParameterSyntax.cs" />
     <Compile Include="TokenKind.cs" />
   </ItemGroup>

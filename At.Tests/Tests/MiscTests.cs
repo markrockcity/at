@@ -33,10 +33,15 @@ namespace At.Tests
                 $"@{className}<>{{}}",
                 $"@{className}<  > {{ \r\n }}",
                 $"\r\n  @{className}<  > {{ \r\n }}\r\n\r\n  ",
+                $"@{className}<T>",
+                $"@{className}< T >",
+                $"@{className}< T, U>"
             };
               
             foreach(var input in inputs)
             {
+                Write(input);
+
                 var tree = AtSyntaxTree.ParseText(input);
 
                 //TODO: verify that no ErrorNodes exist
@@ -46,7 +51,7 @@ namespace At.Tests
     }
 
         
-   [TestMethod]
+   [TestMethod] //TODO: className<T, U>
     public void CompileStringToAssemblyTest()
     {
         using (var testData = new TestData(this))

@@ -10,10 +10,11 @@ public class SeparatedSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtS
 {
     readonly AtSyntaxList<AtSyntaxNode> _list;
 
-    public SeparatedSyntaxList(AtSyntaxNode owner, IEnumerable<AtSyntaxNode> nodes)
+    internal SeparatedSyntaxList(AtSyntaxNode owner, IEnumerable<AtSyntaxNode> nodes)
     {
         this._list = new AtSyntaxList<AtSyntaxNode>(owner,nodes);
     }
+
 
     public TNode this[int index]
     {
@@ -39,6 +40,11 @@ public class SeparatedSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtS
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((SeparatedSyntaxList<TNode>)this).GetEnumerator();
+    }
+
+    public override string ToString()
+    {
+        return string.Join("",_list.Select(_=>_.FullText));
     }
 }
 }

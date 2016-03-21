@@ -11,7 +11,7 @@ public class AtToken : AtSyntaxNode
     internal AtSyntaxList<AtToken> trailingTrivia = AtSyntaxList<AtToken>.Empty;
 
 
-    public AtToken(TokenKind kind, int position, string text=null) : base(new AtSyntaxNode[0])
+    internal AtToken(TokenKind kind, int position, string text=null) : base(new AtSyntaxNode[0])
     {
         this.Text = text;
         this.Position = position;

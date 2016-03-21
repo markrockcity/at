@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using At;
 using At.Syntax;
 using static At.TokenKind;
 
@@ -67,13 +68,13 @@ namespace At
             }        
         }
 
-        ErrorNode error(List<AtDiagnostic> diagnostics,object diagnosticId,AtToken token,string f, object arg1, object arg2) 
+        ErrorNode error(List<AtDiagnostic> diagnostics,object diagnosticId,AtToken token,string f, params object[] args) 
         {
-           diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,arg1,arg2)));
+           diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
 
            return SyntaxFactory.ErrorNode(
                                     diagnostics,
-                                    string.Format(f,arg1,arg2),
+                                    string.Format(f,args),
                                     token);
         }   
 
@@ -127,13 +128,15 @@ namespace At
                 lessThan = current();
                 skipWhiteSpace();
 
-                //TODO: type parameters
-
-                assertCurrent(GreaterThan);
+                SeparatedSyntaxList<TypeParameterSyntax> typeParamList = null;
+                if (!isCurrent(GreaterThan))
+                    typeParamList = list(Comma,typeParameter,GreaterThan);
+                   
+                assertCurrent(GreaterThan);             
                 greaterThan = current();
                 skipWhiteSpace();
 
-                typeParams = SyntaxFactory.TypeParameterList(lessThan,greaterThan);
+                typeParams = SyntaxFactory.TypeParameterList(lessThan,typeParamList,greaterThan);
                 nodes.Add(typeParams);
                 isClass = true; 
             }
@@ -200,84 +203,132 @@ namespace At
         }
     }
 
-        AtToken current()        => tokens.Current;
-        int     position()       => tokens.Position;
-        AtToken lookAhead(int k) => tokens.LookAhead(k);
-        bool    moveNext()       => tokens.MoveNext();
+       
+    AtToken current()        => tokens.Current;
+    int     position()       => tokens.Position;
+    AtToken lookAhead(int k) => tokens.LookAhead(k);
+    bool    moveNext()       => tokens.MoveNext();
 
 
-        private ExpressionSyntax error() 
-        {
-            throw new NotImplementedException();
-        }
-
-        //{Curly Block}
-        private CurlyBlockSyntax curlyBlock()
-        {
-            assertCurrent(LeftBrace);
-            var leftBrace = current();
-            var p = position();
-            skipWhiteSpace();
-
-            var contents = new List<ExpressionSyntax>();
-            while(!isCurrent(RightBrace))
-            {
-               contents.Add(expression());
-               skipWhiteSpace();
-            }
-
-            return SyntaxFactory.CurlyBlock(leftBrace,contents,rightBrace:current());
-        }
-
-        void assertCurrent(TokenKind tokenKind)
-        {
-            Debug.Assert(tokens.Current.Kind==tokenKind);
-        }
-
-        bool skip(params TokenKind[] tokenKinds)
-        {
-            for(int i=1;i < tokenKinds.Length+1;++i) 
-            {
-                if (lookAhead(i).Kind!=tokenKinds[i-1]) 
-                    return false;
-                else 
-                    skipWhiteSpace();
-            }
-
-            for(int i=0; i < tokenKinds.Length; ++i) 
-                moveNext();
-
-            return true;
-        }
-
-        void skipWhiteSpace()
-        {
-            if (!isWhiteSpace(current())) 
-                moveNext();
-        
-            while(isWhiteSpace(current())) 
-                moveNext();
-        }
-
-        static bool isWhiteSpace(AtToken token)
-        {
-            return      (token != null)
-                    &&  (token.Kind==Space  || token.Kind==EndOfLine);
-        }
-
-        bool isNext(TokenKind kind, int k = 1)
-        {
-           return lookAhead(k).Kind==kind;
-        }
-
-        bool isCurrent(TokenKind tokenKind)
-        {
-           return tokens.Current?.Kind == tokenKind;
-        }
-
-        void IDisposable.Dispose()
-        {
-            
-        }
+    private ExpressionSyntax error() 
+    {
+        throw new NotImplementedException();
     }
+
+    //{Curly Block}
+    private CurlyBlockSyntax curlyBlock()
+    {
+        assertCurrent(LeftBrace);
+        var leftBrace = current();
+        var p = position();
+        skipWhiteSpace();
+
+        var contents = new List<ExpressionSyntax>();
+        while(!isCurrent(RightBrace))
+        {
+            contents.Add(expression());
+            skipWhiteSpace();
+        }
+
+        return SyntaxFactory.CurlyBlock(leftBrace,contents,rightBrace:current());
+    }
+
+
+    TypeParameterSyntax typeParameter()
+    {
+        assertCurrent(TokenCluster);
+        var nameSyntax = SyntaxFactory.TypeParameter(current());
+        moveNext();
+        return nameSyntax;
+    }
+
+    SeparatedSyntaxList<T> list<T>(TokenKind separator, Func<T> parseExpr, TokenKind endDelimiter)
+        where T : AtSyntaxNode
+    {
+        var list = new List<AtSyntaxNode>();
+    
+        if (!isCurrent(endDelimiter))
+        {
+            if (isCurrent(separator))
+            {
+                error(diagnostics,DiagnosticIds.UnexpectedToken,current(),$"Unexpected token: {separator}");
+                moveNext();
+            }
+
+            while(true)
+            {
+                if (isCurrent(endDelimiter))
+                    break;  
+        
+                list.Add(parseExpr());
+
+                if (isCurrent(separator))
+                {
+                    list.Add(current());
+                    moveNext();
+                }
+                else
+                {
+                    break;
+                }
+            }            
+        }
+
+        assertCurrent(endDelimiter);
+        return new SeparatedSyntaxList<T>(null,list);
+    }
+
+
+    void assertCurrent(TokenKind tokenKind)
+    {
+        Debug.Assert(tokens.Current.Kind==tokenKind);
+    }
+
+    bool skip(params TokenKind[] tokenKinds)
+    {
+        for(int i=1;i < tokenKinds.Length+1;++i) 
+        {
+            if (lookAhead(i).Kind!=tokenKinds[i-1]) 
+                return false;
+            else 
+                skipWhiteSpace();
+        }
+
+        for(int i=0; i < tokenKinds.Length; ++i) 
+            moveNext();
+
+        return true;
+    }
+
+    //TODO: remove this? 
+    void skipWhiteSpace()
+    {
+        if (!isWhiteSpace(current())) 
+            moveNext();
+        
+        while(isWhiteSpace(current())) 
+            moveNext();
+    }
+
+    static bool isWhiteSpace(AtToken token)
+    {
+        return      (token != null)
+                &&  (token.Kind==Space  || token.Kind==EndOfLine);
+    }
+
+    bool isNext(TokenKind kind, int k = 1)
+    {
+        return lookAhead(k).Kind==kind;
+    }
+
+    bool isCurrent(TokenKind tokenKind)
+    {
+        return tokens.Current?.Kind == tokenKind;
+    }
+
+    void IDisposable.Dispose()
+    {
+            
+    }
+}
 }

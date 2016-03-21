@@ -83,7 +83,7 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.ExpressionSyntax ExpressionSyntax(At.Syntax.ExpressionSyntax expr)
     {
-        var id = expr as IdentifierSyntax;
+        var id = expr as Syntax.NameSyntax;
         if (id != null) return CSharp.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
         throw new NotImplementedException(expr.ToString());

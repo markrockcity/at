@@ -57,6 +57,11 @@ public abstract class AtSyntaxNode
         return nodesRecursive(this,includeTokens);
     }
 
+    public override string ToString()
+    {
+        return FullText;
+    }
+
     IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens)
     {
         foreach(var node in parent.nodes.Where(_=> includeTokens || !_.IsToken))

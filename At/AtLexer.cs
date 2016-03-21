@@ -35,6 +35,7 @@ public class AtLexer : IDisposable
         {':',Colon},
         {'{',LeftBrace},
         {'}',RightBrace},
+        {',',Comma}
     };    
     
     public IEnumerable<AtToken> Lex()

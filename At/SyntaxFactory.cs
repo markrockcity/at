@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using At.Syntax;
@@ -29,7 +30,19 @@ internal class SyntaxFactory
 
     public static TypeParameterListSyntax TypeParameterList(AtToken lessThan,AtToken greaterThan)
     {
-        return new TypeParameterListSyntax(lessThan,new AtSyntaxNode[0],greaterThan);
+        return new TypeParameterListSyntax(lessThan,new SeparatedSyntaxList<TypeParameterSyntax>(null,new AtSyntaxNode[0]),greaterThan);
+    }
+
+    public static TypeParameterListSyntax TypeParameterList(AtToken lessThan, SeparatedSyntaxList<TypeParameterSyntax> typeParamList,AtToken greaterThan)
+    {
+        checkNull(lessThan,nameof(lessThan));        
+        checkNull(greaterThan,nameof(greaterThan));
+
+        if (typeParamList == null)
+            return TypeParameterList(lessThan,greaterThan);
+
+        checkNull(typeParamList,nameof(typeParamList));
+        return new TypeParameterListSyntax(lessThan,typeParamList,greaterThan);
     }
 
     public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace)
@@ -46,5 +59,29 @@ internal class SyntaxFactory
 
         return new CurlyBlockSyntax(leftBrace,contents,rightBrace);
     }
+
+    public static NameSyntax NameSyntax(AtToken identifier)
+    {
+        if (identifier == null)
+            throw new ArgumentNullException(nameof(identifier));   
+              
+        return new NameSyntax(identifier);    
+    }
+
+    public static TypeParameterSyntax TypeParameter(AtToken identifier)
+    {
+        checkNull(identifier,nameof(identifier));
+        return new TypeParameterSyntax(identifier);
+    }
+
+    static void checkNull(object obj, string name)
+    {
+        if (obj == null)
+            throw new ArgumentNullException(name);
+
+        if (obj is IEnumerable && ((IEnumerable) obj).Cast<object>().Any(_=>_== null))
+            throw new ArgumentNullException(name,name+" contains a null reference");        
+    }
+
 }
 }

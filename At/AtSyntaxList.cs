@@ -8,11 +8,14 @@ namespace At
 public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNode
 {
     readonly AtSyntaxNode owner;
-    readonly ImmutableList<TNode> nodes;
+    readonly ImmutableList<TNode> nodes = ImmutableList<TNode>.Empty;
 
     internal AtSyntaxList(AtSyntaxNode owner, IEnumerable<TNode> nodes)
     {
         this.owner = owner;
+
+        if (nodes == null)
+            return;
         
         foreach(var node in nodes)
         {
@@ -28,7 +31,7 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
         }
 
     
-        this.nodes = ImmutableList<TNode>.Empty.AddRange(nodes);
+        this.nodes = this.nodes.AddRange(nodes);
     }
 
     public TNode this[int index]

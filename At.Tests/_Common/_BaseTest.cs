@@ -183,6 +183,10 @@ namespace At.Tests
    }
    
    //Write()
+   protected internal void Write(string msg)
+   {
+      TestContext.WriteLine("[{0}] {1}",DateTime.Now, msg);
+   }
    protected internal void Write(string f, params object[] args)
    { 
       TestContext.WriteLine("[{0}] {1}",DateTime.Now, string.Format(f,args));
