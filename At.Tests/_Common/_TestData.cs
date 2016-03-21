@@ -9,50 +9,57 @@ namespace At.Tests
 {
 public partial class TestData : IDisposable
 {    
-   const string testUsername = "test";
+    const string testUsername = "test";
 
-   Test test;
+    Test test;
 
-   static bool initialized;
+    static bool initialized;
 
-   //cctor
-   static TestData()
-   {
-      Init();
-   }
+    //cctor
+    static TestData()
+    {
+        Init();
+    }
 
-   public string Identifier() 
-   {
-        return "X";
-   }
+    public string Identifier(int? i = null) 
+    {
+        const int ascii_A = 65;
 
-   static internal void Init()
-   {
-      if (initialized) return;
+        return 
+            (i != null) ? 
+                ((char) Math.Abs(i.Value) + ascii_A).ToString() :
+                "X";
+                
+        
+    }
+
+    static internal void Init()
+    {
+        if (initialized) return;
 
 
 
-      initialized = true;
-   }
+        initialized = true;
+    }
   
-   //ctor
-   public TestData(Test t) 
-   {
-      this.test = t;
+    //ctor
+    public TestData(Test t) 
+    {
+        this.test = t;
 
-   }
-
-
-   //SubmitChanges
-   public void SubmitChanges() 
-   { 
-   }
+    }
 
 
-   //IDisposable.Dispose()
-   void IDisposable.Dispose()
-   {  
-   }
+    //SubmitChanges
+    public void SubmitChanges() 
+    { 
+    }
+
+
+    //IDisposable.Dispose()
+    void IDisposable.Dispose()
+    {  
+    }
 
 }
 }
