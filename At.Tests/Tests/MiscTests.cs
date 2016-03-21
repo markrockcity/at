@@ -40,8 +40,6 @@ namespace At.Tests
               
             foreach(var input in inputs)
             {
-                Write(input);
-
                 var tree = AtSyntaxTree.ParseText(input);
 
                 //TODO: verify that no ErrorNodes exist

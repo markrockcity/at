@@ -69,11 +69,14 @@ namespace At.Tests
                                  ,Expression<Func<T>> actual
                                  ,string              format = null
                                  ,params object[]     args) 
-   { Write("assert EQUAL: {0} == {1}",exprStr(expected.Body),exprStr(actual.Body));
-     var f = expected.Compile();
+   { var f = expected.Compile();
      var g = actual.Compile();
      var x = f();
      var y = g();
+
+     var _x = expected.Body is ConstantExpression ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ({x})";
+     var _y = actual.Body is ConstantExpression ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ({y})";
+     Write($"assert EQUAL: {_x} == {_y}");
 
      if (format == null)
         Assert.AreEqual(x,y);
