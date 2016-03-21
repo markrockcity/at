@@ -55,9 +55,9 @@ namespace At.Tests
         using (var testData = new TestData(this))
         {
             var className = testData.Identifier();
-            var input = $"@{className}<  > {{ \r\n }}"; // @X<>
+            var input = $"@{className}< T , U > {{ \r\n }}"; // @X<>
             var output = AtProgram.compileStringToAssembly(input);
-            verifyOutput(output, className);
+            verifyOutput(output, className+"`2");
         }
     }
 
