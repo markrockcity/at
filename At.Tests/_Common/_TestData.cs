@@ -27,7 +27,7 @@ public partial class TestData : IDisposable
 
         return 
             (i != null) ? 
-                ((char) Math.Abs(i.Value) + ascii_A).ToString() :
+                ((char) (Math.Abs(i.Value) + ascii_A)).ToString() :
                 "X";
                 
         
