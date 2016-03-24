@@ -10,6 +10,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace At.Tests
 {
@@ -271,10 +272,14 @@ namespace At.Tests
                 var m   = mae.Member;
                 var o   = exprStr(mae.Expression);
 
-                if (m.Name=="expected" || m.Name=="actual")
-                    return getValue(mae).ToString();
-                else
-                    return  o.Length == 0 ? m.Name : $"{o}.{m.Name}";
+                return (m.Name=="expected" || m.Name=="actual") ?
+                            getValue(mae).ToString() :
+                            
+                       (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
+                        || o.Length == 0) ? 
+                            m.Name : 
+
+                       $"{o}.{m.Name}";
             }
 
             //Parameter
