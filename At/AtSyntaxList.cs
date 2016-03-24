@@ -19,6 +19,9 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
         
         foreach(var node in nodes)
         {
+            if (node == null)
+                continue;
+
             // - this might give a false negative where the parent wasn't changed
             //   but the child nodes have changed (e.g., in another thread)... maybe?
             if (node.Parent == owner)

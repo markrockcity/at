@@ -1,12 +1,12 @@
 ﻿namespace At.Syntax
 {
 // Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterSyntax
-public class TypeParameterSyntax : AtSyntaxNode
+public class ParameterSyntax : AtSyntaxNode
 {
     AtSyntaxNode identifier;
 
 
-    internal TypeParameterSyntax(AtToken identifier) : base(new[] {identifier})
+    internal ParameterSyntax(AtToken identifier) : base(new[] {identifier})
     {
         this.identifier = identifier;
     }

@@ -121,14 +121,13 @@ namespace At
             //<>
             AtToken lessThan = null;
             AtToken greaterThan = null;
-            TypeParameterListSyntax typeParams = null;
-            
+            ListSyntax<ParameterSyntax> typeParams = null;
             if (isCurrent(LessThan))
             {                
                 lessThan = current();
                 skipWhiteSpace();
 
-                SeparatedSyntaxList<TypeParameterSyntax> typeParamList = null;
+                SeparatedSyntaxList<ParameterSyntax> typeParamList = null;
                 if (!isCurrent(GreaterThan))
                     typeParamList = list(Comma,typeParameter,GreaterThan);
                    
@@ -136,42 +135,24 @@ namespace At
                 greaterThan = current();
                 skipWhiteSpace();
 
-                typeParams = SyntaxFactory.TypeParameterList(lessThan,typeParamList,greaterThan);
+                typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan);
                 nodes.Add(typeParams);
                 isClass = true; 
             }
 
-            //TODO: implement base class
-            //: className<>
+
+            //: baseType<>[, ...]
+            AtToken colon = null;
+            ListSyntax<NameSyntax> baseList = null; 
             if (isCurrent(Colon))
             {
+                colon = consumeToken(Colon);
                 
-                throw new NotImplementedException("@className<> : baseClass");
+                var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
 
-                //TODO: typeExpression()?
-
-                /*
-                var colon = current();
-                skipWhiteSpace();
-
-                if (isCurrent(TokenCluster))
-                {
-                    afterColon = current();
-                    skipWhiteSpace();
-                   
-                    //<>
-                    
-                    if (isCurrent(LessThan))
-                    {
-                        skip(LessThan,GreaterThan);
-                    }
-                    
-                }
-                else
-                {
-                    return error();
-                    //return error(diagnostics,DiagnosticIds.UnexpectedToken,"{0}:unexpected: {1}",tokens.Current.Position+1,tokens.LookAhead(1));
-                }*/
+                //TODO: remove colon from list?
+                baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null);
+                nodes.Add(baseList);
             }
 
             
@@ -188,7 +169,7 @@ namespace At
 
 
             if (isClass)
-                return SyntaxFactory.ClassDeclaration(atSymbol,tc,typeParams,nodes);
+                return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,nodes);
 
             throw new NotImplementedException("non-class declaration expresssion");
 
@@ -208,6 +189,16 @@ namespace At
     int     position()       => tokens.Position;
     AtToken lookAhead(int k) => tokens.LookAhead(k);
     bool    moveNext()       => tokens.MoveNext();
+
+    AtToken consumeToken(TokenKind? assumedToken = null)
+    {
+        if (assumedToken != null)
+            assertCurrent(assumedToken.Value);
+
+        var c = tokens.Current;
+        tokens.MoveNext();
+        return c;
+    }
 
 
     private ExpressionSyntax error() 
@@ -234,20 +225,40 @@ namespace At
     }
 
 
-    TypeParameterSyntax typeParameter()
+    NameSyntax name()
     {
         assertCurrent(TokenCluster);
-        var nameSyntax = SyntaxFactory.TypeParameter(current());
-        moveNext();
-        return nameSyntax;
+        var identifier = consumeToken();
+
+        //type args <T, U, V>
+        SeparatedSyntaxList<NameSyntax> typeArgs = null;
+        AtToken lessThan = null;
+        AtToken greaterThan = null;
+
+        if (isCurrent(LessThan))
+        {
+           lessThan = consumeToken(); 
+           typeArgs = list(Comma,name,GreaterThan);
+           greaterThan = consumeToken(GreaterThan);
+        }
+
+        return (lessThan != null) ?
+                    SyntaxFactory.NameSyntax(identifier,SyntaxFactory.List<NameSyntax>(lessThan,typeArgs,greaterThan)):
+                    SyntaxFactory.NameSyntax(identifier);
     }
 
-    SeparatedSyntaxList<T> list<T>(TokenKind separator, Func<T> parseExpr, TokenKind endDelimiter)
+    ParameterSyntax typeParameter()
+    {
+        assertCurrent(TokenCluster);
+        return SyntaxFactory.Parameter(consumeToken());
+    }
+
+    SeparatedSyntaxList<T> list<T>(TokenKind separator, Func<T> parseExpr, params TokenKind[] endDelimiters)
         where T : AtSyntaxNode
     {
         var list = new List<AtSyntaxNode>();
     
-        if (!isCurrent(endDelimiter))
+        if (!isCurrent(endDelimiters))
         {
             if (isCurrent(separator))
             {
@@ -257,7 +268,7 @@ namespace At
 
             while(true)
             {
-                if (isCurrent(endDelimiter))
+                if (isCurrent(endDelimiters))
                     break;  
         
                 list.Add(parseExpr());
@@ -267,21 +278,17 @@ namespace At
                     list.Add(current());
                     moveNext();
                 }
-                else
-                {
-                    break;
-                }
             }            
         }
 
-        assertCurrent(endDelimiter);
+        assertCurrent(endDelimiters);
         return new SeparatedSyntaxList<T>(null,list);
     }
 
 
-    void assertCurrent(TokenKind tokenKind)
+    void assertCurrent(params TokenKind[] tokenKinds)
     {
-        Debug.Assert(tokens.Current.Kind==tokenKind);
+        Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
     }
 
     bool skip(params TokenKind[] tokenKinds)
@@ -321,9 +328,9 @@ namespace At
         return lookAhead(k).Kind==kind;
     }
 
-    bool isCurrent(TokenKind tokenKind)
+    bool isCurrent(params TokenKind[] tokenKinds)
     {
-        return tokens.Current?.Kind == tokenKind;
+        return tokenKinds.Any(_=>tokens.Current?.Kind==_);
     }
 
     void IDisposable.Dispose()

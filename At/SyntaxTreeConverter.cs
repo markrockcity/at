@@ -91,7 +91,7 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
     {
-        var classDecl = d as At.Syntax.ClassDeclarationSyntax;
+        var classDecl = d as At.Syntax.TypeDeclarationSyntax;
         if (classDecl != null)
         { 
            var csharpClass = ClassDeclarationSyntax(classDecl);
@@ -101,15 +101,18 @@ class SyntaxTreeConverter
         throw new NotSupportedException(d.ToString());
     }
 
-    CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.ClassDeclarationSyntax classDecl)
+    CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
     {
         var csId = CSharp.SyntaxFactory.Identifier(classDecl.Identifier.Text);
         var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId);
-        var csTypeParams = classDecl.TypeParameterList.Parameters.Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
+        var csTypeParams = classDecl.TypeParameters.List.Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
+
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());
-        if (classDecl.BaseClass != null) 
-        csClass = csClass.AddBaseListTypes(CSharp.SyntaxFactory.SimpleBaseType(CSharp.SyntaxFactory.ParseTypeName(classDecl.BaseClass)));
+
+        if (classDecl.BaseTypes != null) 
+            csClass = csClass.AddBaseListTypes(classDecl.BaseTypes.List.Select(_=>CSharp.SyntaxFactory.SimpleBaseType(CSharp.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
+        
         return csClass;
     }
 }

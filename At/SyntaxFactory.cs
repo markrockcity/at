@@ -19,30 +19,31 @@ internal class SyntaxFactory
     }
 
 
-    public static ExpressionSyntax ClassDeclaration(
-                                                AtToken                   atSymbol, 
-                                                AtToken                   identifier, 
-                                                TypeParameterListSyntax   typeParameterList,
-                                                IEnumerable<AtSyntaxNode> nodes)
+    public static ExpressionSyntax TypeDeclaration(
+                                            AtToken atSymbol, 
+                                            AtToken identifier, 
+                                            ListSyntax<ParameterSyntax>  typeParameterList,
+                                            ListSyntax<NameSyntax> baseList,
+                                            IEnumerable<AtSyntaxNode> nodes)
     {
-        return new ClassDeclarationSyntax(atSymbol,identifier,typeParameterList,nodes);
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList, nodes);
     }
 
-    public static TypeParameterListSyntax TypeParameterList(AtToken lessThan,AtToken greaterThan)
+    public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter) where T : AtSyntaxNode
     {
-        return new TypeParameterListSyntax(lessThan,new SeparatedSyntaxList<TypeParameterSyntax>(null,new AtSyntaxNode[0]),greaterThan);
+        return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter);
     }
 
-    public static TypeParameterListSyntax TypeParameterList(AtToken lessThan, SeparatedSyntaxList<TypeParameterSyntax> typeParamList,AtToken greaterThan)
+    public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter) where T : AtSyntaxNode
     {
-        checkNull(lessThan,nameof(lessThan));        
-        checkNull(greaterThan,nameof(greaterThan));
+        checkNull(startDelimiter,nameof(startDelimiter));        
+        //checkNull(endDelimiter,nameof(endDelimiter));
 
-        if (typeParamList == null)
-            return TypeParameterList(lessThan,greaterThan);
+        if (list == null)
+            return List<T>(startDelimiter,endDelimiter);
 
-        checkNull(typeParamList,nameof(typeParamList));
-        return new TypeParameterListSyntax(lessThan,typeParamList,greaterThan);
+        checkNull(list,nameof(list));
+        return new ListSyntax<T>(startDelimiter,list,endDelimiter);
     }
 
     public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace)
@@ -60,18 +61,16 @@ internal class SyntaxFactory
         return new CurlyBlockSyntax(leftBrace,contents,rightBrace);
     }
 
-    public static NameSyntax NameSyntax(AtToken identifier)
+    public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
     {
-        if (identifier == null)
-            throw new ArgumentNullException(nameof(identifier));   
-              
-        return new NameSyntax(identifier);    
+        checkNull(identifier,nameof(identifier));  
+        return new NameSyntax(identifier, typeArgs);    
     }
 
-    public static TypeParameterSyntax TypeParameter(AtToken identifier)
+    public static ParameterSyntax Parameter(AtToken identifier)
     {
         checkNull(identifier,nameof(identifier));
-        return new TypeParameterSyntax(identifier);
+        return new ParameterSyntax(identifier);
     }
 
     static void checkNull(object obj, string name)

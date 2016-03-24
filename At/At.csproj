@@ -112,7 +112,7 @@
     <Compile Include="AtSyntaxTrivia.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
-    <Compile Include="Syntax\ClassDeclarationSyntax.cs" />
+    <Compile Include="Syntax\TypeDeclarationSyntax.cs" />
     <Compile Include="SyntaxAndDeclarationManager.cs" />
     <Compile Include="SyntaxTreeConverter.cs" />
     <Compile Include="Syntax\CurlyBlockSyntax.cs" />
@@ -133,8 +133,8 @@
     <Compile Include="Syntax\ExpressionClusterSyntax.cs" />
     <Compile Include="Syntax\NameSyntax.cs" />
     <Compile Include="Syntax\SeparatedSyntaxList.cs" />
-    <Compile Include="Syntax\TypeParameterListSyntax.cs" />
-    <Compile Include="Syntax\TypeParameterSyntax.cs" />
+    <Compile Include="Syntax\ListSyntax.cs" />
+    <Compile Include="Syntax\ParameterSyntax.cs" />
     <Compile Include="TokenKind.cs" />
   </ItemGroup>
   <ItemGroup>

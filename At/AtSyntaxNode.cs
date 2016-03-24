@@ -14,6 +14,10 @@ public abstract class AtSyntaxNode
         this.nodes = new AtSyntaxList<AtSyntaxNode>(this,nodes);
     }
 
+    protected AtSyntaxNode(params AtSyntaxNode[] nodes) : this((IEnumerable<AtSyntaxNode>)nodes)
+    { 
+    }
+
     public AtSyntaxNode Parent {get; internal set;}
 
     public virtual bool IsToken
@@ -37,7 +41,7 @@ public abstract class AtSyntaxNode
         get
         {
             if (_text == null)
-                _text = string.Concat(nodes.Select(_=>_.FullText));
+                _text = string.Concat(nodes.Select(_=>_?.FullText));
 
             return _text;
         }
@@ -64,7 +68,7 @@ public abstract class AtSyntaxNode
 
     IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens)
     {
-        foreach(var node in parent.nodes.Where(_=> includeTokens || !_.IsToken))
+        foreach(var node in parent?.nodes.Where(_=> _!=null && (includeTokens || !_.IsToken)))
         {
             yield return node;
 

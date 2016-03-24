@@ -58,20 +58,26 @@ namespace At.Tests
     {
         using (var testData = new TestData(this))
         {
-            var className = testData.Identifier(0);
-            var baseClass = testData.Identifier(1);
+            var className1 = testData.Identifier(0);
+            var baseClass1 = testData.Identifier(1);
+            var className2 = testData.Identifier(2);
 
-            var input = $"@{className}< T , U > : {baseClass}<T>{{ \r\n }}"+ // @X<>
-                        $"@{baseClass}<X>;"; 
+            var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n }}"+ // @X<>
+                        $"@{baseClass1}<T, U>;"+
+                        $"@{className2}<>"; 
             var output = AtProgram.compileStringToAssembly(input);
-            verifyOutput(output, className+"`2");
+            verifyOutput(output, className1+"`2", className2);
         }
     }
 
-    void verifyOutput(Assembly assembly, string className) 
+    void verifyOutput(Assembly assembly, params string[] classNames) 
     {
         assert_not_null(()=>assembly);
-        assert_true(()=>assembly.GetTypes().Any(_=>_.Name==className&&_.IsClass));
+
+        var types = assembly.GetTypes();
+
+        foreach(var className in classNames)
+            assert_true(()=>types.Any(_=>_.Name==className&&_.IsClass));
     }
 
     void verifyOutput(string input, AtSyntaxTree tree,string className)
@@ -83,7 +89,7 @@ namespace At.Tests
         var root = tree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
-        var classDecl = (ClassDeclarationSyntax) root.Nodes().First();
+        var classDecl = (TypeDeclarationSyntax) root.Nodes().First();
         assert_equals(()=>className, ()=>classDecl.Identifier.Text);
         
     }
