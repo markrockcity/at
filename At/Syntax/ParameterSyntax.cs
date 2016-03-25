@@ -1,4 +1,6 @@
-﻿namespace At.Syntax
+﻿using System.Collections.Generic;
+
+namespace At.Syntax
 {
 // Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterSyntax
 public class ParameterSyntax : AtSyntaxNode
@@ -6,7 +8,7 @@ public class ParameterSyntax : AtSyntaxNode
     AtSyntaxNode identifier;
 
 
-    internal ParameterSyntax(AtToken identifier) : base(new[] {identifier})
+    internal ParameterSyntax(AtToken identifier, IEnumerable<AtDiagnostic> diagnostics) : base(new[] {identifier},diagnostics)
     {
         this.identifier = identifier;
     }

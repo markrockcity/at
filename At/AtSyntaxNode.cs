@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace At
@@ -8,17 +9,23 @@ namespace At
 public abstract class AtSyntaxNode
 {
     readonly AtSyntaxList<AtSyntaxNode> nodes;
+    readonly ImmutableArray<AtDiagnostic> diagnostics;
 
-    protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes) 
+    protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) 
     { 
         this.nodes = new AtSyntaxList<AtSyntaxNode>(this,nodes);
+        this.diagnostics = new ImmutableArray<AtDiagnostic>();
+        
+        if (diagnostics != null) 
+            this.diagnostics = this.diagnostics.AddRange(diagnostics.Where(_=>_!=null));
     }
 
-    protected AtSyntaxNode(params AtSyntaxNode[] nodes) : this((IEnumerable<AtSyntaxNode>)nodes)
-    { 
-    }
+        public AtSyntaxNode(AtToken[] atToken)
+        {
+            this.atToken = atToken;
+        }
 
-    public AtSyntaxNode Parent {get; internal set;}
+        public AtSyntaxNode Parent {get; internal set;}
 
     public virtual bool IsToken
     {
@@ -46,8 +53,9 @@ public abstract class AtSyntaxNode
             return _text;
         }
     } string _text;
+        private AtToken[] atToken;
 
-    public virtual string Text
+        public virtual string Text
     {
         get
         {
@@ -55,10 +63,17 @@ public abstract class AtSyntaxNode
         }
     } 
 
-
-    public IEnumerable<AtSyntaxNode> Nodes(bool includeTokens = false)
+    public IEnumerable<AtDiagnostic> GetDiagnostics()
     {
-        return nodesRecursive(this,includeTokens);
+        return diagnostics;
+    }
+
+
+    public IEnumerable<AtSyntaxNode> Nodes(
+                                bool includeTokens = false, 
+                                Func<AtSyntaxNode,bool> filter = null)
+    {
+        return nodesRecursive(this,includeTokens,filter);
     }
 
     public override string ToString()
@@ -66,13 +81,16 @@ public abstract class AtSyntaxNode
         return FullText;
     }
 
-    IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens)
+    IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> filter)
     {
-        foreach(var node in parent?.nodes.Where(_=> _!=null && (includeTokens || !_.IsToken)))
+        foreach(var node in parent?.nodes.Where(_=> 
+                                    (_!=null) && 
+                                    (includeTokens || !_.IsToken) && 
+                                    (filter != null && filter(_))))
         {
             yield return node;
 
-            foreach(var descendant in nodesRecursive(node,includeTokens))
+            foreach(var descendant in nodesRecursive(node,includeTokens, filter))
                 yield return descendant;
         }
     }

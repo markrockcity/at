@@ -7,7 +7,7 @@ namespace At.Syntax
 {
 public class CompilationUnitSyntax : AtSyntaxNode
 {
-    internal CompilationUnitSyntax(IEnumerable<ExpressionSyntax> exprs) : base(exprs)
+    internal CompilationUnitSyntax(IEnumerable<ExpressionSyntax> exprs, IEnumerable<AtDiagnostic> diagnostics) : base(exprs, diagnostics)
     {
         
     }   

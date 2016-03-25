@@ -8,9 +8,9 @@ namespace At
 {
 internal class SyntaxFactory
 {
-    public static CompilationUnitSyntax CompilationUnit(IEnumerable<ExpressionSyntax> exprs)
+    public static CompilationUnitSyntax CompilationUnit(IEnumerable<ExpressionSyntax> exprs,IEnumerable<AtDiagnostic> diagnostics = null)
     {
-        return new CompilationUnitSyntax(exprs);
+        return new CompilationUnitSyntax(exprs,diagnostics);
     }
 
     public static ErrorNode ErrorNode(IList<AtDiagnostic> diagnostics,string msg, AtSyntaxNode node)
@@ -24,29 +24,30 @@ internal class SyntaxFactory
                                             AtToken identifier, 
                                             ListSyntax<ParameterSyntax>  typeParameterList,
                                             ListSyntax<NameSyntax> baseList,
-                                            IEnumerable<AtSyntaxNode> nodes)
+                                            IEnumerable<AtSyntaxNode> nodes,
+                                            IEnumerable<AtDiagnostic> diagnostics = null)
     {
-        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList, nodes);
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList, nodes, diagnostics);
     }
 
-    public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter) where T : AtSyntaxNode
+    public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
-        return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter);
+        return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter,diagnostics);
     }
 
-    public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter) where T : AtSyntaxNode
+    public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics) where T : AtSyntaxNode
     {
         checkNull(startDelimiter,nameof(startDelimiter));        
         //checkNull(endDelimiter,nameof(endDelimiter));
 
         if (list == null)
-            return List<T>(startDelimiter,endDelimiter);
+            return List<T>(startDelimiter,endDelimiter,diagnostics);
 
         checkNull(list,nameof(list));
-        return new ListSyntax<T>(startDelimiter,list,endDelimiter);
+        return new ListSyntax<T>(startDelimiter,list,endDelimiter,diagnostics);
     }
 
-    public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace)
+    public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         if (leftBrace == null)
             throw new ArgumentNullException(nameof(leftBrace));
@@ -58,7 +59,7 @@ internal class SyntaxFactory
         if (contents.Any(_=>_==null))
             throw new ArgumentException(nameof(contents),"contents contains a null reference");
 
-        return new CurlyBlockSyntax(leftBrace,contents,rightBrace);
+        return new CurlyBlockSyntax(leftBrace,contents,rightBrace,diagnostics);
     }
 
     public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
@@ -67,10 +68,10 @@ internal class SyntaxFactory
         return new NameSyntax(identifier, typeArgs);    
     }
 
-    public static ParameterSyntax Parameter(AtToken identifier)
+    public static ParameterSyntax Parameter(AtToken identifier,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));
-        return new ParameterSyntax(identifier);
+        return new ParameterSyntax(identifier, diagnostics);
     }
 
     static void checkNull(object obj, string name)

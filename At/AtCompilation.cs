@@ -65,14 +65,16 @@ public class AtCompilation
         {
             throw new ArgumentException("peStream must support write", nameof(peStream));
         }
+
+        var cSharpTrees = csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
  
         var cSharpCompilation = CSharpCompilation.Create(  assemblyName
-                                                          ,csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees)
+                                                          ,cSharpTrees
                                                           ,references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)}
                                                           ,options: null);
 
         var result = cSharpCompilation.Emit(peStream, cancellationToken: cancellationToken);
-        return atEmitREsult(result);
+        return atEmitREsult(result, cSharpTrees,cancellationToken);
     }
 
     private IEnumerable<CSharpSyntaxTree> csharpSyntaxTrees(ImmutableArray<AtSyntaxTree> atSyntaxTrees)
@@ -85,10 +87,11 @@ public class AtCompilation
         }
     }
 
-    AtEmitResult atEmitREsult(EmitResult result)
+    AtEmitResult atEmitREsult(EmitResult result, IEnumerable<SyntaxTree> syntaxTrees,CancellationToken cancellationToken)
     {
         return new AtEmitResult(  result.Success
-                                 ,result.Diagnostics);
+                                 ,result.Diagnostics
+                                 ,syntaxTrees.Select(_=>_.GetText(cancellationToken).ToString()));
     }
 }
 }

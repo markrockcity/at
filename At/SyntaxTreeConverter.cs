@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using At.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CSharp = Microsoft.CodeAnalysis.CSharp;
@@ -103,7 +104,8 @@ class SyntaxTreeConverter
 
     CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
     {
-        var csId = CSharp.SyntaxFactory.Identifier(classDecl.Identifier.Text);
+        var classId = classDecl.Identifier;
+        var csId = CSharp.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));
         var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId);
         var csTypeParams = classDecl.TypeParameters.List.Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
 
@@ -115,5 +117,16 @@ class SyntaxTreeConverter
         
         return csClass;
     }
+
+    SyntaxTriviaList lTrivia(AtToken token)
+    {
+        return CSharp.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.leadingTrivia.Select(_=>_.FullText)));
+    }
+
+    SyntaxTriviaList tTrivia(AtToken token)
+    {
+        return CSharp.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.trailingTrivia.Select(_=>_.FullText)));
+    }
+
 }
 }

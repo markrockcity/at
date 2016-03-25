@@ -10,8 +10,9 @@ public class TypeDeclarationSyntax: DeclarationSyntax
                                 AtToken identifier, 
                                 ListSyntax<ParameterSyntax> typeParameterList, 
                                 ListSyntax<NameSyntax> baseList,
-                                IEnumerable<AtSyntaxNode> nodes) : 
-        base(atSymbol, identifier, nodes)
+                                IEnumerable<AtSyntaxNode> nodes,
+                                IEnumerable<AtDiagnostic> diagnostics) : 
+        base(atSymbol, identifier, nodes, diagnostics)
     {
         TypeParameters = typeParameterList;
         BaseTypes = baseList;

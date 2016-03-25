@@ -3,10 +3,11 @@ using At.Syntax;
 
 namespace At.Syntax
 {
-internal class ErrorNode : ExpressionSyntax
+//TODO: remove ErrorNode class
+public class ErrorNode : ExpressionSyntax
 {
     public ErrorNode(IList<AtDiagnostic> diagnostics, string message, AtSyntaxNode node) : 
-        base(new[] {node})
+        base(new[] {node},diagnostics)
     {
         Diagnostics = diagnostics;
         Message = message;

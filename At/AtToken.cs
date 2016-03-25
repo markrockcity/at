@@ -1,9 +1,9 @@
-﻿using System;
+﻿using System.Collections.Generic;
 
 namespace At
 {
-//SyntaxToken 
-public class AtToken : AtSyntaxNode
+    //SyntaxToken 
+    public class AtToken : AtSyntaxNode
 {
     TokenKind _kind;
     
@@ -11,7 +11,8 @@ public class AtToken : AtSyntaxNode
     internal AtSyntaxList<AtToken> trailingTrivia = AtSyntaxList<AtToken>.Empty;
 
 
-    internal AtToken(TokenKind kind, int position, string text=null) : base(new AtSyntaxNode[0])
+    internal AtToken(TokenKind kind, int position, string text=null, IEnumerable<AtDiagnostic> diagnostics = null) :
+        base(new AtSyntaxNode[0],diagnostics)
     {
         this.Text = text;
         this.Position = position;

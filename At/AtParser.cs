@@ -68,7 +68,7 @@ namespace At
             }        
         }
 
-        ErrorNode error(List<AtDiagnostic> diagnostics,object diagnosticId,AtToken token,string f, params object[] args) 
+        ErrorNode error(List<AtDiagnostic> diagnostics,string diagnosticId,AtToken token,string f, params object[] args) 
         {
            diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
 
@@ -101,7 +101,6 @@ namespace At
     //declarationExpression "@TokenCluster[<>][; | { ... }]"
     ExpressionSyntax declarationExpression()
     {
-        
         var nodes = new List<AtSyntaxNode>();
         Debug.Assert(current().Kind==AtSymbol);
         var atSymbol = current();
@@ -135,7 +134,7 @@ namespace At
                 greaterThan = current();
                 skipWhiteSpace();
 
-                typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan);
+                typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan,null);
                 nodes.Add(typeParams);
                 isClass = true; 
             }
@@ -151,7 +150,7 @@ namespace At
                 var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
 
                 //TODO: remove colon from list?
-                baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null);
+                baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
                 nodes.Add(baseList);
             }
 
@@ -218,7 +217,6 @@ namespace At
         while(!isCurrent(RightBrace))
         {
             contents.Add(expression());
-            skipWhiteSpace();
         }
 
         return SyntaxFactory.CurlyBlock(leftBrace,contents,rightBrace:current());
@@ -243,7 +241,7 @@ namespace At
         }
 
         return (lessThan != null) ?
-                    SyntaxFactory.NameSyntax(identifier,SyntaxFactory.List<NameSyntax>(lessThan,typeArgs,greaterThan)):
+                    SyntaxFactory.NameSyntax(identifier,SyntaxFactory.List<NameSyntax>(lessThan,typeArgs,greaterThan,null)):
                     SyntaxFactory.NameSyntax(identifier);
     }
 

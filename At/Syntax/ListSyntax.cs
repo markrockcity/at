@@ -10,8 +10,8 @@ public class ListSyntax<T> : AtSyntaxNode where T : AtSyntaxNode
     private AtToken startDelimiter;
     private AtToken endDelimiter;
 
-    internal ListSyntax(AtToken startDelimiter, SeparatedSyntaxList<T> list, AtToken endDelimiter) : 
-    base(new AtSyntaxNode[] {startDelimiter}.Concat(list).Concat(new[] {endDelimiter}))
+    internal ListSyntax(AtToken startDelimiter, SeparatedSyntaxList<T> list, AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics) : 
+    base(new AtSyntaxNode[] {startDelimiter}.Concat(list).Concat(new[] {endDelimiter}),diagnostics)
     {        
         if (list==null)
             throw new ArgumentNullException(nameof(list));

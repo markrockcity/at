@@ -9,8 +9,8 @@ namespace At
 public class CurlyBlockSyntax : ExpressionSyntax 
 {
 
-    internal CurlyBlockSyntax(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace) : 
-        base(new AtSyntaxNode[] {leftBrace}.Concat(contents).Concat(new[] {rightBrace})) 
+    internal CurlyBlockSyntax(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace, IEnumerable<AtDiagnostic> diagnostics) : 
+        base(new AtSyntaxNode[] {leftBrace}.Concat(contents).Concat(new[] {rightBrace}), diagnostics) 
     {
     }
 }
