@@ -19,7 +19,7 @@ namespace At.Tests
 
 
     [TestMethod]
-    public void ParseTextTest()
+    public void ParseTextTest1()
     {
 
         using (var testData = new TestData(this))
@@ -52,8 +52,18 @@ namespace At.Tests
         }
     }
 
+    [TestMethod]
+    public void ParseTextTest2()
+    {
+        var input = "@class<> : y<> {@P<>}";
+        var tree = AtSyntaxTree.ParseText(input);
+        var root = tree.GetRoot();
+        assert_not_null(()=>root);
+        verifyOutput(input,tree,"class");
+    }
+
         
-   [TestMethod] //TODO: className<T, U>
+    [TestMethod] //TODO: className<T, U>
     public void CompileStringToAssemblyTest()
     {
         using (var testData = new TestData(this))
