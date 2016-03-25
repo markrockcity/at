@@ -139,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="at.csx" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
