@@ -83,10 +83,9 @@ public abstract class AtSyntaxNode
 
     IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> filter)
     {
-        foreach(var node in parent?.nodes.Where(_=> 
-                                    (_!=null) && 
-                                    (includeTokens || !_.IsToken) && 
-                                    (filter != null && filter(_))))
+        foreach(var node in parent?.nodes.Where(_=>    (_!=null) 
+                                                    && (includeTokens || !_.IsToken) 
+                                                    && (filter==null  || filter(_))))
         {
             yield return node;
 
