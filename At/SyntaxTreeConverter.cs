@@ -43,27 +43,7 @@ class SyntaxTreeConverter
        var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
        var statements = new List<CSharp.Syntax.StatementSyntax>();
 
-       //TODO: recursion
-       foreach(var node in atRoot.Nodes().Where(_=>_.Parent==atRoot))
-       {
-          var d = node as DeclarationSyntax;
-          if (d != null)
-          {
-            var cSharpDecl = MemberDeclarationSyntax(d);
-            members.Add(cSharpDecl);
-            continue;
-          }
-
-          var expr = node as At.Syntax.ExpressionSyntax;
-          if (expr != null)
-          {
-             var csExprStmt = ExpressionStatementSyntax(expr);
-             statements.Add(csExprStmt);
-             continue;
-          }
-
-          throw new NotSupportedException(node.ToString());       
-       }
+       processChildNodesRecursive(atRoot, members, statements);
 
        //class _ { static int Main() { <statements>; return 0; } }
        var defaultClass = CSharp.SyntaxFactory.ClassDeclaration("_")
@@ -76,7 +56,37 @@ class SyntaxTreeConverter
        csharpSyntax = csharpSyntax.AddMembers(defaultClass).AddMembers(members.ToArray());
        return csharpSyntax;
     }
-    
+
+    //processChildNodesRecursive()
+    void processChildNodesRecursive(
+                            AtSyntaxNode parent, 
+                            List<MemberDeclarationSyntax> members,
+                            List<StatementSyntax>         statements)
+    {
+       foreach(var node in parent.Nodes().Where(_=>_.Parent==parent))
+       {
+          var d = node as DeclarationSyntax;
+          if (d != null)
+          {
+            var cSharpDecl = MemberDeclarationSyntax(d);
+            members.Add(cSharpDecl);
+            //processChildNodesRecursive(node,members,statements);
+            continue;
+          }
+
+          var expr = node as At.Syntax.ExpressionSyntax;
+          if (expr != null)
+          {
+             var csExprStmt = ExpressionStatementSyntax(expr);
+             statements.Add(csExprStmt);
+             //processChildNodesRecursive(node,members,statements);
+             continue;
+          }
+
+          throw new NotSupportedException(node.ToString());  
+       }
+    }
+
     CSharp.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(At.Syntax.ExpressionSyntax expr)
     {
         return CSharp.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
