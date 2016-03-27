@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace At.Syntax
@@ -8,13 +10,17 @@ public class NameSyntax : ExpressionSyntax
 {
     
     internal NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null, IEnumerable<AtDiagnostic> diagnostics = null) :
-         base(new AtSyntaxNode[] { identifier}.Concat(typeArgs.List),diagnostics)
+         base(_nodes(identifier,typeArgs),diagnostics)
     {
+        Debug.Assert(identifier!= null);
+    
         Identifier = identifier;
         TypeArguments = typeArgs;
     }
 
     public AtToken Identifier {get;}
     public ListSyntax<NameSyntax> TypeArguments {get;}
+    
+    static IEnumerable<AtSyntaxNode> _nodes(AtSyntaxNode a,AtSyntaxNode b) => (b != null) ?  new [] {a,b} : new [] {a};
 }
 }
