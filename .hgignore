@@ -4,3 +4,5 @@ syntax: glob
 */obj/*
 *.user
 .vs/*
+At/.dll
+At/x
