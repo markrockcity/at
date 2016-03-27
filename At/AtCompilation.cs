@@ -54,6 +54,19 @@ public class AtCompilation
         return new AtCompilation(assemblyName,syntaxAndDeclarations);
     }
 
+    public AtEmitResult Emit(CancellationToken cancellationToken = default(CancellationToken))
+    {
+        var cSharpTrees = csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
+ 
+        var cSharpCompilation = CSharpCompilation.Create(  assemblyName
+                                                          ,cSharpTrees
+                                                          ,references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)}
+                                                          ,options: null);
+
+        var result = cSharpCompilation.Emit(assemblyName+".dll", cancellationToken: cancellationToken);
+        return atEmitREsult(result, cSharpTrees,cancellationToken);
+    }
+
     public AtEmitResult Emit(Stream peStream, CancellationToken cancellationToken = default(CancellationToken)) 
     {
         if (peStream == null)
