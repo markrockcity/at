@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using System.Linq.Expressions;
-using System.IO;
-using System.Threading;
 using System.Diagnostics;
-using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using static System.Linq.Expressions.ExpressionType;
 
 namespace At.Tests
 {
 
-//Test base class
-[TestClass] public partial class Test
+    //Test base class
+    [TestClass] public partial class Test
 {
    //ctor
    protected Test()
@@ -86,6 +85,7 @@ namespace At.Tests
    } 
 
   //assert_true()
+  public void assert_true(bool b) => Assert.IsTrue(b);
   public void assert_true(Expression<Func<bool>> e) 
    { var b = e.Body;
      Write("assert TRUE: {0}",exprStr(e.Body));
@@ -277,9 +277,9 @@ namespace At.Tests
                             
                        (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
                         || o.Length == 0) ? 
-                            m.Name : 
+                           (mae.Expression.NodeType!= Parameter? $"{m.Name} ({getValue(mae)})" : m.Name) : 
 
-                       $"{o}.{m.Name}";
+                       (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ({getValue(mae)})" : $"{o}.{m.Name}");
             }
 
             //Parameter
