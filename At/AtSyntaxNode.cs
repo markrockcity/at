@@ -68,10 +68,12 @@ public abstract class AtSyntaxNode
         return diagnostics;
     }
 
+    public IEnumerable<AtSyntaxNode> ChildNodes(bool includeTokens = false)
+    {
+        return nodes.Where(_=>includeTokens || !_.IsToken); 
+    }
 
-    public IEnumerable<AtSyntaxNode> Nodes(
-                                bool includeTokens = false, 
-                                Func<AtSyntaxNode,bool> filter = null)
+    public IEnumerable<AtSyntaxNode> DescendantNodes(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false)
     {
         return nodesRecursive(this,includeTokens,filter);
     }

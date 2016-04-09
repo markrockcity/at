@@ -20,11 +20,15 @@ namespace At.Tests
             var baseClass1 = testData.Identifier(1);
             var className2 = testData.Identifier(2);
 
-            var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n }}"+ // @X<>
-                        $"@{baseClass1}<T, U>;"+
+            var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<> }}\r\n"+ 
+                        $"@{baseClass1}<T, U>;\r\n"+
                         $"@{className2}<>"; 
             var output = AtProgram.compileStringToAssembly(input);
-            verifyOutput(output, className1+"`2", className2);
+
+            verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
+            assert_not_null(()=>
+                    output.GetType(className1+"`2").GetNestedType("P"),
+                    ifFail: ()=>output.GetType(className1+"`2").GetNestedTypes());
         }
     }
 
@@ -82,6 +86,8 @@ namespace At.Tests
                 var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
                 verifyOutput(cSharpTree,className);
             }
+
+
         }
     }
 
@@ -110,7 +116,7 @@ namespace At.Tests
         var types = assembly.GetTypes();
 
         foreach(var className in classNames)
-            assert_true(()=>types.Any(_=>_.Name==className&&_.IsClass));
+            assert_true(()=>types.Any(_=>_.Name==className&&_.IsClass), ()=>types);
     }
 
     //verify output (syntax tree)
@@ -123,7 +129,7 @@ namespace At.Tests
         var root = tree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
-        var classDecl = (TypeDeclarationSyntax) root.Nodes().First();
+        var classDecl = (TypeDeclarationSyntax) root.DescendantNodes().First();
         assert_equals(()=>className, ()=>classDecl.Identifier.Text);
         
     }

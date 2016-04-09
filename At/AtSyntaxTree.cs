@@ -21,7 +21,7 @@ public class AtSyntaxTree
     //GetDiagnostics()
     public IEnumerable<AtDiagnostic> GetDiagnostics()
     {
-       return GetRoot().Nodes(true).OfType<ErrorNode>().SelectMany(_=>_.Diagnostics);
+       return GetRoot().DescendantNodes(null,true).OfType<ErrorNode>().SelectMany(_=>_.Diagnostics);
     }
 
     //GetRoot()

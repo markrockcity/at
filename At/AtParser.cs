@@ -39,7 +39,7 @@ namespace At
               parsing = false;   
            }
 
-           diagnostics.AddRange (compilationUnitSyntax.Nodes()
+           diagnostics.AddRange (compilationUnitSyntax.DescendantNodes()
                                                       .OfType<ExpressionClusterSyntax>()
                                                       .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,"Compiler","Expression cluster: "+_,DiagnosticSeverity.Error,0,true)));   
           return compilationUnitSyntax;
@@ -98,15 +98,16 @@ namespace At
         throw new NotImplementedException();
     }
 
-    //declarationExpression "@TokenCluster[<>][; | { ... }]"
-    ExpressionSyntax declarationExpression()
+    //declarationExpression "@TokenCluster[<...>][; | { ... }]"
+    //declarationExpression "@TokenCluster ColonPair [; | { ... }]"
+    DeclarationSyntax declarationExpression()
     {
         var nodes = new List<AtSyntaxNode>();
         Debug.Assert(current().Kind==AtSymbol);
         var atSymbol = current();
         var isClass = false;
         //AtToken afterColon = null;
-        ExpressionSyntax body = null;
+        
 
         nodes.Add(atSymbol);
         
@@ -149,26 +150,36 @@ namespace At
                 
                 var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
 
-                //TODO: remove colon from list?
+                //TODO: remove colon from list? (PairSyntax<Colon>)
                 baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
                 nodes.Add(baseList);
             }
 
             
             //";" | "{...}"
+            var members = new List<DeclarationSyntax>();
             if (isCurrent(SemiColon))
             {                
                 nodes.Add(current());
             }
             else if (isCurrent(LeftBrace))
             {
-                body = curlyBlock();
-                nodes.Add(body);
+                nodes.Add(consumeToken(LeftBrace));
+
+                while(!isCurrent(RightBrace))
+                {               
+                    //TODO: support for ".ctor { }" expression 
+                    var member = declarationExpression();
+                    members.Add(member);
+                    nodes.Add(member);
+                }
+
+                nodes.Add(current(RightBrace));
             }
 
 
             if (isClass)
-                return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,nodes);
+                return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,members,nodes);
 
             throw new NotImplementedException("non-class declaration expresssion");
 
@@ -178,7 +189,7 @@ namespace At
         else
         {
             string msg = string.Format("character {1}: expected TokenCluster after '{0}'", atSymbol.Text, atSymbol.Position);            
-            return error();
+            return error<DeclarationSyntax>();
             //return  error(diagnostics,DiagnosticIds.UnexpectedToken, msg);
         }
     }
@@ -188,6 +199,12 @@ namespace At
     int     position()       => tokens.Position;
     AtToken lookAhead(int k) => tokens.LookAhead(k);
     bool    moveNext()       => tokens.MoveNext();
+
+    AtToken current(TokenKind assertedToken) 
+    {
+        assertCurrent(assertedToken);
+        return tokens.Current;
+    }
 
     AtToken consumeToken(TokenKind? assumedToken = null)
     {
@@ -200,13 +217,13 @@ namespace At
     }
 
 
-    private ExpressionSyntax error() 
+    private T error<T>() 
     {
         throw new NotImplementedException();
     }
 
     //{Curly Block}
-    private CurlyBlockSyntax curlyBlock()
+    private BlockSyntax curlyBlock()
     {
         assertCurrent(LeftBrace);
         var leftBrace = current();
@@ -219,7 +236,7 @@ namespace At
             contents.Add(expression());
         }
 
-        return SyntaxFactory.CurlyBlock(leftBrace,contents,rightBrace:current());
+        return SyntaxFactory.Block(leftBrace,contents,rightBrace:current());
     }
 
 

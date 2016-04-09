@@ -115,7 +115,7 @@
     <Compile Include="Syntax\TypeDeclarationSyntax.cs" />
     <Compile Include="SyntaxAndDeclarationManager.cs" />
     <Compile Include="SyntaxTreeConverter.cs" />
-    <Compile Include="Syntax\CurlyBlockSyntax.cs" />
+    <Compile Include="Syntax\BlockSyntax.cs" />
     <Compile Include="DiagnosticIds.cs" />
     <Compile Include="DiagnosticSeverity.cs" />
     <Compile Include="Syntax\ExpressionSyntax.cs" />

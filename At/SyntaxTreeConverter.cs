@@ -32,7 +32,7 @@ class SyntaxTreeConverter
     CSharp.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(At.Syntax.CompilationUnitSyntax atRoot)
     {
        //160316: this is mainly for making tests fail
-       var error = atRoot.Nodes().OfType<ErrorNode>().FirstOrDefault();
+       var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
        if (error != null)
        {
             throw new Exception(error.Message);
@@ -43,7 +43,7 @@ class SyntaxTreeConverter
        var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
        var statements = new List<CSharp.Syntax.StatementSyntax>();
 
-       processChildNodesRecursive(atRoot, members, statements);
+       processNodes(atRoot.DescendantNodes(_=>_.Parent==atRoot), members, statements);
 
        //class _ { static int Main() { <statements>; return 0; } }
        var defaultClass = CSharp.SyntaxFactory.ClassDeclaration("_")
@@ -57,33 +57,29 @@ class SyntaxTreeConverter
        return csharpSyntax;
     }
 
-    //processChildNodesRecursive()
-    void processChildNodesRecursive(
-                            AtSyntaxNode parent, 
-                            List<MemberDeclarationSyntax> members,
-                            List<StatementSyntax>         statements)
+    //processNodes()
+    void processNodes(IEnumerable<AtSyntaxNode> nodes,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
     {
-       foreach(var node in parent.Nodes().Where(_=>_.Parent==parent))
+       foreach(var node in nodes)
        {
           var d = node as DeclarationSyntax;
           if (d != null)
           {
             var cSharpDecl = MemberDeclarationSyntax(d);
             members.Add(cSharpDecl);
-            //processChildNodesRecursive(node,members,statements);
             continue;
           }
 
+          //SHOULD ALWAYS BE LAST
           var expr = node as At.Syntax.ExpressionSyntax;
           if (expr != null)
           {
              var csExprStmt = ExpressionStatementSyntax(expr);
              statements.Add(csExprStmt);
-             //processChildNodesRecursive(node,members,statements);
              continue;
           }
 
-          throw new NotSupportedException(node.ToString());  
+          //throw new NotSupportedException(node.GetType().ToString());  
        }
     }
 
@@ -97,7 +93,7 @@ class SyntaxTreeConverter
         var id = expr as Syntax.NameSyntax;
         if (id != null) return CSharp.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
-        throw new NotImplementedException(expr.ToString());
+        throw new NotImplementedException(expr.GetType().ToString());
     }
 
     CSharp.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
@@ -109,22 +105,29 @@ class SyntaxTreeConverter
            return csharpClass;
         }
 
-        throw new NotSupportedException(d.ToString());
+        throw new NotSupportedException(d.GetType().ToString());
     }
 
     CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
     {
         var classId = classDecl.Identifier;
         var csId = CSharp.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));
-        var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId);
-        var csTypeParams = classDecl.TypeParameters.List.Select(_=>CSharp.SyntaxFactory.TypeParameter(_.Text));
+        var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId).AddModifiers(
+                             CSharp.SyntaxFactory.ParseToken("public"));
+        var csTypeParams = classDecl.TypeParameters.List.Select(_=>
+                                CSharp.SyntaxFactory.TypeParameter(_.Text));
 
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());
 
         if (classDecl.BaseTypes != null) 
-            csClass = csClass.AddBaseListTypes(classDecl.BaseTypes.List.Select(_=>CSharp.SyntaxFactory.SimpleBaseType(CSharp.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
-        
+            csClass = csClass.AddBaseListTypes(classDecl.BaseTypes.List.Select(_=>
+                            CSharp.SyntaxFactory.SimpleBaseType(
+                                CSharp.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
+
+        if (classDecl.Members != null)
+            csClass = csClass.AddMembers(classDecl.Members.Select(MemberDeclarationSyntax).ToArray());
+
         return csClass;
     }
 

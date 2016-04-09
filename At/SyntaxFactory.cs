@@ -19,15 +19,16 @@ internal class SyntaxFactory
     }
 
 
-    public static ExpressionSyntax TypeDeclaration(
-                                            AtToken atSymbol, 
-                                            AtToken identifier, 
-                                            ListSyntax<ParameterSyntax>  typeParameterList,
-                                            ListSyntax<NameSyntax> baseList,
-                                            IEnumerable<AtSyntaxNode> nodes,
-                                            IEnumerable<AtDiagnostic> diagnostics = null)
+    public static TypeDeclarationSyntax TypeDeclaration(
+                                                AtToken atSymbol, 
+                                                AtToken identifier, 
+                                                ListSyntax<ParameterSyntax>  typeParameterList,
+                                                ListSyntax<NameSyntax> baseList,
+                                                IEnumerable<DeclarationSyntax> members,
+                                                IEnumerable<AtSyntaxNode> nodes,
+                                                IEnumerable<AtDiagnostic> diagnostics = null)
     {
-        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList, nodes, diagnostics);
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,nodes,diagnostics);
     }
 
     public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
@@ -47,7 +48,7 @@ internal class SyntaxFactory
         return new ListSyntax<T>(startDelimiter,list,endDelimiter,diagnostics);
     }
 
-    public static CurlyBlockSyntax CurlyBlock(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static BlockSyntax Block(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         if (leftBrace == null)
             throw new ArgumentNullException(nameof(leftBrace));
@@ -59,7 +60,7 @@ internal class SyntaxFactory
         if (contents.Any(_=>_==null))
             throw new ArgumentException(nameof(contents),"contents contains a null reference");
 
-        return new CurlyBlockSyntax(leftBrace,contents,rightBrace,diagnostics);
+        return new BlockSyntax(leftBrace,contents,rightBrace,diagnostics);
     }
 
     public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
