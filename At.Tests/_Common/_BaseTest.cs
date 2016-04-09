@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,8 +15,8 @@ using static System.Linq.Expressions.ExpressionType;
 namespace At.Tests
 {
 
-    //Test base class
-    [TestClass] public partial class Test
+//Test base class
+[TestClass] public partial class Test
 {
    //ctor
    protected Test()
@@ -86,7 +87,7 @@ namespace At.Tests
 
   //assert_true()
   public void assert_true(bool b) => Assert.IsTrue(b);
-  public void assert_true(Expression<Func<bool>> e) 
+  public void assert_true(Expression<Func<bool>> e, Expression<Func<object>> ifFail = null) 
    { var b = e.Body;
      Write("assert TRUE: {0}",exprStr(e.Body));
 
@@ -94,19 +95,35 @@ namespace At.Tests
       { 
         case ExpressionType.Equal:
          {
-           var be = (BinaryExpression) b;
-           var l1 = Expression.Lambda(be.Left);
-           var l2 = Expression.Lambda(be.Right);
-           var f1 = l1.Compile();
-           var f2 = l2.Compile();
-           var v1 = f1.DynamicInvoke();
-           var v2 = f2.DynamicInvoke();
-           Assert.AreEqual(v2,v1);
-           break;
+            var be = (BinaryExpression) b;
+            var l1 = Expression.Lambda(be.Left);
+            var l2 = Expression.Lambda(be.Right);
+            var f1 = l1.Compile();
+            var f2 = l2.Compile();
+            var v1 = f1.DynamicInvoke();
+            var v2 = f2.DynamicInvoke();
+
+            if (ifFail!=null && !v1.Equals(v2))
+            {
+                Write("FAIL!");
+                Write(exprStr(ifFail));
+                Write(ifFail.Compile()());
+            }
+            
+            Assert.AreEqual(v2,v1);
+            break;
          }
 
         default: var f = e.Compile();
                  var x = f();
+
+                 if (ifFail!=null && !x)
+                 {
+                    Write("FAIL!");
+                    Write(exprStr(ifFail));
+                    Write(ifFail.Compile()());
+                 }
+
                  Assert.IsTrue(x);
                  break;
       }
@@ -142,10 +159,18 @@ namespace At.Tests
    }
    
   //AssertNotNull
-  public void assert_not_null<T>(Expression<Func<T>> e) where T : class
+  public void assert_not_null<T>(Expression<Func<T>> e, Expression<Func<object>> ifFail = null) where T : class
    { Write("assert NOT NULL: {0}",exprStr(e.Body));
      var f = e.Compile();
      var x = f();
+
+     if (ifFail!=null && x==null)
+     {
+        Write("FAIL!");
+        Write(exprStr(ifFail));
+        Write(ifFail.Compile()());
+     }
+
      Assert.IsNotNull(x);
    }
 
@@ -198,25 +223,38 @@ namespace At.Tests
    
    //Write()
    protected internal void Write(object o)
-   { TestContext.WriteLine("[{0}] {1}",DateTime.Now,o);
+   { TestContext.WriteLine("[{0}] {1}",DateTime.Now,objStr(o));
    }
 
 
- 
+    //objStr()
+    string objStr(object o)
+    {
+        var e = o as IEnumerable;
+        if (e != null)
+            return "["+string.Join(", ",e.Cast<object>().Select(objStr))+"]";
+        
+        return o.ToString();
+    }
+
+
+
     //exprString() 
-    string exprStr(Expression e)
+        string exprStr(Expression e)
     {
         if (e==null) return "<null expression>";
 
         switch(e.NodeType)
         {
+            //Add (+)
+            case Add: return binaryStr(e,"+");
 
             //AndAlso (&&)
-            case ExpressionType.AndAlso: return binaryStr(e,"&&");
+            case AndAlso: return binaryStr(e,"&&");
 
 
             //Call
-            case ExpressionType.Call:
+            case Call:
             {
                 var mce = (MethodCallExpression) e;
                 var m   = mce.Method;
@@ -232,7 +270,7 @@ namespace At.Tests
             }
 
             //Constant
-            case ExpressionType.Constant: 
+            case Constant: 
             {
                 var ce = (ConstantExpression) e;
                 var t  = ce.Value.GetType();
@@ -252,11 +290,11 @@ namespace At.Tests
             }
 
             //Equal (==)
-            case ExpressionType.Equal: return binaryStr(e,"==");
+            case Equal: return binaryStr(e,"==");
             
 
             //Lambda
-            case ExpressionType.Lambda:
+            case Lambda:
             {
                 var le = (LambdaExpression) e;
                 var ps = le.Parameters.Count==1 ? 
@@ -266,7 +304,7 @@ namespace At.Tests
             }
 
             //Member
-            case ExpressionType.MemberAccess:
+            case MemberAccess:
             {
                 var mae = (MemberExpression) e;
                 var m   = mae.Member;
@@ -283,10 +321,13 @@ namespace At.Tests
             }
 
             //Parameter
-            case ExpressionType.Parameter: return ((ParameterExpression)e).Name;
+            case Parameter: return ((ParameterExpression)e).Name;
 
             //DEFAULT
-            default: Write("exprString(): "+e.NodeType) ; return e.ToString();
+            default: 
+                Write("exprString(): "+e.NodeType) ; 
+                throw new NotSupportedException("exprString(): "+e.NodeType);
+                //return e.ToString();
         }
     }
 
