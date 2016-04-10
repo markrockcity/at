@@ -1,8 +1,13 @@
 ﻿//CSharpScript (csi.exe)
 
 #r "bin\Debug\At.exe"
+
+using System.IO;
+using System.Linq;
 using At;
-var x = At.AtSyntaxTree.ParseText("@y<>; @class<>  : y {@P<>}");
+
+
+var x = At.AtSyntaxTree.ParseText("@variable; @y<>; @class<>  : y {@P<>;}");
 var root = x.GetRoot();
 var c = AtCompilation.Create(new[] {x});
 var s = new MemoryStream();
@@ -13,3 +18,4 @@ var src = srcs[0];
 s.Seek(0,SeekOrigin.Begin);
 var a  = System.Reflection.Assembly.Load(s.ToArray());
 var ts = a.GetTypes();
+

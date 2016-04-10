@@ -6,17 +6,23 @@ using At.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using CSharp = Microsoft.CodeAnalysis.CSharp;
+using atSyntax = At.Syntax;
+using cs = Microsoft.CodeAnalysis.CSharp;
+using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace At
 {
 class SyntaxTreeConverter
 {
+    internal const string defaultClassName = "_";
+
     readonly AtSyntaxTree atSyntaxTree;
+    csSyntax.ClassDeclarationSyntax defaultClass;
 
     public SyntaxTreeConverter(AtSyntaxTree atSyntaxTree)
     {
        this.atSyntaxTree = atSyntaxTree;
+       this.defaultClass = cs.SyntaxFactory.ClassDeclaration(defaultClassName);
     }
 
     
@@ -29,7 +35,7 @@ class SyntaxTreeConverter
         return (CSharpSyntaxTree) csharpTree;
     }
 
-    CSharp.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(At.Syntax.CompilationUnitSyntax atRoot)
+    csSyntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(At.Syntax.CompilationUnitSyntax atRoot)
     {
        //160316: this is mainly for making tests fail
        var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
@@ -38,20 +44,23 @@ class SyntaxTreeConverter
             throw new Exception(error.Message);
        }
     
-       var csharpSyntax = CSharp.SyntaxFactory.CompilationUnit();
+       var csharpSyntax = cs.SyntaxFactory.CompilationUnit();
        
-       var members    = new List<CSharp.Syntax.MemberDeclarationSyntax>();
-       var statements = new List<CSharp.Syntax.StatementSyntax>();
+       var members    = new List<csSyntax.MemberDeclarationSyntax>();
+       var statements = new List<csSyntax.StatementSyntax>();
 
-       processNodes(atRoot.DescendantNodes(_=>_.Parent==atRoot), members, statements);
+       processNodes(atRoot.ChildNodes(), members, statements);
 
        //class _ { static int Main() { <statements>; return 0; } }
-       var defaultClass = CSharp.SyntaxFactory.ClassDeclaration("_")
-                                .AddMembers(CSharp.SyntaxFactory.MethodDeclaration(CSharp.SyntaxFactory.ParseTypeName("int"),"Main")
-                                                  .AddModifiers(CSharp.SyntaxFactory.ParseToken("static"))
-                                                  .AddBodyStatements(statements.ToArray())
-                                                  //return 0
-                                                  .AddBodyStatements(new StatementSyntax[]{CSharp.SyntaxFactory.ReturnStatement(CSharp.SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,CSharp.SyntaxFactory.ParseToken("0")))}));
+       
+       defaultClass = defaultClass.AddMembers(
+                            cs.SyntaxFactory.MethodDeclaration(
+                                 cs.SyntaxFactory.ParseTypeName("int"),"Main")
+                                .AddModifiers(cs.SyntaxFactory.ParseToken("static"))
+                                .AddBodyStatements(statements.ToArray())
+                                  
+                                 //return 0
+                                .AddBodyStatements(new StatementSyntax[]{cs.SyntaxFactory.ReturnStatement(cs.SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,cs.SyntaxFactory.ParseToken("0")))}));
                                 
        csharpSyntax = csharpSyntax.AddMembers(defaultClass).AddMembers(members.ToArray());
        return csharpSyntax;
@@ -83,47 +92,54 @@ class SyntaxTreeConverter
        }
     }
 
-    CSharp.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(At.Syntax.ExpressionSyntax expr)
+    cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(At.Syntax.ExpressionSyntax expr)
     {
-        return CSharp.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
+        return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
     }
 
-    CSharp.Syntax.ExpressionSyntax ExpressionSyntax(At.Syntax.ExpressionSyntax expr)
+    csSyntax.ExpressionSyntax ExpressionSyntax(At.Syntax.ExpressionSyntax expr)
     {
         var id = expr as Syntax.NameSyntax;
-        if (id != null) return CSharp.SyntaxFactory.IdentifierName(id.Identifier.Text);
+        if (id != null) return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
         throw new NotImplementedException(expr.GetType().ToString());
     }
 
-    CSharp.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
+    csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
     {
-        var classDecl = d as At.Syntax.TypeDeclarationSyntax;
+        var classDecl = d as Syntax.TypeDeclarationSyntax;
         if (classDecl != null)
         { 
-           var csharpClass = ClassDeclarationSyntax(classDecl);
-           return csharpClass;
+            var csharpClass = ClassDeclarationSyntax(classDecl);
+            return csharpClass;
+        }
+
+        var varDecl = d as Syntax.VariableDeclarationSyntax;
+        if (varDecl != null)
+        {
+            var csharpField = FieldDeclarationSyntax(varDecl);
+            return csharpField;
         }
 
         throw new NotSupportedException(d.GetType().ToString());
     }
 
-    CSharp.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
+    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
     {
         var classId = classDecl.Identifier;
-        var csId = CSharp.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));
-        var csClass = CSharp.SyntaxFactory.ClassDeclaration(csId).AddModifiers(
-                             CSharp.SyntaxFactory.ParseToken("public"));
+        var csId = csIdentifer(classId);
+        var csClass = cs.SyntaxFactory.ClassDeclaration(csId).AddModifiers(
+                             cs.SyntaxFactory.ParseToken("public"));
         var csTypeParams = classDecl.TypeParameters.List.Select(_=>
-                                CSharp.SyntaxFactory.TypeParameter(_.Text));
+                                cs.SyntaxFactory.TypeParameter(_.Text));
 
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());
 
         if (classDecl.BaseTypes != null) 
             csClass = csClass.AddBaseListTypes(classDecl.BaseTypes.List.Select(_=>
-                            CSharp.SyntaxFactory.SimpleBaseType(
-                                CSharp.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
+                            cs.SyntaxFactory.SimpleBaseType(
+                                cs.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
 
         if (classDecl.Members != null)
             csClass = csClass.AddMembers(classDecl.Members.Select(MemberDeclarationSyntax).ToArray());
@@ -131,15 +147,22 @@ class SyntaxTreeConverter
         return csClass;
     }
 
-    SyntaxTriviaList lTrivia(AtToken token)
+     
+    csSyntax.FieldDeclarationSyntax FieldDeclarationSyntax(atSyntax.VariableDeclarationSyntax varDecl)
     {
-        return CSharp.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.leadingTrivia.Select(_=>_.FullText)));
+        var fieldId = varDecl.Identifier;
+        var csId = csIdentifer(fieldId);        
+        var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
+        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(cs.SyntaxFactory.ParseTypeName("System.Object"))
+                            .AddVariables(csVarDeclr);
+        var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl);
+        
+        return csField;
     }
 
-    SyntaxTriviaList tTrivia(AtToken token)
-    {
-        return CSharp.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.trailingTrivia.Select(_=>_.FullText)));
-    }
+    SyntaxToken csIdentifer(AtToken classId) => cs.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));       
+    SyntaxTriviaList lTrivia(AtToken token)  => cs.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.leadingTrivia.Select(_=>_.FullText)));
+    SyntaxTriviaList tTrivia(AtToken token)  => cs.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.trailingTrivia.Select(_=>_.FullText)));
 
 }
 }

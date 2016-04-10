@@ -6,7 +6,7 @@ using At.Syntax;
 
 namespace At
 {
-internal class SyntaxFactory
+public class SyntaxFactory
 {
     public static CompilationUnitSyntax CompilationUnit(IEnumerable<ExpressionSyntax> exprs,IEnumerable<AtDiagnostic> diagnostics = null)
     {
@@ -75,6 +75,10 @@ internal class SyntaxFactory
         return new ParameterSyntax(identifier, diagnostics);
     }
 
+    public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,object type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+       return new VariableDeclarationSyntax(atSymbol,identifier,nodes,diagnostics);
+    }
     static void checkNull(object obj, string name)
     {
         if (obj == null)
@@ -83,6 +87,7 @@ internal class SyntaxFactory
         if (obj is IEnumerable && ((IEnumerable) obj).Cast<object>().Any(_=>_== null))
             throw new ArgumentNullException(name,name+" contains a null reference");        
     }
+
 
 }
 }

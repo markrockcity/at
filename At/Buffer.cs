@@ -19,6 +19,7 @@ class Buffer<T> : IEnumerator<T>
     }
 
     public T    Current  {get {return current;}}
+    public T    Next     {get {return LookAhead(1);}}
     public bool End      {get; private set; }   
     public int  Position {get {return position;}}
 

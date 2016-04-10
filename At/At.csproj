@@ -136,6 +136,7 @@
     <Compile Include="Syntax\ListSyntax.cs" />
     <Compile Include="Syntax\ParameterSyntax.cs" />
     <Compile Include="TokenKind.cs" />
+    <Compile Include="Syntax\VariableDeclarationSyntax.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

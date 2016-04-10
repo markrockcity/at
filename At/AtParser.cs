@@ -8,89 +8,96 @@ using static At.TokenKind;
 
 namespace At
 {
-    public class AtParser : IDisposable
+public class AtParser : IDisposable
+{
+    bool parsing;
+
+    readonly AtLexer            lexer;
+    readonly Buffer<AtToken>    tokens;
+    readonly List<AtDiagnostic> diagnostics = new List<AtDiagnostic>();
+    readonly object             @lock       = new object();
+
+    public AtParser(AtLexer lexer)
     {
-        bool parsing;
+        this.lexer  = lexer;
+        this.tokens = new Buffer<AtToken>(lexer.Lex());
+    }
 
-        readonly AtLexer            lexer;
-        readonly Buffer<AtToken>    tokens;
-        readonly List<AtDiagnostic> diagnostics = new List<AtDiagnostic>();
-        readonly object             @lock       = new object();
+    //ParseCompilationUnit()
+    public CompilationUnitSyntax ParseCompilationUnit()
+    {
+        diagnostics.Clear();
+        CompilationUnitSyntax compilationUnitSyntax;
 
-        public AtParser(AtLexer lexer)
+        lock(@lock)
         {
-            this.lexer  = lexer;
-            this.tokens = new Buffer<AtToken>(lexer.Lex());
+            if (parsing) throw new Exception("PARSING ALREADY");
+            parsing = true;
+
+            compilationUnitSyntax = SyntaxFactory.CompilationUnit(compilationUnit().ToList());
+
+            parsing = false;   
         }
 
-        //ParseCompilationUnit()
-        public CompilationUnitSyntax ParseCompilationUnit()
+        diagnostics.AddRange (compilationUnitSyntax.DescendantNodes()
+                                                    .OfType<ExpressionClusterSyntax>()
+                                                    .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,"Compiler","Expression cluster: "+_,DiagnosticSeverity.Error,0,true)));   
+        return compilationUnitSyntax;
+    }
+
+    //Compilation Unit
+    IEnumerable<ExpressionSyntax> compilationUnit()
+    {
+        if (position() < 0) 
+            moveNext();
+
+        while (!END())
         {
-           diagnostics.Clear();
-           CompilationUnitSyntax compilationUnitSyntax;
+            var token = current();
 
-           lock(@lock)
-           {
-              if (parsing) throw new Exception("PARSING ALREADY");
-              parsing = true;
-
-              compilationUnitSyntax = SyntaxFactory.CompilationUnit(compilationUnit().ToList());
-
-              parsing = false;   
-           }
-
-           diagnostics.AddRange (compilationUnitSyntax.DescendantNodes()
-                                                      .OfType<ExpressionClusterSyntax>()
-                                                      .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,"Compiler","Expression cluster: "+_,DiagnosticSeverity.Error,0,true)));   
-          return compilationUnitSyntax;
-        }
-
-        //Compilation Unit
-        IEnumerable<ExpressionSyntax> compilationUnit()
-        {
-            while (moveNext())
+            switch(token.Kind)
             {
-                var token = current();
+                case StartOfFile:
+                case EndOfFile  :
+                case Space:
+                case EndOfLine:  
+                    moveNext();
+                    continue; //TODO: #hash-statements, etc.
 
-                switch(token.Kind)
-                {
-                    case StartOfFile:
-                    case EndOfFile  :
-                    case Space:
-                    case EndOfLine:  continue;  
-
-                    case AtSymbol: 
-                    case StringLiteral:
-                    case TokenCluster: yield return expression(); break;
+                case AtSymbol: 
+                case StringLiteral:
+                case TokenCluster: yield return expression(); break;
                             
-                    default: yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,"char {1}: Unexpected token: '{0}'",token.Text,token.Position); break;
-                }       
-            }        
-        }
+                default: 
+                    moveNext();
+                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,"char {1}: Unexpected token: '{0}'",token.Text,token.Position); break;
+            }       
+        }        
+    }
 
-        ErrorNode error(List<AtDiagnostic> diagnostics,string diagnosticId,AtToken token,string f, params object[] args) 
-        {
-           diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
+    ErrorNode error(List<AtDiagnostic> diagnostics,string diagnosticId,AtToken token,string f, params object[] args) 
+    {
+        diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
 
-           return SyntaxFactory.ErrorNode(
-                                    diagnostics,
-                                    string.Format(f,args),
-                                    token);
-        }   
+        return SyntaxFactory.ErrorNode(
+                                diagnostics,
+                                string.Format(f,args),
+                                token);
+    }   
 
-        //expression (stringLiteral | id)
-        ExpressionSyntax expression()
-        {
-            if (isCurrent(AtSymbol)) 
-                return declarationExpression();            
+    //expression (stringLiteral | id)
+    ExpressionSyntax expression()
+    {
+        if (isCurrent(AtSymbol)) 
+            return declarationExpression();            
 
-            var x = current();
+        var x = current();
 
-            throw new NotImplementedException($"{x.Kind}: {x.Text}");
+        throw new NotImplementedException($"{x.Kind}: {x.Text}");
 
-            /*return x.Kind==TokenKind.TokenCluster ? new ExpressionSyntax("id",x)
-                                                    : new ExpressionSyntax("string literal",x);*/
-        }
+        /*return x.Kind==TokenKind.TokenCluster ? new ExpressionSyntax("id",x)
+                                                : new ExpressionSyntax("string literal",x);*/
+    }
 
     //Expression Cluster: "a { ... } b() { ... } ;"
     ExpressionClusterSyntax expressionCluster()
@@ -103,95 +110,87 @@ namespace At
     DeclarationSyntax declarationExpression()
     {
         var nodes = new List<AtSyntaxNode>();
-        Debug.Assert(current().Kind==AtSymbol);
-        var atSymbol = current();
-        var isClass = false;
-        //AtToken afterColon = null;
-        
+        var atSymbol = consumeToken(AtSymbol);
+        var tc = consumeToken(TokenCluster);
+        var isClass = false;       
 
         nodes.Add(atSymbol);
-        
-        if (isNext(TokenCluster))
+        nodes.Add(tc);
+  
+        //<[...]>
+        AtToken lessThan = null;
+        AtToken greaterThan = null;
+        ListSyntax<ParameterSyntax> typeParams = null;
+        if (isCurrent(LessThan))
+        {                
+            lessThan = consumeToken(LessThan);
+
+            SeparatedSyntaxList<ParameterSyntax> typeParamList = null;
+            if (!isCurrent(GreaterThan))
+                typeParamList = list(Comma,typeParameter,GreaterThan);
+                                   
+            greaterThan = consumeToken(GreaterThan);
+
+            typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan,null);
+            nodes.Add(typeParams);
+            isClass = true; 
+        }
+
+
+        //: baseType<>[, ...]
+        AtToken colon = null;
+        ListSyntax<NameSyntax> baseList = null; 
+        if (isCurrent(Colon))
         {
-            moveNext();
-            var tc = current();
-            nodes.Add(tc);
-            skipWhiteSpace();
-
-            //<>
-            AtToken lessThan = null;
-            AtToken greaterThan = null;
-            ListSyntax<ParameterSyntax> typeParams = null;
-            if (isCurrent(LessThan))
-            {                
-                lessThan = current();
-                skipWhiteSpace();
-
-                SeparatedSyntaxList<ParameterSyntax> typeParamList = null;
-                if (!isCurrent(GreaterThan))
-                    typeParamList = list(Comma,typeParameter,GreaterThan);
-                   
-                assertCurrent(GreaterThan);             
-                greaterThan = current();
-                skipWhiteSpace();
-
-                typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan,null);
-                nodes.Add(typeParams);
-                isClass = true; 
-            }
-
-
-            //: baseType<>[, ...]
-            AtToken colon = null;
-            ListSyntax<NameSyntax> baseList = null; 
-            if (isCurrent(Colon))
-            {
-                colon = consumeToken(Colon);
+            colon = consumeToken(Colon);
                 
-                var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
+            var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
 
-                //TODO: remove colon from list? (PairSyntax<Colon>)
-                baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
-                nodes.Add(baseList);
-            }
+            //TODO: remove colon from list? (PairSyntax<Colon>)
+            baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
+            nodes.Add(baseList);
+        }
 
             
-            //";" | "{...}"
-            var members = new List<DeclarationSyntax>();
-            if (isCurrent(SemiColon))
-            {                
-                nodes.Add(current());
-            }
-            else if (isCurrent(LeftBrace))
-            {
-                nodes.Add(consumeToken(LeftBrace));
-
-                while(!isCurrent(RightBrace))
-                {               
-                    //TODO: support for ".ctor { }" expression 
-                    var member = declarationExpression();
-                    members.Add(member);
-                    nodes.Add(member);
-                }
-
-                nodes.Add(current(RightBrace));
-            }
-
-
-            if (isClass)
-                return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,members,nodes);
-
-            throw new NotImplementedException("non-class declaration expresssion");
-
-            //return new ExpressionSyntax(isClass?"@class":"@obj",tc,afterColon ?? new Token());
-            //return new ExpressionSyntax();
+        //";" | "{...}"
+        var members = new List<DeclarationSyntax>();
+        if (isCurrent(SemiColon))
+        {                
+            nodes.Add(consumeToken(SemiColon));
         }
-        else
+        else if (isCurrent(LeftBrace))
         {
-            string msg = string.Format("character {1}: expected TokenCluster after '{0}'", atSymbol.Text, atSymbol.Position);            
-            return error<DeclarationSyntax>();
-            //return  error(diagnostics,DiagnosticIds.UnexpectedToken, msg);
+            nodes.Add(consumeToken(LeftBrace));
+
+            while(!isCurrent(RightBrace))
+            {               
+                //TODO: support for ".ctor { }" expression 
+                var member = declarationExpression();
+                members.Add(member);
+                nodes.Add(member);
+            }
+
+            nodes.Add(consumeToken(RightBrace));
         }
+
+
+        if (isClass)
+            return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,members,nodes);
+
+        //TODO: method decl, property decl, variable/field decl (= vs. <-)
+
+
+        //TODO: @<assignmentExpression> (decl (assign newid value))
+        //TODO: @<assignmentExpression> (decl (assign (colon-pair newid type) value))
+        //TODO: @x : T { P = v, ...}
+        //TODO: [(+ | -)]@x;
+        return SyntaxFactory.VariableDeclaration(atSymbol, tc,type:null, value: null,nodes:nodes);
+
+        //throw new NotImplementedException("non-class declaration expresssion");
+
+        //return new ExpressionSyntax(isClass?"@class":"@obj",tc,afterColon ?? new Token());
+        //return new ExpressionSyntax();
+
     }
 
        
@@ -199,6 +198,7 @@ namespace At
     int     position()       => tokens.Position;
     AtToken lookAhead(int k) => tokens.LookAhead(k);
     bool    moveNext()       => tokens.MoveNext();
+    bool    END()            => tokens.End;
 
     AtToken current(TokenKind assertedToken) 
     {
@@ -225,10 +225,8 @@ namespace At
     //{Curly Block}
     private BlockSyntax curlyBlock()
     {
-        assertCurrent(LeftBrace);
-        var leftBrace = current();
+        var leftBrace = consumeToken(LeftBrace);
         var p = position();
-        skipWhiteSpace();
 
         var contents = new List<ExpressionSyntax>();
         while(!isCurrent(RightBrace))
@@ -236,14 +234,14 @@ namespace At
             contents.Add(expression());
         }
 
-        return SyntaxFactory.Block(leftBrace,contents,rightBrace:current());
+        return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(RightBrace));
     }
 
 
     NameSyntax name()
     {
         assertCurrent(TokenCluster);
-        var identifier = consumeToken();
+        var identifier = consumeToken(TokenCluster);
 
         //type args <T, U, V>
         SeparatedSyntaxList<NameSyntax> typeArgs = null;
@@ -289,10 +287,7 @@ namespace At
                 list.Add(parseExpr());
 
                 if (isCurrent(separator))
-                {
-                    list.Add(current());
-                    moveNext();
-                }
+                    list.Add(consumeToken(separator));
             }            
         }
 
@@ -301,10 +296,7 @@ namespace At
     }
 
 
-    void assertCurrent(params TokenKind[] tokenKinds)
-    {
-        Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
-    }
+    void assertCurrent(params TokenKind[] tokenKinds) => Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
 
     bool skip(params TokenKind[] tokenKinds)
     {
@@ -312,8 +304,6 @@ namespace At
         {
             if (lookAhead(i).Kind!=tokenKinds[i-1]) 
                 return false;
-            else 
-                skipWhiteSpace();
         }
 
         for(int i=0; i < tokenKinds.Length; ++i) 
@@ -322,21 +312,6 @@ namespace At
         return true;
     }
 
-    //TODO: remove this? 
-    void skipWhiteSpace()
-    {
-        if (!isWhiteSpace(current())) 
-            moveNext();
-        
-        while(isWhiteSpace(current())) 
-            moveNext();
-    }
-
-    static bool isWhiteSpace(AtToken token)
-    {
-        return      (token != null)
-                &&  (token.Kind==Space  || token.Kind==EndOfLine);
-    }
 
     bool isNext(TokenKind kind, int k = 1)
     {
