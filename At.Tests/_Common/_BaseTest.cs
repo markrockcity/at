@@ -15,6 +15,7 @@ using static System.Linq.Expressions.ExpressionType;
 namespace At.Tests
 {
 
+
 //Test base class
 [TestClass] public partial class Test
 {
@@ -22,7 +23,10 @@ namespace At.Tests
    protected Test()
    {
       At.Tests.TestData.Init();
+      TestData = new TestData(this);
    }
+
+   public TestData TestData {get;}
 
    //Stopwatch
    public Stopwatch Stopwatch {get {return stopwatch;}}
@@ -48,8 +52,10 @@ namespace At.Tests
    //Cleanup()
    [TestCleanup] public void Cleanup() 
    {
-      if (_TestContextWriter != null && _TestContextWriter.Buffered) _TestContextWriter.flush2();
+      if (_TestContextWriter != null && _TestContextWriter.Buffered) 
+        _TestContextWriter.flush2();
       TearDown();
+      TestData.Cleanup();
    }
   
    //TearDown()
@@ -75,8 +81,8 @@ namespace At.Tests
      var x = f();
      var y = g();
 
-     var _x = expected.Body is ConstantExpression ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ({x})";
-     var _y = actual.Body is ConstantExpression ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ({y})";
+     var _x = expected.Body is ConstantExpression || expected.Body.NodeType == ExpressionType.MemberAccess ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ({x})";
+     var _y = actual.Body is ConstantExpression || actual.Body.NodeType == ExpressionType.MemberAccess ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ({y})";
      Write($"assert EQUAL: {_x} == {_y}");
 
      if (format == null)
