@@ -17,16 +17,35 @@ namespace At.Tests
         var className1 = TestData.Identifier(0);
         var baseClass1 = TestData.Identifier(1);
         var className2 = TestData.Identifier(2);
+        var variableName = TestData.Identifier(3);
 
         var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<> }}\r\n"+ 
                     $"@{baseClass1}<T, U>;\r\n"+
-                    $"@{className2}<>"; 
+                    $"@{className2}<>;"+
+                    $"@{variableName};";
         var output = AtProgram.compileStringToAssembly(input);
 
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
+
         assert_not_null(()=>
                 output.GetType(className1+"`2").GetNestedType("P"),
                 ifFail: ()=>output.GetType(className1+"`2").GetNestedTypes());
+
+        assert_not_null(()=>
+            output.GetType(SyntaxTreeConverter.defaultClassName).GetField(variableName),
+            ifFail:()=>output.GetType(SyntaxTreeConverter.defaultClassName).GetFields());
+    }
+
+    //Method Test
+    [TestMethod] public void MethodTest()
+    {
+        var id = TestData.Identifier();
+        var input = $"@{id}();";
+        var tree = AtSyntaxTree.ParseText(input);
+        verifyOutput<atSyntax.MethodDeclarationSyntax>(input,tree,id);
+
+        var csharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
+        verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
     }
 
     //Lexer Test
@@ -44,7 +63,7 @@ namespace At.Tests
         var className = TestData.Identifier(0);
         var baseClass = TestData.Identifier(1);
               
-        foreach(var input in inputs(className,baseClass))
+        foreach(var input in classInputs(className,baseClass))
         {
             var tree = AtSyntaxTree.ParseText(input);
 
@@ -72,7 +91,7 @@ namespace At.Tests
         var className = TestData.Identifier(0);
         var baseClass = TestData.Identifier(1);
 
-        foreach(var input in inputs(className,baseClass))
+        foreach(var input in classInputs(className,baseClass))
         {
             var tree = AtSyntaxTree.ParseText(input);            
             var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
@@ -85,9 +104,10 @@ namespace At.Tests
     //Variable Test
     [TestMethod] public void VariableTest()
     {
-        var id = TestData.Identifier();
+        var id = TestData.Identifier(0);
+        var className = TestData.Identifier(1);
 
-        foreach(var input in inputs(id))
+        foreach(var input in variableInputs(id,className))
         {
             var tree = AtSyntaxTree.ParseText(input); //@x
             verifyOutput<atSyntax.VariableDeclarationSyntax>(input,tree,id);
@@ -98,7 +118,7 @@ namespace At.Tests
     }
 
     //inputs
-    IEnumerable<string> inputs(string className,string baseClass) => new[] 
+    IEnumerable<string> classInputs(string className,string baseClass) => new[] 
     {
         $"@{className}<>",
         $"@{className}<>;",
@@ -114,10 +134,12 @@ namespace At.Tests
         $"@{className}<T,U> : {baseClass}<T>",
         $"@{className}<T,U> : {baseClass}<T>;",
     };       
-    IEnumerable<string> inputs(string id) => new[]
+    IEnumerable<string> variableInputs(string id, string className) => new[]
     {
         $"@{id}",
         $"@{id};",
+        $"@{id} : {className}",
+        $"@{id} : {className};",
     };
 
 

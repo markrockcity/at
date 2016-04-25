@@ -36,7 +36,7 @@ public class SyntaxFactory
         return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter,diagnostics);
     }
 
-    public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics) where T : AtSyntaxNode
+    public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
         checkNull(startDelimiter,nameof(startDelimiter));        
         //checkNull(endDelimiter,nameof(endDelimiter));
@@ -63,6 +63,11 @@ public class SyntaxFactory
         return new BlockSyntax(leftBrace,contents,rightBrace,diagnostics);
     }
 
+    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+       return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,diagnostics);
+    }
+
     public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
     {
         checkNull(identifier,nameof(identifier));  
@@ -87,7 +92,6 @@ public class SyntaxFactory
         if (obj is IEnumerable && ((IEnumerable) obj).Cast<object>().Any(_=>_== null))
             throw new ArgumentNullException(name,name+" contains a null reference");        
     }
-
 
 }
 }

@@ -105,14 +105,15 @@ public class AtParser : IDisposable
         throw new NotImplementedException();
     }
 
-    //declarationExpression "@TokenCluster[<...>][; | { ... }]"
+    //declarationExpression "@TokenCluster[<...>][(...)][; | { ... }]"
     //declarationExpression "@TokenCluster ColonPair [; | { ... }]"
     DeclarationSyntax declarationExpression()
     {
         var nodes = new List<AtSyntaxNode>();
         var atSymbol = consumeToken(AtSymbol);
         var tc = consumeToken(TokenCluster);
-        var isClass = false;       
+        var isClass = false;
+        var isMethod = false;       
 
         nodes.Add(atSymbol);
         nodes.Add(tc);
@@ -131,9 +132,26 @@ public class AtParser : IDisposable
                                    
             greaterThan = consumeToken(GreaterThan);
 
-            typeParams = SyntaxFactory.List<ParameterSyntax>(lessThan,typeParamList,greaterThan,null);
+            typeParams = SyntaxFactory.List(lessThan,typeParamList,greaterThan,null);
             nodes.Add(typeParams);
             isClass = true; 
+        }
+
+        //(...)
+        ListSyntax<ParameterSyntax> methodParams = null;
+        if (isCurrent(LeftParenthesis))
+        {
+            var leftParen = consumeToken(LeftParenthesis);
+
+            SeparatedSyntaxList<ParameterSyntax> methodParamList = null;
+            if(!isCurrent(RightParenthesis))
+                methodParamList = list(TokenKind.Comma,methodParameter,RightParenthesis);
+
+            var rightParen = consumeToken(RightParenthesis);
+            methodParams = SyntaxFactory.List<ParameterSyntax>(leftParen,methodParamList,rightParen);
+            nodes.Add(methodParams);
+            isMethod = true;
+            isClass  = false;
         }
 
 
@@ -170,7 +188,7 @@ public class AtParser : IDisposable
                 nodes.Add(member);
             }
 
-            nodes.Add(consumeToken(RightBrace));
+            nodes.Add(consumeToken(RightBrace)); 
         }
 
 
@@ -184,6 +202,13 @@ public class AtParser : IDisposable
         //TODO: @<assignmentExpression> (decl (assign (colon-pair newid type) value))
         //TODO: @x : T { P = v, ...}
         //TODO: [(+ | -)]@x;
+        if (isCurrent(SemiColon))
+            nodes.Add(current(SemiColon));        
+
+        if (isMethod)
+            return SyntaxFactory.MethodDeclaration(atSymbol,tc, methodParams, returnType: null, nodes: nodes);
+        
+
         return SyntaxFactory.VariableDeclaration(atSymbol, tc,type:null, value: null,nodes:nodes);
 
         //throw new NotImplementedException("non-class declaration expresssion");
@@ -237,6 +262,10 @@ public class AtParser : IDisposable
         return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(RightBrace));
     }
 
+    ParameterSyntax methodParameter()
+    {
+        throw new NotImplementedException();
+    }
 
     NameSyntax name()
     {
