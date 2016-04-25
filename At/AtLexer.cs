@@ -34,7 +34,9 @@ public class AtLexer : IDisposable
         {'>',GreaterThan},
         {':',Colon},
         {'{',LeftBrace},
+        {'(',LeftParenthesis},
         {'}',RightBrace},
+        {')',RightParenthesis},
         {',',Comma}
     };    
     

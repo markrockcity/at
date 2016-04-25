@@ -6,25 +6,27 @@ using System.Threading.Tasks;
 
 namespace At
 {
-    public enum TokenKind
-    {
-        Any = 0,
-        StartOfFile,
-        EndOfFile,
-        EndOfLine,
-        Space,
-        AtSymbol,
-        TokenCluster,
-        SemiColon,
-        LessThan,
-        GreaterThan,
-        StringLiteral,
-        Colon,
-        LeftBrace,
-        RightBrace,
-        Dot,
-        DotDot,
-        Ellipsis,
-        Comma
-    }
+public enum TokenKind
+{
+    Any = 0,
+    StartOfFile,
+    EndOfFile,
+    EndOfLine,
+    Space,
+    AtSymbol,
+    TokenCluster,
+    SemiColon,
+    LessThan,
+    GreaterThan,
+    StringLiteral,
+    Colon,
+    LeftBrace,
+    LeftParenthesis,
+    RightBrace,
+    RightParenthesis,
+    Dot,
+    DotDot,
+    Ellipsis,
+    Comma
+}
 }
