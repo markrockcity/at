@@ -14,7 +14,7 @@ public abstract class AtSyntaxNode
     protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) 
     { 
         this.nodes = new AtSyntaxList<AtSyntaxNode>(this,nodes);
-        this.diagnostics = new ImmutableArray<AtDiagnostic>();
+        this.diagnostics = ImmutableArray<AtDiagnostic>.Empty;
         
         if (diagnostics != null) 
             this.diagnostics = this.diagnostics.AddRange(diagnostics.Where(_=>_!=null));
