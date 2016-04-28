@@ -7,7 +7,7 @@ using System.Linq;
 using At;
 
 
-var x = At.AtSyntaxTree.ParseText("@variable; @y<>; @class<>  : y {@P<>;}");
+var x = At.AtSyntaxTree.ParseText("@variable : y; @y<>; @class<>  : y {@P<>;}");
 var root = x.GetRoot();
 var c = AtCompilation.Create(new[] {x});
 var s = new MemoryStream();

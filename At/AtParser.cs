@@ -192,6 +192,12 @@ public class AtParser : IDisposable
 
             while(!isCurrent(RightBrace))
             {               
+                if (!isCurrent(AtSymbol))
+                {
+                    nodes.Add(error(diagnostics,DiagnosticIds.UnexpectedToken,consumeToken(),"Expected an '@'."));
+                    continue;
+                }
+            
                 //TODO: support for ".ctor { }" expression 
                 var member = declarationExpression();
                 members.Add(member);

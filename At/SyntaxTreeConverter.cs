@@ -41,7 +41,7 @@ class SyntaxTreeConverter
        var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
        if (error != null)
        {
-            throw new Exception(error.Message);
+            throw new Exception(error.GetDiagnostics().FirstOrDefault()?.Message ?? error.Message);
        }
     
        var csharpSyntax = cs.SyntaxFactory.CompilationUnit();
