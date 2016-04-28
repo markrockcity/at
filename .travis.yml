@@ -1,2 +1,3 @@
 language: csharp
 solution: At2015.sln
+mono: alpha
