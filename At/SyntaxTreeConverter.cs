@@ -160,7 +160,7 @@ class SyntaxTreeConverter
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
         var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
-        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(cs.SyntaxFactory.ParseTypeName("System.Object"))
+        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(cs.SyntaxFactory.ParseTypeName(varDecl.Type?.Text ?? "System.Object"))
                             .AddVariables(csVarDeclr);
         var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl)
                                                 .AddModifiers(cs.SyntaxFactory.ParseToken("public"),cs.SyntaxFactory.ParseToken("static"));
