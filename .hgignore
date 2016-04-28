@@ -6,3 +6,4 @@ syntax: glob
 .vs/*
 At/.dll
 At/x
+*.orig
