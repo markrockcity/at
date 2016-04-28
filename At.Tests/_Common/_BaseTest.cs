@@ -165,6 +165,7 @@ namespace At.Tests
    }
    
   //AssertNotNull
+  public void assert_not_null<T>(T o) => Assert.IsNotNull(o);
   public void assert_not_null<T>(Expression<Func<T>> e, Expression<Func<object>> ifFail = null) where T : class
    { Write("assert NOT NULL: {0}",exprStr(e.Body));
      var f = e.Compile();
