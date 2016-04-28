@@ -80,9 +80,9 @@ public class SyntaxFactory
         return new ParameterSyntax(identifier, diagnostics);
     }
 
-    public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,object type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
     {
-       return new VariableDeclarationSyntax(atSymbol,identifier,nodes,diagnostics);
+       return new VariableDeclarationSyntax(atSymbol,identifier,type,nodes,diagnostics);
     }
     static void checkNull(object obj, string name)
     {

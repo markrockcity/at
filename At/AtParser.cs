@@ -158,15 +158,25 @@ public class AtParser : IDisposable
         //: baseType<>[, ...]
         AtToken colon = null;
         ListSyntax<NameSyntax> baseList = null; 
+        NameSyntax type = null;
         if (isCurrent(Colon))
         {
             colon = consumeToken(Colon);
                 
-            var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
+            if (isClass)
+            {
+                var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
 
-            //TODO: remove colon from list? (PairSyntax<Colon>)
-            baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
-            nodes.Add(baseList);
+                //TODO: remove colon from list? (PairSyntax<Colon>)
+                baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
+                nodes.Add(baseList);
+            }
+            else
+            {
+                type = name();
+                nodes.Add(colon);
+                nodes.Add(type);
+            }
         }
 
             
@@ -209,7 +219,7 @@ public class AtParser : IDisposable
             return SyntaxFactory.MethodDeclaration(atSymbol,tc, methodParams, returnType: null, nodes: nodes);
         
 
-        return SyntaxFactory.VariableDeclaration(atSymbol, tc,type:null, value: null,nodes:nodes);
+        return SyntaxFactory.VariableDeclaration(atSymbol, tc,type, value: null,nodes:nodes);
 
         //throw new NotImplementedException("non-class declaration expresssion");
 
