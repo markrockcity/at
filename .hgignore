@@ -7,3 +7,4 @@ syntax: glob
 At/.dll
 At/x
 *.orig
+At/x.dll
