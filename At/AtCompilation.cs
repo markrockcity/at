@@ -104,7 +104,7 @@ public class AtCompilation
     {
         return new AtEmitResult(  result.Success
                                  ,result.Diagnostics
-                                 ,syntaxTrees.Select(_=>_.GetText(cancellationToken).ToString()));
+                                 ,syntaxTrees.Select(_=>_.GetRoot().NormalizeWhitespace().ToFullString()));
     }
 }
 }

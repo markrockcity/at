@@ -17,23 +17,31 @@ namespace At.Tests
         var className1 = TestData.Identifier(0);
         var baseClass1 = TestData.Identifier(1);
         var className2 = TestData.Identifier(2);
-        var variableName = TestData.Identifier(3);
+        var variableName1 = TestData.Identifier(3);
+        var variableName2 = TestData.Identifier(4);
+        var className3 = TestData.Identifier(5);
+        var functionName1 = TestData.Identifier(6);
 
-        var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<> }}\r\n"+ 
+        var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<>; @G() }}\r\n"+ 
                     $"@{baseClass1}<T, U>;\r\n"+
                     $"@{className2}<>;"+
-                    $"@{variableName};";
+                    $"@{variableName1} : {className1}<{className2},{className2}>;"+
+                    $"@{functionName1}()";
         var output = AtProgram.compileStringToAssembly(input);
 
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
 
-        assert_not_null(()=>
-                output.GetType(className1+"`2").GetNestedType("P"),
-                ifFail: ()=>output.GetType(className1+"`2").GetNestedTypes());
+        var class1 = output.GetType(className1+"`2");
 
-        assert_not_null(()=>
-            output.GetType(SyntaxTreeConverter.defaultClassName).GetField(variableName),
-            ifFail:()=>output.GetType(SyntaxTreeConverter.defaultClassName).GetFields());
+        assert_not_null(()=>class1.GetNestedType("P"),ifFail:()=>class1.GetNestedTypes());
+        assert_not_null(()=>class1.GetMethod("G"),ifFail:()=>class1.GetMethods());
+
+        var _ =  output.GetType(SyntaxTreeConverter.defaultClassName);
+        var variable = _.GetField(variableName1);
+
+        assert_not_null(()=>variable,ifFail:()=>_.GetFields());
+        assert_not_null(()=>_.GetMethod(functionName1),()=>_.GetMethods());
+        assert_equals(()=>$"{className1}`2",()=>variable.FieldType.Name);
     }
 
     //Method Test
@@ -110,10 +118,12 @@ namespace At.Tests
         foreach(var input in variableInputs(id,className))
         {
             var tree = AtSyntaxTree.ParseText(input); //@x
-            verifyOutput<atSyntax.VariableDeclarationSyntax>(input,tree,id);
-
+            var decl = verifyOutput<atSyntax.VariableDeclarationSyntax>(input,tree,id);
+ 
             var csharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
-            verifyOutput<csSyntax.FieldDeclarationSyntax>(csharpTree,id, _=>_.Declaration.Variables[0].Identifier.Text);
+            verifyOutput<csSyntax.FieldDeclarationSyntax>(csharpTree,
+                id,_=>_.Declaration.Variables[0].Identifier.Text,
+                decl.Type?.Text ?? "System.Object",_=>_.Declaration.Type.ToString());
         }
     }
 
@@ -140,6 +150,9 @@ namespace At.Tests
         $"@{id};",
         $"@{id} : {className}",
         $"@{id} : {className};",
+        $"@{id} : {className}<{className}>",
+        $"@{id} : {className}<{className},{className}>;",
+        $"@{id} : {className}<{className},{className}<{className}>>",
     };
 
 
@@ -155,8 +168,8 @@ namespace At.Tests
     }
 
     //verify output (syntax tree)
-    void verifyOutput<T>(string input, AtSyntaxTree tree, string id) where T : atSyntax.DeclarationSyntax
-        {
+    T verifyOutput<T>(string input, AtSyntaxTree tree, string id) where T : atSyntax.DeclarationSyntax
+    {
         assert_not_null(()=>tree);
 
         assert_equals(()=>0,()=>tree.GetDiagnostics().Count());
@@ -166,18 +179,28 @@ namespace At.Tests
 
         var declaration = (T) root.DescendantNodes().First();
         assert_equals(()=>id, ()=>declaration.Identifier.Text);
-        
+
+        return declaration;
     }
 
     //verify output (C# tree)
-    void verifyOutput<T>(cs.CSharpSyntaxTree tree,string id,Func<T,string> getId) 
+    void verifyOutput<T>(cs.CSharpSyntaxTree csharpTree,
+                         string id,
+                         Func<T,string> getId,
+                         string id2 = null,
+                         Func<T,string> getId2 = null) 
         where T : cs.Syntax.MemberDeclarationSyntax
     {
-        var root = tree.GetRoot();
+        var root = csharpTree.GetRoot();
         var any = root.DescendantNodes()
                         .OfType<T>()
-                        .Any(_=>getId(_)==id);
-        assert_true(any);                    
+                        .Single(_=>getId(_)==id);
+        assert_not_null(any);
+        
+        if (id2!=null && getId2!=null)
+        {
+            assert_equals(id2,getId2(any));
+        }                    
     }
 }
 }

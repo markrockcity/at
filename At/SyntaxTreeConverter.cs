@@ -35,7 +35,7 @@ class SyntaxTreeConverter
         return (CSharpSyntaxTree) csharpTree;
     }
 
-    csSyntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(At.Syntax.CompilationUnitSyntax atRoot)
+    csSyntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(atSyntax.CompilationUnitSyntax atRoot)
     {
        //160316: this is mainly for making tests fail
        var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
@@ -53,6 +53,7 @@ class SyntaxTreeConverter
 
        //class _ { <fields> static int Main() { <statements>; return 0; } }
        defaultClass = defaultClass.AddMembers(members.OfType<FieldDeclarationSyntax>().ToArray())
+                                  .AddMembers(members.OfType<csSyntax.MethodDeclarationSyntax>().ToArray())
                                   .AddMembers(cs.SyntaxFactory.MethodDeclaration(
                                                     cs.SyntaxFactory.ParseTypeName("int"),"Main")
                                                 .AddModifiers(cs.SyntaxFactory.ParseToken("static"))
@@ -62,7 +63,7 @@ class SyntaxTreeConverter
                                                 .AddBodyStatements(new StatementSyntax[]{cs.SyntaxFactory.ReturnStatement(cs.SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,cs.SyntaxFactory.ParseToken("0")))}));
                                                          
        csharpSyntax = csharpSyntax.AddMembers(defaultClass)
-                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax)).ToArray());
+                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
        return csharpSyntax;
     }
 
@@ -80,7 +81,7 @@ class SyntaxTreeConverter
           }
 
           //SHOULD ALWAYS BE LAST
-          var expr = node as At.Syntax.ExpressionSyntax;
+          var expr = node as atSyntax.ExpressionSyntax;
           if (expr != null)
           {
              var csExprStmt = ExpressionStatementSyntax(expr);
@@ -174,7 +175,10 @@ class SyntaxTreeConverter
         var returnType = methodDecl.ReturnType != null
                             ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
                             : cs.SyntaxFactory.ParseTypeName("System.Object");
-        var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId));
+        var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
+                                            .AddModifiers(cs.SyntaxFactory.ParseToken("public"))
+                                            .AddBodyStatements(cs.SyntaxFactory.ParseStatement("return null;"));
+                            
 
         return csMethod;
     }
