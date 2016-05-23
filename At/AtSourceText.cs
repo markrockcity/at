@@ -23,5 +23,7 @@ public class AtSourceText
     {
         return new AtSourceText(text);
     }
+
+    public static implicit operator AtSourceText (string source) => new AtSourceText(source);
 }
 }
