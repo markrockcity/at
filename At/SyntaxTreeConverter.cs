@@ -9,6 +9,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using atSyntax = At.Syntax;
 using cs = Microsoft.CodeAnalysis.CSharp;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace At
 {
@@ -44,7 +46,7 @@ class SyntaxTreeConverter
             throw new Exception(error.GetDiagnostics().FirstOrDefault()?.Message ?? error.Message);
        }
     
-       var csharpSyntax = cs.SyntaxFactory.CompilationUnit();
+       var csharpSyntax = CompilationUnit();
        
        var members    = new List<csSyntax.MemberDeclarationSyntax>();
        var statements = new List<csSyntax.StatementSyntax>();
@@ -54,13 +56,12 @@ class SyntaxTreeConverter
        //class _ { <fields> static int Main() { <statements>; return 0; } }
        defaultClass = defaultClass.AddMembers(members.OfType<FieldDeclarationSyntax>().ToArray())
                                   .AddMembers(members.OfType<csSyntax.MethodDeclarationSyntax>().ToArray())
-                                  .AddMembers(cs.SyntaxFactory.MethodDeclaration(
-                                                    cs.SyntaxFactory.ParseTypeName("int"),"Main")
-                                                .AddModifiers(cs.SyntaxFactory.ParseToken("static"))
+                                  .AddMembers(MethodDeclaration(ParseTypeName("int"),"Main")
+                                                .AddModifiers(ParseToken("static"))
                                                 .AddBodyStatements(statements.ToArray())
                                   
                                                 //return 0
-                                                .AddBodyStatements(new StatementSyntax[]{cs.SyntaxFactory.ReturnStatement(cs.SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,cs.SyntaxFactory.ParseToken("0")))}));
+                                                .AddBodyStatements(new StatementSyntax[]{ReturnStatement(LiteralExpression(NumericLiteralExpression,ParseToken("0")))}));
                                                          
        csharpSyntax = csharpSyntax.AddMembers(defaultClass)
                                   .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
@@ -136,8 +137,8 @@ class SyntaxTreeConverter
     {
         var classId = classDecl.Identifier;
         var csId = csIdentifer(classId);
-        var csClass = cs.SyntaxFactory.ClassDeclaration(csId).AddModifiers(
-                             cs.SyntaxFactory.ParseToken("public"));
+        var csClass = ClassDeclaration(csId).AddModifiers(
+                             ParseToken("public"));
         var csTypeParams = classDecl.TypeParameters.List.Select(_=>
                                 cs.SyntaxFactory.TypeParameter(_.Text));
 
