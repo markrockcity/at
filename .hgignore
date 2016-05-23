@@ -8,3 +8,7 @@ At/.dll
 At/x
 *.orig
 At/x.dll
+Backup/*
+CSharpCompilerPlatformSDKDownload1/*
+UpgradeLog*
+packages/*
