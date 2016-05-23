@@ -12,3 +12,4 @@ Backup/*
 CSharpCompilerPlatformSDKDownload1/*
 UpgradeLog*
 packages/*
+*.vssettings
