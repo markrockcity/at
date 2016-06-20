@@ -2,10 +2,12 @@
 **/packages/
 **/bin/**
 **/obj/**
+.vs/
 
-**.suo
 **.user
+**.suo
 
 x.dll
+
 
 
