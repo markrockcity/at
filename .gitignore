@@ -1,0 +1,11 @@
+﻿
+**/packages/
+**/bin/**
+**/obj/**
+
+**.suo
+**.user
+
+x.dll
+
+
