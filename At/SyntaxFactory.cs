@@ -19,18 +19,6 @@ public class SyntaxFactory
     }
 
 
-    public static TypeDeclarationSyntax TypeDeclaration(
-                                                AtToken atSymbol, 
-                                                AtToken identifier, 
-                                                ListSyntax<ParameterSyntax>  typeParameterList,
-                                                ListSyntax<NameSyntax> baseList,
-                                                IEnumerable<DeclarationSyntax> members,
-                                                IEnumerable<AtSyntaxNode> nodes,
-                                                IEnumerable<AtDiagnostic> diagnostics = null)
-    {
-        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,nodes,diagnostics);
-    }
-
     public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
         return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter,diagnostics);
@@ -68,23 +56,44 @@ public class SyntaxFactory
        return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,diagnostics);
     }
 
+    public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, List<DeclarationSyntax> members,List<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new NamespaceDeclarationSyntax(atSymbol,identifier,members,nodes,diagnostics);
+    }
+
     public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
     {
         checkNull(identifier,nameof(identifier));  
         return new NameSyntax(identifier, typeArgs);    
     }
-
+                                                   
     public static ParameterSyntax Parameter(AtToken identifier,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));
         return new ParameterSyntax(identifier, diagnostics);
     }
 
+    
+    public static TypeDeclarationSyntax TypeDeclaration(
+                                                AtToken atSymbol, 
+                                                AtToken identifier, 
+                                                ListSyntax<ParameterSyntax>  typeParameterList,
+                                                ListSyntax<NameSyntax> baseList,
+                                                IEnumerable<DeclarationSyntax> members,
+                                                IEnumerable<AtSyntaxNode> nodes,
+                                                IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        checkNull(identifier,nameof(identifier));
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,nodes,diagnostics);
+    }
+
     public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
     {
-       return new VariableDeclarationSyntax(atSymbol,identifier,type,nodes,diagnostics);
+        checkNull(identifier,nameof(identifier));
+        return new VariableDeclarationSyntax(atSymbol,identifier,type,nodes,diagnostics);
     }
-    static void checkNull(object obj, string name)
+
+    private static void checkNull(object obj, string name)
     {
         if (obj == null)
             throw new ArgumentNullException(name);
@@ -92,6 +101,5 @@ public class SyntaxFactory
         if (obj is IEnumerable && ((IEnumerable) obj).Cast<object>().Any(_=>_== null))
             throw new ArgumentNullException(name,name+" contains a null reference");        
     }
-
 }
 }

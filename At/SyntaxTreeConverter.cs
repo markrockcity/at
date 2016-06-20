@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using At.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using atSyntax = At.Syntax;
-using cs = Microsoft.CodeAnalysis.CSharp;
-using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+
 using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
+using atSyntax = At.Syntax;
+using cs       = Microsoft.CodeAnalysis.CSharp;
+using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace At
 {
@@ -19,14 +20,13 @@ class SyntaxTreeConverter
     internal const string defaultClassName = "_";
 
     readonly AtSyntaxTree atSyntaxTree;
-    csSyntax.ClassDeclarationSyntax defaultClass;
+    private csSyntax.ClassDeclarationSyntax defaultClass;
 
     public SyntaxTreeConverter(AtSyntaxTree atSyntaxTree)
     {
        this.atSyntaxTree = atSyntaxTree;
-       this.defaultClass = cs.SyntaxFactory.ClassDeclaration(defaultClassName);
+       this.defaultClass = ClassDeclaration(defaultClassName).WithModifiers(TokenList(Token(PartialKeyword)));
     }
-
     
     public CSharpSyntaxTree ConvertToCSharpTree()
     {
@@ -47,9 +47,8 @@ class SyntaxTreeConverter
        }
     
        var csharpSyntax = CompilationUnit();
-       
-       var members    = new List<csSyntax.MemberDeclarationSyntax>();
-       var statements = new List<csSyntax.StatementSyntax>();
+       var members      = new List<csSyntax.MemberDeclarationSyntax>();
+       var statements   = new List<csSyntax.StatementSyntax>();
 
        processNodes(atRoot.ChildNodes(), members, statements);
 
@@ -59,7 +58,28 @@ class SyntaxTreeConverter
                                   .AddMembers(MethodDeclaration(ParseTypeName("int"),"Main")
                                                 .AddModifiers(ParseToken("static"))
                                                 .AddBodyStatements(statements.ToArray())
-                                  
+                                                
+                                                .AddBodyStatements
+                                                (
+                                                    (
+                                                        from ns  in members.OfType<csSyntax.NamespaceDeclarationSyntax>()
+                                                        from cls in ns.Members.OfType<csSyntax.ClassDeclarationSyntax>()
+                                                        where cls.Identifier.Text == ns.Name.ToString()
+                                                        select ExpressionStatement(
+                                                                    InvocationExpression(
+                                                                            MemberAccessExpression
+                                                                            (
+                                                                                SimpleMemberAccessExpression,
+                                                                                MemberAccessExpression(
+                                                                                    SimpleMemberAccessExpression,
+                                                                                    IdentifierName(ns.Name.ToString()),
+                                                                                    IdentifierName(cls.Identifier.ToString())),
+                                                                                IdentifierName("Init")))
+
+                                                                            )
+                                                    ).ToArray()
+                                                )
+
                                                 //return 0
                                                 .AddBodyStatements(new StatementSyntax[]{ReturnStatement(LiteralExpression(NumericLiteralExpression,ParseToken("0")))}));
                                                          
@@ -68,7 +88,7 @@ class SyntaxTreeConverter
        return csharpSyntax;
     }
 
-    //processNodes()
+    //# processNodes()
     void processNodes(IEnumerable<AtSyntaxNode> nodes,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
     {
        foreach(var node in nodes)
@@ -81,7 +101,7 @@ class SyntaxTreeConverter
             continue;
           }
 
-          //SHOULD ALWAYS BE LAST
+          //! SHOULD ALWAYS BE LAST
           var expr = node as atSyntax.ExpressionSyntax;
           if (expr != null)
           {
@@ -102,13 +122,21 @@ class SyntaxTreeConverter
     csSyntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
     {
         var id = expr as atSyntax.NameSyntax;
-        if (id != null) return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
+        if (id != null) 
+            return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
         throw new NotImplementedException(expr.GetType().ToString());
     }
 
     csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
     {
+        var nsDecl = d as atSyntax.NamespaceDeclarationSyntax;
+        if (nsDecl != null)
+        {
+            var csharpNs = NamespaceDeclarationSyntax(nsDecl);
+            return csharpNs;
+        }
+
         var classDecl = d as atSyntax.TypeDeclarationSyntax;
         if (classDecl != null)
         { 
@@ -177,16 +205,39 @@ class SyntaxTreeConverter
                             ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
                             : cs.SyntaxFactory.ParseTypeName("System.Object");
         var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
-                                            .AddModifiers(cs.SyntaxFactory.ParseToken("public"))
-                                            .AddBodyStatements(cs.SyntaxFactory.ParseStatement("return null;"));
+                                            .AddModifiers(ParseToken("public"))
+                                            .AddBodyStatements(ParseStatement("return null;"));
                             
 
         return csMethod;
     }
 
+    csSyntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
+    {
+        var nsId = nsDecl.Identifier;
+        var csId = csIdentifer(nsId);         
+        var members    = new List<csSyntax.MemberDeclarationSyntax>();
+        var statements = new List<csSyntax.StatementSyntax>();
+
+       processNodes(nsDecl.Members, members, statements);
+
+       //class _ { <fields> static int Main() { <statements>; return 0; } }
+       var defaultClass = ClassDeclaration(nsId.Text).WithModifiers(TokenList(Token(PartialKeyword)))
+                                  .AddMembers(members.OfType<FieldDeclarationSyntax>().ToArray())
+                                  .AddMembers(members.OfType<csSyntax.MethodDeclarationSyntax>().ToArray())
+                                  .AddMembers(MethodDeclaration(PredefinedType(Token(VoidKeyword)),"Init")
+                                                .AddModifiers(Token(InternalKeyword),Token(StaticKeyword))
+                                                .AddBodyStatements(statements.ToArray()));
+                                                         
+        var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
+                                         .AddMembers(defaultClass)
+                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
+        
+        return csNs;
+    }
+
     SyntaxToken csIdentifer(AtToken classId) => cs.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));       
     SyntaxTriviaList lTrivia(AtToken token)  => cs.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.leadingTrivia.Select(_=>_.FullText)));
     SyntaxTriviaList tTrivia(AtToken token)  => cs.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.trailingTrivia.Select(_=>_.FullText)));
-
 }
 }

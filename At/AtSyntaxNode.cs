@@ -22,7 +22,7 @@ public abstract class AtSyntaxNode
 
         public AtSyntaxNode(AtToken[] atToken)
         {
-            this.atToken = atToken;
+            this.atTokens = atToken;
         }
 
         public AtSyntaxNode Parent {get; internal set;}
@@ -43,6 +43,7 @@ public abstract class AtSyntaxNode
         }
     }
 
+    /// <summary>Includes trivia</summary>
     public virtual string FullText
     {
         get
@@ -53,9 +54,10 @@ public abstract class AtSyntaxNode
             return _text;
         }
     } string _text;
-        private AtToken[] atToken;
 
-        public virtual string Text
+    AtToken[] atTokens;
+
+    public virtual string Text
     {
         get
         {
@@ -83,12 +85,14 @@ public abstract class AtSyntaxNode
         return FullText;
     }
 
-    IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> filter)
+    private IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> filter)
     {
-        foreach(var node in parent?.nodes.Where(_=>    (_!=null) 
-                                                    && (includeTokens || !_.IsToken) 
-                                                    && (filter==null  || filter(_))))
-        {
+        foreach(var node in parent?.nodes.Where
+        (_=>   
+               (_!=null) 
+            && (includeTokens || !_.IsToken) 
+            && (filter==null  || filter(_)))) {
+
             yield return node;
 
             foreach(var descendant in nodesRecursive(node,includeTokens, filter))

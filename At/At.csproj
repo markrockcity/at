@@ -112,6 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AtCompilation.cs" />
+    <Compile Include="Exceptions.cs" />
     <Compile Include="AtSourceText.cs" />
     <Compile Include="AtSyntaxNode.cs" />
     <Compile Include="AtSyntaxList.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
     <Compile Include="Syntax\MethodDeclarationSyntax.cs" />
+    <Compile Include="Syntax\NamespaceDeclarationSyntax.cs" />
     <Compile Include="Syntax\TypeDeclarationSyntax.cs" />
     <Compile Include="SyntaxAndDeclarationManager.cs" />
     <Compile Include="SyntaxTreeConverter.cs" />

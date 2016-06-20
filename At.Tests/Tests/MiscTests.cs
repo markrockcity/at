@@ -12,7 +12,8 @@ namespace At.Tests
 [TestClass] public class MiscTests : Test
 {
     //Compile-String-To-Assembly Test
-    [TestMethod] public void CompileStringToAssemblyTest()
+    [TestMethod] 
+    public void CompileStringToAssemblyTest()
     {
         var className1 = TestData.Identifier(0);
         var baseClass1 = TestData.Identifier(1);
@@ -21,13 +22,18 @@ namespace At.Tests
         var variableName2 = TestData.Identifier(4);
         var className3 = TestData.Identifier(5);
         var functionName1 = TestData.Identifier(6);
+        var ns = TestData.Identifier(7);
 
         var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<>; @G() }}\r\n"+ 
                     $"@{baseClass1}<T, U>;\r\n"+
                     $"@{className2}<>;"+
                     $"@{variableName1} : {className1}<{className2},{className2}>;"+
-                    $"@{functionName1}()";
+                    $"@{functionName1}()"+
+                    $"@{ns} : namespace {{@{functionName1}(); @{@className1}<> }}"+
+                    "@ns1 : namespace  {@f(); @variable : y; @y<>; @class<>  : y {@P<>;@G()}}"
+                    ;
         var output = AtProgram.compileStringToAssembly(input);
+
 
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
 
@@ -45,7 +51,8 @@ namespace At.Tests
     }
 
     //Method Test
-    [TestMethod] public void MethodTest()
+    [TestMethod] 
+    public void MethodTest()
     {
         var id = TestData.Identifier();
         var input = $"@{id}();";
@@ -57,7 +64,8 @@ namespace At.Tests
     }
 
     //Lexer Test
-    [TestMethod] public void LexerTest()
+    [TestMethod] 
+    public void LexerTest()
     {
         var lexer  = new AtLexer(new AtSourceText("<>"));
         var tokens = lexer.Lex().ToList();
@@ -66,7 +74,8 @@ namespace At.Tests
     }
 
     //Parse Text Test #1
-    [TestMethod] public void ParseTextTest1()
+    [TestMethod] 
+    public void ParseTextTest1()
     {
         var className = TestData.Identifier(0);
         var baseClass = TestData.Identifier(1);
@@ -82,18 +91,20 @@ namespace At.Tests
 
     
     //Parse Text Test #2 
-    [TestMethod] public void ParseTextTest2()
+    [TestMethod] 
+    public void ParseTextTest2()
     {
-        var input = "@class<> : y<> {@P<>}";
+        var input = "@ns : namespace {@f(); @class<> : y<> {@P<>} }";
         var tree = AtSyntaxTree.ParseText(input);
         var root = tree.GetRoot();
         assert_not_null(()=>root);
-        verifyOutput<atSyntax.TypeDeclarationSyntax>(input,tree,"class");
+        verifyOutput<atSyntax.NamespaceDeclarationSyntax>(input,tree,"ns");
     }
 
         
     //Syntax Tree Converter Test
-    [TestMethod] public void SyntaxTreeConverterTest()
+    [TestMethod] 
+    public void SyntaxTreeConverterTest()
     {
        
         var className = TestData.Identifier(0);
@@ -143,6 +154,7 @@ namespace At.Tests
         $"@{className}<T,U> : {baseClass};",
         $"@{className}<T,U> : {baseClass}<T>",
         $"@{className}<T,U> : {baseClass}<T>;",
+        $"@ns : namespace {{@{className}<T,U> : {baseClass}<T>;}}",
     };       
     IEnumerable<string> variableInputs(string id, string className) => new[]
     {
@@ -177,7 +189,7 @@ namespace At.Tests
         var root = tree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
-        var declaration = (T) root.DescendantNodes().First();
+        var declaration = (T) root.DescendantNodes().OfType<T>().First();
         assert_equals(()=>id, ()=>declaration.Identifier.Text);
 
         return declaration;

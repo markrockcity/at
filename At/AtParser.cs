@@ -112,11 +112,12 @@ public class AtParser : IDisposable
         var nodes = new List<AtSyntaxNode>();
         var atSymbol = consumeToken(AtSymbol);
         var tc = consumeToken(TokenCluster);
+        var isNamespace = false;
         var isClass = false;
         var isMethod = false;       
 
         nodes.Add(atSymbol);
-        nodes.Add(tc);
+        nodes.Add(tc);        
   
         //<[...]>
         AtToken lessThan = null;
@@ -174,6 +175,8 @@ public class AtParser : IDisposable
             else
             {
                 type = name();
+                if (type.Text == "namespace")
+                    isNamespace = true;
                 nodes.Add(colon);
                 nodes.Add(type);
             }
@@ -181,7 +184,7 @@ public class AtParser : IDisposable
 
             
         //";" | "{...}"
-        var members = new List<DeclarationSyntax>();
+        members:  var members = new List<DeclarationSyntax>();
         if (isCurrent(SemiColon))
         {                
             nodes.Add(consumeToken(SemiColon));
@@ -211,6 +214,9 @@ public class AtParser : IDisposable
         if (isClass)
             return SyntaxFactory.TypeDeclaration(atSymbol,tc,typeParams,baseList,members,nodes);
 
+        if (isNamespace)
+            return SyntaxFactory.NamespaceDeclaration(atSymbol,tc,members,nodes);
+
         //TODO: method decl, property decl, variable/field decl (= vs. <-)
 
 
@@ -223,7 +229,6 @@ public class AtParser : IDisposable
 
         if (isMethod)
             return SyntaxFactory.MethodDeclaration(atSymbol,tc, methodParams, returnType: null, nodes: nodes);
-        
 
         return SyntaxFactory.VariableDeclaration(atSymbol, tc,type, value: null,nodes:nodes);
 

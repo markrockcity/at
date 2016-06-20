@@ -33,7 +33,7 @@ public class AtProgram
             }
             else
             {
-                throw new Exception(result.Diagnostics[0].GetMessage());
+                throw new CompilationException(result);
             }
         }
 
