@@ -81,9 +81,9 @@ namespace At.Tests
      var x = f();
      var y = g();
 
-     var _x = expected.Body is ConstantExpression || expected.Body.NodeType == ExpressionType.MemberAccess ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ({x})";
-     var _y = actual.Body is ConstantExpression || actual.Body.NodeType == ExpressionType.MemberAccess ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ({y})";
-     Write($"assert EQUAL: {_x} == {_y}");
+     var _x = expected.Body is ConstantExpression || expected.Body.NodeType == ExpressionType.MemberAccess ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ⩵ «{x}»";
+     var _y = actual.Body is ConstantExpression || actual.Body.NodeType == ExpressionType.MemberAccess ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ⩵ «{y}»";
+     Write($"assert EQUAL: ({_x}) == ({_y})");
 
      if (format == null)
         Assert.AreEqual(x,y);
@@ -237,19 +237,37 @@ namespace At.Tests
     //objStr()
     string objStr(object o)
     {
+        if (o == null)
+            return "<null>";
+
         var e = o as IEnumerable;
-        if (e != null)
+        if (e != null && !(o is string))
             return "["+string.Join(", ",e.Cast<object>().Select(objStr))+"]";
-        
-        return o.ToString();
+
+        var t = o.GetType();
+
+        return    (t == typeof(string)) 
+                    ? $"\"{o}\""
+
+                : (t == typeof(int))
+                    ? o.ToString()
+
+                : (t.Name.Contains("DisplayClass")) 
+                    ? ""
+
+                : (t.Name.StartsWith("Func`"))
+                    ? "<func>" 
+
+                : o.ToString()+$" ({t})";
     }
 
 
 
     //exprString() 
-        string exprStr(Expression e)
+    string exprStr(Expression e)
     {
-        if (e==null) return "<null expression>";
+        if (e==null) 
+            return "<null expression>";
 
         switch(e.NodeType)
         {
@@ -266,13 +284,16 @@ namespace At.Tests
                 var mce = (MethodCallExpression) e;
                 var m   = mce.Method;
 
-                return   (m.Name=="get_Item") ? 
-                            exprStr(mce.Object)+"."+"["+exprStr(mce.Arguments[0])+"]" : 
-                         (m.DeclaringType==typeof(Enumerable)) ?
-                            $"{exprStr(mce.Arguments[0])}.{mce.Method.Name}({string.Join(",",mce.Arguments.Skip(1).Select(exprStr))})" :
-                         (m.IsStatic) 
+                return    (m.Name=="get_Item") 
+                            ? exprStr(mce.Object)+"."+"["+exprStr(mce.Arguments[0])+"]" 
+                            
+                        : (m.DeclaringType==typeof(Enumerable)) 
+                            ? $"{exprStr(mce.Arguments[0])}.{mce.Method.Name}({string.Join(",",mce.Arguments.Skip(1).Select(exprStr))})" 
+
+                        : (m.IsStatic) 
                             ? m.DeclaringType.Name 
-                            : exprStr(mce.Object)+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
+                        
+                        : exprStr(mce.Object)+"."+m.Name+"("+string.Join(",",mce.Arguments.Select(exprStr))+")";
         
             }
 
@@ -280,13 +301,7 @@ namespace At.Tests
             case Constant: 
             {
                 var ce = (ConstantExpression) e;
-                var t  = ce.Value.GetType();
-                var v  = ce.Value;
-
-                return    (t==typeof(int))                  ? v.ToString()
-                        : (t==typeof(string))               ? "\"" + v.ToString().Replace("\"","\\\"") + "\""
-                        : (t.Name.Contains("DisplayClass")) ? ""
-                        : $"[{ce.Type} {ce.Value.ToString()}]";
+                return objStr(ce.Value);
             }
 
             //Convert
@@ -298,6 +313,13 @@ namespace At.Tests
 
             //Equal (==)
             case Equal: return binaryStr(e,"==");
+
+            //Invoke()
+            case Invoke: 
+            {
+                var ie = (InvocationExpression) e;
+                return $"{exprStr(ie.Expression)}({string.Join(",",ie.Arguments.Select(exprStr))})";
+            }
             
 
             //Lambda
@@ -317,14 +339,14 @@ namespace At.Tests
                 var m   = mae.Member;
                 var o   = exprStr(mae.Expression);
 
-                return (m.Name=="expected" || m.Name=="actual") ?
-                            getValue(mae).ToString() :
-                            
-                       (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
-                        || o.Length == 0) ? 
-                           (mae.Expression.NodeType!= Parameter? $"{m.Name} ({getValue(mae)})" : m.Name) : 
+                return (m.Name=="expected" || m.Name=="actual") 
+                            ? objStr(getValue(mae)) 
 
-                       (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ({getValue(mae)})" : $"{o}.{m.Name}");
+                      : (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
+                         || o.Length == 0) 
+                            ? (mae.Expression.NodeType!= Parameter? $"{m.Name} ⩵ «{objStr(getValue(mae))}»" : m.Name) 
+
+                      : (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ⩵ «{objStr(getValue(mae))}»" : $"{o}.{m.Name}");
             }
 
             //Parameter
