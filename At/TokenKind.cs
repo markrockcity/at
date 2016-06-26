@@ -18,6 +18,7 @@ public enum TokenKind
     SemiColon,
     LessThan,
     GreaterThan,
+    NumericLiteral,
     StringLiteral,
     Colon,
     LeftBrace,
@@ -27,6 +28,7 @@ public enum TokenKind
     Dot,
     DotDot,
     Ellipsis,
-    Comma
+    Comma,
+        
 }
 }

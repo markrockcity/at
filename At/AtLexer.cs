@@ -53,8 +53,8 @@ public class AtLexer : IDisposable
         yield return new AtToken(StartOfFile,0);
 
         AtToken _token = null;
-        while (!END())
-        {
+        while (!END() || _token != null)
+        {        
             var c = lookAhead(1);
 
             if (c=='\0') 
@@ -79,11 +79,17 @@ public class AtLexer : IDisposable
 
             if (_token == null)
             {
-                _token =      singleCharTokens.ContainsKey(c) ? token(singleCharTokens[c],chars)
+                _token =      singleCharTokens.ContainsKey(c) 
+                                ? token(singleCharTokens[c],chars)
 
-                            : c == '\"'                       ? stringLiteral(c)
+                            : c == '\"'                       
+                                ? stringLiteral(c)
 
-                            : c == '.'                        ? dot()
+                            : c == '.'                        
+                                ? dot()
+
+                            : char.IsDigit(c) || (c=='+'||c=='-') && char.IsDigit(lookAhead(2))
+                                ? numericLiteral()
 
                             : token( TokenKind.TokenCluster,chars
                                     ,b=>!isWhiteSpace(b) && !singleCharTokens.ContainsKey(b));
@@ -113,6 +119,32 @@ public class AtLexer : IDisposable
             this.tokenizing = false;
             this.chars = null;
         }
+    }
+
+    //# numeric literal
+    AtToken numericLiteral()
+    {
+        Debug.Assert(char.IsDigit(lookAhead(1)) || isNext('+') || isNext('-'));
+        var p = position()+1;
+        bool dot = false;
+        var sb = new StringBuilder();
+
+        if (isNext('+') || isNext('-'))
+        {
+            moveNext();
+            sb.Append(current());
+        }            
+
+        while (!END() && (char.IsDigit(lookAhead(1)) || !dot && isNext('.')))
+        {            
+            if (isNext('.'))
+                dot = true;         
+
+            moveNext();
+            sb.Append(current());
+        }
+
+        return new AtToken(TokenKind.NumericLiteral,p,sb.ToString());
     }
 
     // . | .. | ...
@@ -160,7 +192,7 @@ public class AtLexer : IDisposable
            }
            else
            {
-                chars.MoveNext();
+                moveNext();
                 sb.Append(current());           
            }
         }
@@ -220,12 +252,15 @@ public class AtLexer : IDisposable
         return new AtToken(kind,pos,text);
     }
 
-    bool isNext(char c, int i = 1) => chars.LookAhead(i)==c; 
+    //char consume()                 => chars.Consume();
+    bool isNext(char c, int k = 1) => chars.LookAhead(k)==c; 
     bool moveNext()                => chars.MoveNext();
     char lookAhead(int k)          => chars.LookAhead(k);
     char current()                 => chars.Current;
     bool END()                     => chars.End;
-    int  position()                => chars.Position;
+    int  position()                => chars.Position+1;
+
+    
 
 }
 }
