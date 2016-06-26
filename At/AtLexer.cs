@@ -173,7 +173,7 @@ public class AtLexer : IDisposable
     static AtToken lineBreak(Buffer<char> buffer, char c)
     {
         buffer.MoveNext();
-        var p = buffer.Position;
+        var p = buffer.Position+1;
 
         if (c == '\r' && buffer.LookAhead(1) == '\n')
         {
@@ -208,7 +208,7 @@ public class AtLexer : IDisposable
         if (predicate==null) predicate = c => false;     
        
         var sb  = new StringBuilder().Append(buffer.Current);
-        var pos = buffer.Position;
+        var pos = buffer.Position+1;
         
         while (!buffer.End && buffer.LookAhead(1)!='\0' && predicate(buffer.LookAhead(1))) 
         {
