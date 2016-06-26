@@ -8,7 +8,7 @@ namespace At
 {
 public enum TokenKind
 {
-    Any = 0,
+    None = 0,
     StartOfFile,
     EndOfFile,
     EndOfLine,

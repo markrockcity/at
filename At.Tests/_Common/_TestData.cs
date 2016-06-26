@@ -9,19 +9,34 @@ namespace At.Tests
 {
 public partial class TestData : IDisposable
 {    
-    const string testUsername = "test";
-
-    Test test;
-
     static bool initialized;
 
+    readonly string testUsername = "test";
+    readonly Test test;
+
     //cctor
-    static TestData()
+    static @TestData()
     {
         Init();
     }
 
-    public string Identifier(int? i = null) 
+    //ctor
+    public @TestData(Test t) 
+    {
+        this.test = t;
+
+    }
+
+    internal static void @Init()
+    {
+        if (initialized) return;
+
+
+
+        initialized = true;
+    }
+
+    public string @Identifier(int? i = null) 
     {
         const int ascii_A = 65;
 
@@ -33,22 +48,7 @@ public partial class TestData : IDisposable
         
     }
 
-    static internal void Init()
-    {
-        if (initialized) return;
-
-
-
-        initialized = true;
-    }
   
-    //ctor
-    public TestData(Test t) 
-    {
-        this.test = t;
-
-    }
-
 
     //SubmitChanges
     public void SubmitChanges() 
