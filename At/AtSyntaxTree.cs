@@ -8,8 +8,8 @@ namespace At
 //SyntaxTree + ParsedSyntaxTree
 public class AtSyntaxTree
 {
-    CompilationUnitSyntax compilationUnit;
-    AtSourceText text;
+    readonly CompilationUnitSyntax compilationUnit;
+    readonly AtSourceText text;
 
     public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
     {
@@ -17,11 +17,10 @@ public class AtSyntaxTree
         this.compilationUnit = compilationUnit;
     }
 
-
     //GetDiagnostics()
     public IEnumerable<AtDiagnostic> GetDiagnostics()
     {
-       return GetRoot().DescendantNodes(null,true).OfType<ErrorNode>().SelectMany(_=>_.Diagnostics);
+       return this.compilationUnit.GetDiagnostics().Concat(this.compilationUnit.DescendantNodes(null,true).OfType<ErrorNode>().SelectMany(_=>_.Diagnostics));
     }
 
     //GetRoot()
@@ -33,11 +32,16 @@ public class AtSyntaxTree
     //ParseText(string)
     public static AtSyntaxTree ParseText(string text)
     {
-         return ParseText(AtSourceText.From(text));
+         return parseText(AtSourceText.From(text));
     }
 
-    //ParseText(AtSourceText)
-    private static AtSyntaxTree ParseText(AtSourceText text)
+    public override string ToString()
+    {
+        return $"[{compilationUnit.ToString()}]";
+    }
+
+    //parseText(AtSourceText)
+    static AtSyntaxTree parseText(AtSourceText text)
     {
         using (var lexer  = new AtLexer(text))
         using (var parser = new AtParser(lexer))
