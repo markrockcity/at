@@ -23,6 +23,13 @@ class Buffer<T> : IEnumerator<T>
     public bool End      {get; private set; }   
     public int  Position {get {return position;}}
 
+    public T Consume()
+    {
+        var c = current;
+        MoveNext();
+        return c;
+    }
+
     public bool MoveNext()
     {
        if (buffer.Count>0) 
