@@ -24,7 +24,8 @@ namespace At.Tests
         var functionName1 = TestData.Identifier(6);
         var ns = TestData.Identifier(7);
 
-        var input = $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<>; @G() }}\r\n"+ 
+        var input = "#import System; "+
+                    $"@{className1}< T , U > : {baseClass1}<{className2}, T>{{ \r\n @P<>; @G() }}\r\n"+ 
                     $"@{baseClass1}<T, U>;\r\n"+
                     $"@{className2}<>;"+
                     $"@{variableName1} : {className1}<{className2},{className2}>;"+
@@ -34,13 +35,12 @@ namespace At.Tests
                     ;
         var output = AtProgram.compileStringToAssembly(input);
 
-
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
 
         var class1 = output.GetType(className1+"`2");
 
         assert_not_null(()=>class1.GetNestedType("P"),ifFail:()=>class1.GetNestedTypes());
-        assert_not_null(()=>class1.GetMethod("G"),ifFail:()=>class1.GetMethods());
+        assert_not_null(()=>class1.GetMethod("G"),ifFail:()=>class1.GetMethods());    
 
         var _ =  output.GetType(SyntaxTreeConverter.defaultClassName);
         var variable = _.GetField(variableName1);
@@ -49,6 +49,27 @@ namespace At.Tests
         assert_not_null(()=>_.GetMethod(functionName1),()=>_.GetMethods());
         assert_equals(()=>$"{className1}`2",()=>variable.FieldType.Name);
     }
+
+    //ImportTest
+    [TestMethod]
+    public void ImportDirectiveTest()
+    {
+        var nsid  = TestData.Identifier();
+        var inputs = new[] 
+        { 
+            $"#import {nsid}",
+            $"#import {nsid};",
+        };
+
+        foreach(var input in inputs)
+        {
+            var tree  = parseTree(input);
+            verifyOutput<atSyntax.DirectiveSyntax>(input,tree,nsid,_=>_.Name.Identifier.Text);
+        }
+    } 
+    string identifier(int? i = null)     => TestData.Identifier();
+    AtSyntaxTree parseTree(string input) => AtSyntaxTree.ParseText(input);
+
 
     //Method Test
     [TestMethod] 
@@ -95,8 +116,8 @@ namespace At.Tests
     public void ParseTextTest2()
     {
         var input = "@ns : namespace {@f(); @class<> : y<> {@P<>} }";
-        var tree = AtSyntaxTree.ParseText(input);
-        var root = tree.GetRoot();
+        var tree  = AtSyntaxTree.ParseText(input);
+        var root  = tree.GetRoot();
         assert_not_null(()=>root);
         verifyOutput<atSyntax.NamespaceDeclarationSyntax>(input,tree,"ns");
     }
@@ -106,7 +127,6 @@ namespace At.Tests
     [TestMethod] 
     public void SyntaxTreeConverterTest()
     {
-       
         var className = TestData.Identifier(0);
         var baseClass = TestData.Identifier(1);
 
@@ -155,6 +175,7 @@ namespace At.Tests
         $"@{className}<T,U> : {baseClass}<T>",
         $"@{className}<T,U> : {baseClass}<T>;",
         $"@ns : namespace {{@{className}<T,U> : {baseClass}<T>;}}",
+        $"#import System; @{className}<>",
     };       
     IEnumerable<string> variableInputs(string id, string className) => new[]
     {
@@ -179,20 +200,26 @@ namespace At.Tests
             assert_true(()=>types.Any(_=>_.Name==className&&_.IsClass), ()=>types);
     }
 
-    //verify output (syntax tree)
+    //verify output (syntax tree - declaration)
     T verifyOutput<T>(string input, AtSyntaxTree tree, string id) where T : atSyntax.DeclarationSyntax
+    {
+        return verifyOutput<T>(input,tree,id,decl=>decl.Identifier.Text);
+    }
+
+    //verify output (syntax tree)
+    T verifyOutput<T>(string input, AtSyntaxTree tree, string expectedId, Func<T,string> actualId)  where T : AtSyntaxNode
     {
         assert_not_null(()=>tree);
 
-        assert_equals(()=>0,()=>tree.GetDiagnostics().Count());
+        assert_equals(()=>0,()=>tree.GetDiagnostics().Count(),"Syntax tree contains diagnostics: {0}",tree.GetDiagnostics().FirstOrDefault()?.Message);
 
         var root = tree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
-        var declaration = (T) root.DescendantNodes().OfType<T>().First();
-        assert_equals(()=>id, ()=>declaration.Identifier.Text);
+        var node = root.DescendantNodes().OfType<T>().First();
+        assert_equals(()=>expectedId, ()=>actualId(node));
 
-        return declaration;
+        return node;
     }
 
     //verify output (C# tree)
@@ -208,6 +235,8 @@ namespace At.Tests
                         .OfType<T>()
                         .Single(_=>getId(_)==id);
         assert_not_null(any);
+
+        Write(root);
         
         if (id2!=null && getId2!=null)
         {

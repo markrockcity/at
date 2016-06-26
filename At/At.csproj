@@ -119,6 +119,7 @@
     <Compile Include="AtSyntaxTrivia.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
+    <Compile Include="Syntax\DirectiveSyntax.cs" />
     <Compile Include="Syntax\MethodDeclarationSyntax.cs" />
     <Compile Include="Syntax\NamespaceDeclarationSyntax.cs" />
     <Compile Include="Syntax\TypeDeclarationSyntax.cs" />

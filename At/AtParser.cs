@@ -89,7 +89,10 @@ public class AtParser : IDisposable
     ExpressionSyntax expression()
     {
         if (isCurrent(AtSymbol)) 
-            return declarationExpression();            
+            return declarationExpression();        
+            
+        if (isCurrent(TokenCluster) && current().Text[0]=='#')
+            return directiveExpression();
 
         var x = current();
 
@@ -97,6 +100,23 @@ public class AtParser : IDisposable
 
         /*return x.Kind==TokenKind.TokenCluster ? new ExpressionSyntax("id",x)
                                                 : new ExpressionSyntax("string literal",x);*/
+    }
+
+    //#import namespace
+    private DirectiveSyntax directiveExpression()
+    {
+        var nodes = new List<AtSyntaxNode>();
+        var directive = consumeToken(TokenCluster); nodes.Add(directive);
+        var name = this.name(); nodes.Add(name);
+
+        AtToken semi = null;
+        if (isCurrent(SemiColon))
+        {
+            semi = consumeToken(SemiColon); 
+            nodes.Add(semi);
+        }
+
+        return SyntaxFactory.Directive(directive,name,semi,nodes);
     }
 
     //Expression Cluster: "a { ... } b() { ... } ;"
@@ -321,7 +341,7 @@ public class AtParser : IDisposable
     {
         var list = new List<AtSyntaxNode>();
     
-        if (!isCurrent(endDelimiters))
+        if (!isCurrentAny(endDelimiters))
         {
             if (isCurrent(separator))
             {
@@ -331,7 +351,7 @@ public class AtParser : IDisposable
 
             while(true)
             {
-                if (isCurrent(endDelimiters))
+                if (isCurrentAny(endDelimiters))
                     break;  
         
                 list.Add(parseExpr());
@@ -365,10 +385,20 @@ public class AtParser : IDisposable
 
     bool isNext(TokenKind kind, int k = 1)
     {
-        return lookAhead(k).Kind==kind;
+        return lookAhead(k)?.Kind==kind;
     }
 
-    bool isCurrent(params TokenKind[] tokenKinds)
+    bool isCurrent(TokenKind tokenKind)
+    {
+        return tokens.Current?.Kind==tokenKind;
+    }
+
+    bool isCurrentAny(TokenKind tokenKind, params TokenKind[] tokenKinds)
+    {
+        return tokens.Current?.Kind==tokenKind || tokenKinds.Any(_=>tokens.Current?.Kind==_);
+    }
+
+    bool isCurrentAny(params TokenKind[] tokenKinds)
     {
         return tokenKinds.Any(_=>tokens.Current?.Kind==_);
     }

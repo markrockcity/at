@@ -7,7 +7,7 @@ using System.Linq;
 using At;
 
 
-var x = At.AtSyntaxTree.ParseText("@ns1 : namespace {@f(); @variable : y; @y<>; @class<>  : y {@P<>;@G()}}");
+var x = At.AtSyntaxTree.ParseText("#import System; @ns1 : namespace {@f(); @variable : y; @y<>; @class<>  : y {@P<>;@G()}}");
 var root = x.GetRoot();
 var c = AtCompilation.Create(new[] {x});
 var s = new MemoryStream();

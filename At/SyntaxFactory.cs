@@ -87,6 +87,14 @@ public class SyntaxFactory
         return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,nodes,diagnostics);
     }
 
+    //#directive n[;]
+    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,AtToken semi,List<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        checkNull(directive,nameof(directive));
+        checkNull(n,nameof(n));
+        return new DirectiveSyntax(directive,n,nodes,diagnostics);
+    }
+
     public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));

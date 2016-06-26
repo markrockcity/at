@@ -20,12 +20,12 @@ public abstract class AtSyntaxNode
             this.diagnostics = this.diagnostics.AddRange(diagnostics.Where(_=>_!=null));
     }
 
-        public AtSyntaxNode(AtToken[] atToken)
-        {
-            this.atTokens = atToken;
-        }
+    public AtSyntaxNode(AtToken[] atToken)
+    {
+        this.atTokens = atToken;
+    }
 
-        public AtSyntaxNode Parent {get; internal set;}
+    public AtSyntaxNode Parent {get; internal set;}
 
     public virtual bool IsToken
     {

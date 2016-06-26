@@ -47,10 +47,11 @@ class SyntaxTreeConverter
        }
     
        var csharpSyntax = CompilationUnit();
+       var usings       = new List<csSyntax.UsingDirectiveSyntax>();
        var members      = new List<csSyntax.MemberDeclarationSyntax>();
        var statements   = new List<csSyntax.StatementSyntax>();
 
-       processNodes(atRoot.ChildNodes(), members, statements);
+       processNodes(atRoot.ChildNodes(), usings, members, statements);
 
        //class _ { <fields> static int Main() { <statements>; return 0; } }
        defaultClass = defaultClass.AddMembers(members.OfType<FieldDeclarationSyntax>().ToArray())
@@ -75,7 +76,6 @@ class SyntaxTreeConverter
                                                                                     IdentifierName(ns.Name.ToString()),
                                                                                     IdentifierName(cls.Identifier.ToString())),
                                                                                 IdentifierName("Init")))
-
                                                                             )
                                                     ).ToArray()
                                                 )
@@ -83,16 +83,25 @@ class SyntaxTreeConverter
                                                 //return 0
                                                 .AddBodyStatements(new StatementSyntax[]{ReturnStatement(LiteralExpression(NumericLiteralExpression,ParseToken("0")))}));
                                                          
-       csharpSyntax = csharpSyntax.AddMembers(defaultClass)
+       csharpSyntax = csharpSyntax.AddUsings(usings.ToArray())
+                                  .AddMembers(defaultClass)
                                   .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
        return csharpSyntax;
     }
 
     //# processNodes()
-    void processNodes(IEnumerable<AtSyntaxNode> nodes,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
+    void processNodes(IEnumerable<AtSyntaxNode> nodes,List<UsingDirectiveSyntax> usings,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
     {
        foreach(var node in nodes)
        {
+          var directive = node as atSyntax.DirectiveSyntax;
+          if (directive?.Directive.Text==DirectiveSyntax.importDirective)
+          {
+             var usingDir = cs.SyntaxFactory.UsingDirective(NameSyntax(directive.Name));
+             usings.Add(usingDir);
+             continue;
+          }
+       
           var d = node as DeclarationSyntax;
           if (d != null)
           {
@@ -125,7 +134,7 @@ class SyntaxTreeConverter
         if (id != null) 
             return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
-        throw new NotImplementedException(expr.GetType().ToString());
+        throw new NotImplementedException($"{expr.GetType()}: {expr}");
     }
 
     csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
@@ -161,7 +170,12 @@ class SyntaxTreeConverter
         throw new NotSupportedException(d.GetType().ToString());
     }
 
-    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(At.Syntax.TypeDeclarationSyntax classDecl)
+    csSyntax.NameSyntax NameSyntax(atSyntax.NameSyntax atName)
+    {
+        return IdentifierName(atName.Text);
+    }
+
+    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl)
     {
         var classId = classDecl.Identifier;
         var csId = csIdentifer(classId);
@@ -190,7 +204,7 @@ class SyntaxTreeConverter
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
         var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
-        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(cs.SyntaxFactory.ParseTypeName(varDecl.Type?.Text ?? "System.Object"))
+        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
                             .AddVariables(csVarDeclr);
         var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl)
                                                 .AddModifiers(cs.SyntaxFactory.ParseToken("public"),cs.SyntaxFactory.ParseToken("static"));
@@ -203,7 +217,7 @@ class SyntaxTreeConverter
         var methodId = methodDecl.Identifier;
         var returnType = methodDecl.ReturnType != null
                             ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
-                            : cs.SyntaxFactory.ParseTypeName("System.Object");
+                            : PredefinedType(Token(SyntaxKind.ObjectKeyword));
         var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
                                             .AddModifiers(ParseToken("public"))
                                             .AddBodyStatements(ParseStatement("return null;"));
@@ -215,11 +229,12 @@ class SyntaxTreeConverter
     csSyntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
     {
         var nsId = nsDecl.Identifier;
-        var csId = csIdentifer(nsId);         
+        var csId = csIdentifer(nsId);
+        var usings     = new List<csSyntax.UsingDirectiveSyntax>();         
         var members    = new List<csSyntax.MemberDeclarationSyntax>();
         var statements = new List<csSyntax.StatementSyntax>();
 
-       processNodes(nsDecl.Members, members, statements);
+       processNodes(nsDecl.Members, usings, members, statements);
 
        //class _ { <fields> static int Main() { <statements>; return 0; } }
        var defaultClass = ClassDeclaration(nsId.Text).WithModifiers(TokenList(Token(PartialKeyword)))
@@ -230,6 +245,7 @@ class SyntaxTreeConverter
                                                 .AddBodyStatements(statements.ToArray()));
                                                          
         var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
+                                         .AddUsings(usings.ToArray())
                                          .AddMembers(defaultClass)
                                          .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
         
