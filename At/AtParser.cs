@@ -66,11 +66,12 @@ public class AtParser : IDisposable
 
                 case AtSymbol: 
                 case StringLiteral:
+                case NumericLiteral:
                 case TokenCluster: yield return expression(); break;
                             
                 default: 
                     moveNext();
-                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,"char {1}: Unexpected token: '{0}'",token.Text,token.Position); break;
+                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); break;
             }       
         }        
     }
@@ -94,6 +95,9 @@ public class AtParser : IDisposable
         if (isCurrent(TokenCluster) && current().Text[0]=='#')
             return directiveExpression();
 
+        if (isCurrentAny(NumericLiteral,StringLiteral))
+            return literalExpression();
+
         var x = current();
 
         throw new NotImplementedException($"{x.Kind}: {x.Text}");
@@ -102,8 +106,14 @@ public class AtParser : IDisposable
                                                 : new ExpressionSyntax("string literal",x);*/
     }
 
+    LiteralExpressionSyntax literalExpression()
+    {
+        assertCurrentAny(NumericLiteral,StringLiteral);
+        return SyntaxFactory.LiteralExpression(consumeToken());
+    }
+
     //#import namespace
-    private DirectiveSyntax directiveExpression()
+    DirectiveSyntax directiveExpression()
     {
         var nodes = new List<AtSyntaxNode>();
         var directive = consumeToken(TokenCluster); nodes.Add(directive);
@@ -361,12 +371,14 @@ public class AtParser : IDisposable
             }            
         }
 
-        assertCurrent(endDelimiters);
+        assertCurrentAny(endDelimiters);
         return new SeparatedSyntaxList<T>(null,list);
     }
 
 
-    void assertCurrent(params TokenKind[] tokenKinds) => Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
+    void assertCurrent(TokenKind tokenKind) => Debug.Assert(tokens.Current.Kind == tokenKind);
+    void assertCurrentAny(TokenKind tokenKind, params TokenKind[] tokenKinds) => Debug.Assert(tokens.Current.Kind == tokenKind || tokenKinds.Contains(tokens.Current.Kind));
+    void assertCurrentAny(IEnumerable<TokenKind> tokenKinds) => Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
 
     bool skip(params TokenKind[] tokenKinds)
     {
@@ -398,7 +410,7 @@ public class AtParser : IDisposable
         return tokens.Current?.Kind==tokenKind || tokenKinds.Any(_=>tokens.Current?.Kind==_);
     }
 
-    bool isCurrentAny(params TokenKind[] tokenKinds)
+    bool isCurrentAny(IEnumerable<TokenKind> tokenKinds)
     {
         return tokenKinds.Any(_=>tokens.Current?.Kind==_);
     }

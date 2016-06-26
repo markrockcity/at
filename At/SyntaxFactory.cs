@@ -51,6 +51,12 @@ public class SyntaxFactory
         return new BlockSyntax(leftBrace,contents,rightBrace,diagnostics);
     }
 
+    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        checkNull(atToken,nameof(atToken)); 
+        return new LiteralExpressionSyntax(atToken,new[] {atToken},diagnostics);
+    }
+
     public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics = null)
     {
        return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,diagnostics);

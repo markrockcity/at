@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
-
+using atSyntax = At.Syntax;
 
 namespace At.Tests
 {
@@ -10,7 +10,7 @@ public class SyntaxTreeConverterTests : AtTest
 {
     //Syntax Tree Converter Test
     [TestMethod] 
-    public void SyntaxTreeConverterTest()
+    public void MiscSyntaxTreeConverterTest()
     {
         var className = identifier(0);
         var baseClass = identifier(1);
@@ -22,5 +22,8 @@ public class SyntaxTreeConverterTests : AtTest
             verifyOutput<csSyntax.ClassDeclarationSyntax>(cSharpTree,className,_=>_.Identifier.Text);
         }
 
-    }}
+    }
+
+
+}
 }
