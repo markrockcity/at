@@ -2,8 +2,9 @@
 using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using atSyntax = At.Syntax;
 using cs = Microsoft.CodeAnalysis.CSharp;
+using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using atSyntax = At.Syntax;
 
 namespace At.Tests
 {
@@ -49,14 +50,14 @@ public class AtTest : Test
                          Func<T,string> getId,
                          string id2 = null,
                          Func<T,string> getId2 = null) 
-        where T : cs.Syntax.MemberDeclarationSyntax
+        where T : csSyntax.MemberDeclarationSyntax
     {
         var root = csharpTree.GetRoot();
         var any = root.DescendantNodes()
                         .OfType<T>()
                         .Single(_=>getId(_)==id);
         assert_not_null(any);
-
+        
         Write(root);
         
         if (id2!=null && getId2!=null)

@@ -19,7 +19,7 @@ public class SyntaxTreeConverterTests : AtTest
         {
             var tree = AtSyntaxTree.ParseText(input);            
             var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
-            verifyOutput<csSyntax.ClassDeclarationSyntax>(cSharpTree,className,_=>_.Identifier.Text);
+                verifyOutput(cSharpTree,className,(Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax _)=> _.Identifier.Text);
         }
 
     }
