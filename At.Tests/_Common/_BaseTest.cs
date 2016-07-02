@@ -227,6 +227,12 @@ namespace At.Tests
    { 
       TestContext.WriteLine("[{0}] {1}",DateTime.Now, string.Format(f,args));
    }
+
+    //Write()
+    protected internal void Write<T>(Expression<Func<T>> exp)
+    {
+        TestContext.WriteLine($"[{DateTime.Now}] {exprStr(exp.Body)}");
+    }
    
    //Write()
    protected internal void Write(object o)
