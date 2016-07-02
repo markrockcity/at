@@ -5,6 +5,7 @@ using System.Linq;
 using At;
 using At.Syntax;
 using static At.TokenKind;
+//using static At.KnownTokenKind;
 
 namespace At
 {
@@ -13,14 +14,14 @@ public class AtParser : IDisposable
     bool parsing;
 
     readonly AtLexer            lexer;
-    readonly Buffer<AtToken>    tokens;
+    readonly Scanner<AtToken>    tokens;
     readonly List<AtDiagnostic> diagnostics = new List<AtDiagnostic>();
     readonly object             @lock       = new object();
 
-    public AtParser(AtLexer lexer)
+    public AtParser(AtLexer lexer, IEnumerable<char> input)
     {
         this.lexer  = lexer;
-        this.tokens = new Buffer<AtToken>(lexer.Lex());
+        this.tokens = new Scanner<AtToken>(lexer.Lex(input));
     }
 
     //ParseCompilationUnit()
@@ -55,24 +56,35 @@ public class AtParser : IDisposable
         {
             var token = current();
 
-            switch(token.Kind)
+            /*
+            if (token.IsTrivia)
             {
-                case StartOfFile:
-                case EndOfFile  :
-                case Space:
-                case EndOfLine:  
-                    moveNext();
-                    continue; //TODO: #hash-statements, etc.
+                moveNext();
+                continue;
+            }*/
 
-                case AtSymbol: 
-                case StringLiteral:
-                case NumericLiteral:
-                case TokenCluster: yield return expression(); break;
+            switch((KnownTokenKind) token.RawKind)
+            {
+                case KnownTokenKind.StartOfFile:
+                case KnownTokenKind.EndOfFile  :                    
+                //case Space:
+                //case EndOfLine:  
+                    //TODO: #hash-statements, etc.
+                    moveNext();
+                    continue;
+
+                //case AtSymbol: 
+                //case StringLiteral:
+                case KnownTokenKind.NumericLiteral:
+                case KnownTokenKind.TokenCluster: 
+                    yield return expression(); 
+                    break;
                             
                 default: 
                     moveNext();
-                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); break;
-            }       
+                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); 
+                    break;
+            }
         }        
     }
 
@@ -170,15 +182,15 @@ public class AtParser : IDisposable
 
         //(...)
         ListSyntax<ParameterSyntax> methodParams = null;
-        if (isCurrent(LeftParenthesis))
+        if (isCurrent(OpenParenthesis))
         {
-            var leftParen = consumeToken(LeftParenthesis);
+            var leftParen = consumeToken(OpenParenthesis);
 
             SeparatedSyntaxList<ParameterSyntax> methodParamList = null;
-            if(!isCurrent(RightParenthesis))
-                methodParamList = list(TokenKind.Comma,methodParameter,RightParenthesis);
+            if(!isCurrent(CloseParenthesis))
+                methodParamList = list(TokenKind.Comma,methodParameter,CloseParenthesis);
 
-            var rightParen = consumeToken(RightParenthesis);
+            var rightParen = consumeToken(CloseParenthesis);
             methodParams = SyntaxFactory.List<ParameterSyntax>(leftParen,methodParamList,rightParen);
             nodes.Add(methodParams);
             isMethod = true;
@@ -196,7 +208,7 @@ public class AtParser : IDisposable
                 
             if (isClass)
             {
-                var baseTypeList = list(Comma,name,SemiColon,LeftBrace,EndOfFile);
+                var baseTypeList = list(Comma,name,SemiColon,OpenBrace,EndOfFile);
 
                 //TODO: remove colon from list? (PairSyntax<Colon>)
                 baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
@@ -219,13 +231,13 @@ public class AtParser : IDisposable
         {                
             nodes.Add(consumeToken(SemiColon));
         }
-        else if (isCurrent(LeftBrace))
+        else if (isCurrent(OpenBrace))
         {
-            nodes.Add(consumeToken(LeftBrace));
+            nodes.Add(consumeToken(TokenKind.OpenBrace));
 
-            while(!isCurrent(RightBrace))
+            while(!isCurrent(TokenKind.CloseBrace))
             {               
-                if (!isCurrent(AtSymbol))
+                if (!isCurrent(TokenKind.AtSymbol))
                 {
                     nodes.Add(error(diagnostics,DiagnosticIds.UnexpectedToken,consumeToken(),"Expected an '@'."));
                     continue;
@@ -237,7 +249,7 @@ public class AtParser : IDisposable
                 nodes.Add(member);
             }
 
-            nodes.Add(consumeToken(RightBrace)); 
+            nodes.Add(consumeToken(TokenKind.CloseBrace)); 
         }
 
 
@@ -254,8 +266,8 @@ public class AtParser : IDisposable
         //TODO: @<assignmentExpression> (decl (assign (colon-pair newid type) value))
         //TODO: @x : T { P = v, ...}
         //TODO: [(+ | -)]@x;
-        if (isCurrent(SemiColon))
-            nodes.Add(current(SemiColon));        
+        if (isCurrent(TokenKind.SemiColon))
+            nodes.Add(current(TokenKind.SemiColon));        
 
         if (isMethod)
             return SyntaxFactory.MethodDeclaration(atSymbol,tc, methodParams, returnType: null, nodes: nodes);
@@ -301,16 +313,16 @@ public class AtParser : IDisposable
     //{Curly Block}
     private BlockSyntax curlyBlock()
     {
-        var leftBrace = consumeToken(LeftBrace);
+        var leftBrace = consumeToken(OpenBrace);
         var p = position();
 
         var contents = new List<ExpressionSyntax>();
-        while(!isCurrent(RightBrace))
+        while(!isCurrent(CloseBrace))
         {
             contents.Add(expression());
         }
 
-        return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(RightBrace));
+        return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(CloseBrace));
     }
 
     ParameterSyntax methodParameter()

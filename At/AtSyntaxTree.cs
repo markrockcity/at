@@ -32,7 +32,7 @@ public class AtSyntaxTree
     //ParseText(string)
     public static AtSyntaxTree ParseText(string text)
     {
-         return parseText(AtSourceText.From(text));
+         return parseText(text);
     }
 
     public override string ToString()
@@ -41,10 +41,10 @@ public class AtSyntaxTree
     }
 
     //parseText(AtSourceText)
-    static AtSyntaxTree parseText(AtSourceText text)
+    static AtSyntaxTree parseText(string text)
     {
-        using (var lexer  = new AtLexer(text))
-        using (var parser = new AtParser(lexer))
+        using (var lexer  = new AtLexer())
+        using (var parser = new AtParser(lexer,text))
         {
             var compilationUnit = parser.ParseCompilationUnit();
             var tree = new AtSyntaxTree(text, compilationUnit);

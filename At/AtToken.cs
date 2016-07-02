@@ -1,22 +1,28 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace At
 {
-    //SyntaxToken 
-    public class AtToken : AtSyntaxNode
+//SyntaxToken 
+public class AtToken : AtSyntaxNode
 {
     TokenKind _kind;
     
-    internal AtSyntaxList<AtToken> leadingTrivia  = AtSyntaxList<AtToken>.Empty;
-    internal AtSyntaxList<AtToken> trailingTrivia = AtSyntaxList<AtToken>.Empty;
+    internal AtSyntaxList<AtSyntaxTrivia> leadingTrivia  = AtSyntaxList<AtSyntaxTrivia>.Empty;
+    internal AtSyntaxList<AtSyntaxTrivia> trailingTrivia = AtSyntaxList<AtSyntaxTrivia>.Empty;
 
+    internal AtToken
+    (
+        TokenKind kind, 
+        int       position,
+        string    text=null, 
+        IEnumerable<AtDiagnostic> diagnostics = null) 
 
-    internal AtToken(TokenKind kind, int position, string text=null, IEnumerable<AtDiagnostic> diagnostics = null) :
-        base(new AtSyntaxNode[0],diagnostics)
-    {
-        this.Text = text;
+        : base(new AtSyntaxNode[0],diagnostics){
+
+        this.Text     = text;
         this.Position = position;
-        this._kind = kind;
+        this._kind    = kind;
     }
 
     public override bool IsToken
@@ -28,6 +34,7 @@ namespace At
     }
 
     public TokenKind Kind => _kind;
+    public int RawKind => _kind.value;
 
     public override int Position
     {
@@ -54,8 +61,8 @@ namespace At
     public override string ToString()
     {
         return 
-            _kind==TokenKind.EndOfFile ? "<EOF>" :
-            _kind==TokenKind.StartOfFile ? "<StartOfFile>" :
+            Kind==TokenKind.EndOfFile ? "<EOF>" :
+            Kind==TokenKind.StartOfFile ? "<StartOfFile>" :
             Text;
     }
 }

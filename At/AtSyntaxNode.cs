@@ -27,6 +27,14 @@ public abstract class AtSyntaxNode
 
     public AtSyntaxNode Parent {get; internal set;}
 
+    public virtual bool IsTrivia
+    {
+        get
+        {
+            return false;
+        }
+    }
+
     public virtual bool IsToken
     {
         get
