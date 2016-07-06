@@ -9,9 +9,9 @@ namespace At
 public class AtSyntaxTree
 {
     readonly CompilationUnitSyntax compilationUnit;
-    readonly AtSourceText text;
+    readonly string text;
 
-    public AtSyntaxTree(AtSourceText text, CompilationUnitSyntax compilationUnit)
+    public AtSyntaxTree(string text, CompilationUnitSyntax compilationUnit)
     {
         this.text = text;
         this.compilationUnit = compilationUnit;

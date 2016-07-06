@@ -113,7 +113,6 @@
   <ItemGroup>
     <Compile Include="AtCompilation.cs" />
     <Compile Include="Exceptions.cs" />
-    <Compile Include="AtSourceText.cs" />
     <Compile Include="AtSyntaxNode.cs" />
     <Compile Include="AtSyntaxList.cs" />
     <Compile Include="AtSyntaxTrivia.cs" />
