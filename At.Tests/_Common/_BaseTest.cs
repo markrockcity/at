@@ -231,7 +231,7 @@ namespace At.Tests
     //Write()
     protected internal void Write<T>(Expression<Func<T>> exp)
     {
-        TestContext.WriteLine($"[{DateTime.Now}] {exprStr(exp.Body)}");
+        TestContext.WriteLine($"[{DateTime.Now}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")}");
     }
    
    //Write()
@@ -353,6 +353,15 @@ namespace At.Tests
                             ? (mae.Expression.NodeType!= Parameter? $"{m.Name} ⩵ «{objStr(getValue(mae))}»" : m.Name) 
 
                       : (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ⩵ «{objStr(getValue(mae))}»" : $"{o}.{m.Name}");
+            }
+
+            //New
+            case New:
+            {
+                var ne = (NewExpression) e;
+                if (ne.Members.Count > 0)
+                    return $"new {{{string.Join(", ",ne.Members.Select((m,i)=>$"{m.Name}={exprStr(ne.Arguments[i])}"))}}}";
+                goto default;
             }
 
             //Parameter
