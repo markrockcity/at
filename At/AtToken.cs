@@ -63,7 +63,7 @@ public class AtToken : AtSyntaxNode
         return 
             Kind==TokenKind.EndOfFile ? "<EOF>" :
             Kind==TokenKind.StartOfFile ? "<StartOfFile>" :
-            $"{Kind.Name}({Text})" ;
+            Text;
     }
 }
 }
