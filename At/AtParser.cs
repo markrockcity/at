@@ -56,34 +56,21 @@ public class AtParser : IDisposable
         {
             var token = current();
 
-            /*
-            if (token.IsTrivia)
+            
+            if (token.IsTrivia  || token.Kind==Space || token.Kind==EndOfLine || token.Kind == StartOfFile || token.Kind == EndOfFile)
             {
                 moveNext();
                 continue;
-            }*/
+            }
 
-            switch((KnownTokenKind) token.RawKind)
+            if (token.Kind == AtSymbol || token.Kind == StringLiteral || token.Kind == NumericLiteral || token.Kind ==EndOfFile)
+            {   
+                yield return expression(); 
+            }
+            else
             {
-                case KnownTokenKind.StartOfFile:
-                case KnownTokenKind.EndOfFile  :                    
-                //case Space:
-                //case EndOfLine:  
-                    //TODO: #hash-statements, etc.
-                    moveNext();
-                    continue;
-
-                //case AtSymbol: 
-                //case StringLiteral:
-                case KnownTokenKind.NumericLiteral:
-                case KnownTokenKind.TokenCluster: 
-                    yield return expression(); 
-                    break;
-                            
-                default: 
-                    moveNext();
-                    yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); 
-                    break;
+                moveNext();
+                yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); 
             }
         }        
     }
@@ -226,7 +213,8 @@ public class AtParser : IDisposable
 
             
         //";" | "{...}"
-        members:  var members = new List<DeclarationSyntax>();
+        //members:  
+        var members = new List<DeclarationSyntax>();
         if (isCurrent(SemiColon))
         {                
             nodes.Add(consumeToken(SemiColon));
