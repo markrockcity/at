@@ -11,7 +11,7 @@ public partial class TestData : IDisposable
 {    
     static bool initialized;
 
-    readonly string testUsername = "test";
+    //readonly string testUsername = "test";
     readonly Test test;
 
     //cctor

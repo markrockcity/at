@@ -85,7 +85,7 @@ class SyntaxTreeConverter
                                                          
        csharpSyntax = csharpSyntax.AddUsings(usings.ToArray())
                                   .AddMembers(defaultClass)
-                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is Syntax.MethodDeclarationSyntax)).ToArray());
+                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax)).ToArray());
        return csharpSyntax;
     }
 
@@ -247,7 +247,7 @@ class SyntaxTreeConverter
         var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
                                          .AddUsings(usings.ToArray())
                                          .AddMembers(defaultClass)
-                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is Syntax.MethodDeclarationSyntax)).ToArray());
+                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax)).ToArray());
         
         return csNs;
     }
