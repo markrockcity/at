@@ -21,9 +21,8 @@ public struct TokenKind : IEquatable<TokenKind>
     });
     
     //see http://source.roslyn.io/#Microsoft.CodeAnalysis.CSharp/Syntax/SyntaxKind.cs
-    public static readonly TokenKind Unspecified = -1;
     public static readonly TokenKind Other = 100;
-    public static readonly TokenKind None = 0;
+    public static readonly TokenKind Unspecified = 0;
     public static readonly TokenKind StartOfFile = 1;
     public static readonly TokenKind EndOfFile = 8496;//(int) KnownTokenKind.EndOfFile;
     public static readonly TokenKind EndOfLine = 4;//(int) KnownTokenKind.EndOfLine;
