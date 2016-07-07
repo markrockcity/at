@@ -14,17 +14,17 @@ public interface ITokenDefinition
 {
     //TokenKind TokenKind  {get;}
 
-    /// <summary>Returns the number of characters the token definition matches the input up to 
-    /// a given number of characters.</summary>
-    int MatchesUpTo(IScanner<char> input, int positionFromStart);
-    AtToken Lex(Scanner<char> input);
+    /// <summary>Returns true if the token definition matches the input up to 
+    /// the given k-lookahead.</summary>
+    bool MatchesUpTo(IScanner<char> chars, int k);
+    AtToken Lex(Scanner<char> chars);
     bool IsAllowedInTokenCluster {get;}
 }
 
 
 public class TokenDefinition : ITokenDefinition
 {
-    Func<IScanner<char>,int,int> matchesUpTo;
+    Func<IScanner<char>,int,bool> matchesUpTo;
     Func<Scanner<char>,AtToken> lex;    
 
     public readonly static TokenDefinition AtSymbol = SingleCharacterToken(TokenKind.AtSymbol,'@');       
@@ -37,20 +37,20 @@ public class TokenDefinition : ITokenDefinition
     public readonly static TokenDefinition OpenParenthesis = SingleCharacterToken(TokenKind.OpenParenthesis,'(');       
     public readonly static TokenDefinition CloseParenthesis = SingleCharacterToken(TokenKind.CloseParenthesis,')');     
     public readonly static TokenDefinition Comma  = SingleCharacterToken(TokenKind.Comma,',');     
-    public readonly static TokenDefinition StartOfFile = new TokenDefinition(TokenKind.StartOfFile,(s,i)=>s.Position<0&&i<1?1:-1,s=>new AtSyntaxTrivia(TokenKind.StartOfFile,-1));
-    public readonly static TokenDefinition EndOfFile   = new TokenDefinition(TokenKind.EndOfFile,(s,i)=>s.End?int.MaxValue:-1,s=>new AtSyntaxTrivia(TokenKind.EndOfFile,s.Position+1));
+    public readonly static TokenDefinition StartOfFile = new TokenDefinition(TokenKind.StartOfFile,(s,i)=>s.Position<0&&i<1,s=>new AtSyntaxTrivia(TokenKind.StartOfFile,-1));
+    public readonly static TokenDefinition EndOfFile   = new TokenDefinition(TokenKind.EndOfFile,(s,i)=>s.End,s=>new AtSyntaxTrivia(TokenKind.EndOfFile,s.Position+1));
     
     public readonly static TokenDefinition Space = new TokenDefinition
     (
-        TokenKind.EndOfFile,
-        (s,i)=>((s.Current==' ' || s.Current=='\t')) ? 1 : -1,
+        TokenKind.Space,
+        (s,i)=>((s.LookAhead(i)==' ' || s.LookAhead(i)=='\t')),
         s=>AtLexer.token<AtSyntaxTrivia>(TokenKind.Space,s,_=>_==' ' || _=='\t')
     );
 
     public readonly static TokenDefinition EndOfLine = new TokenDefinition
     (
         TokenKind.EndOfLine,
-        (s,i)=>(s.Current=='\r' || s.Current=='\n') ? 1 : -1,
+        (s,i)=>(i>=0 && s.LookAhead(i)=='\r' || i>=0 && i<=1 && s.LookAhead(i)=='\n'),
         s=>
         {
             var p = s.Position+1;
@@ -71,8 +71,10 @@ public class TokenDefinition : ITokenDefinition
 
     public readonly static ITokenDefinition StringLiteral = new StringLiteralDefinition('\"');
     
+    //TODO: convert to 3 different token-defs
+    public readonly static ITokenDefinition Dots = new DotsDefinition();
 
-    public TokenDefinition(TokenKind tokenKind, Func<IScanner<char>,int,int> matchesUpTo, Func<Scanner<char>,AtToken> lex, bool allowedInCluster = false) 
+    public TokenDefinition(TokenKind tokenKind, Func<IScanner<char>,int,bool> matchesUpTo, Func<Scanner<char>,AtToken> lex, bool allowedInCluster = false) 
     {  
         this.matchesUpTo = matchesUpTo;
         this.lex = lex;
@@ -86,6 +88,7 @@ public class TokenDefinition : ITokenDefinition
 
         bool escaping = false;
         bool closed = false;
+        bool matchesSoFar = false;
 
         public StringLiteralDefinition(char delimiter) { this.delimiter = delimiter; }
         
@@ -111,36 +114,69 @@ public class TokenDefinition : ITokenDefinition
             return new AtToken(TokenKind.StringLiteral,p,text); 
         }
 
-        public int MatchesUpTo(IScanner<char> chars, int i)
+        public bool MatchesUpTo(IScanner<char> chars, int i)
         {
             if (i==0)
             {
                 closed   = false;
                 escaping = false;
+                matchesSoFar = (chars.Current==delimiter);
 
-                return (chars.Current==delimiter) ? 1 : -1;                 
+                return matchesSoFar;                 
             }
 
-            if (!closed)
+            var c = chars.LookAhead(i);
+
+            if (matchesSoFar && !closed && c!='\0')
             {
-                if (chars.LookAhead(i)==delimiter && !escaping)
+                if (c==delimiter && !escaping)
                     closed = true;
 
-                escaping = (chars.LookAhead(i)=='\\');
+                escaping = (!escaping && c=='\\');
   
-                return chars.Position+1;
+                return true;
             }
 
-            return i-1;
+            return false;
         }
+    }
+
+    private class DotsDefinition:ITokenDefinition
+    {
+        public bool IsAllowedInTokenCluster => true;
+
+        public AtToken Lex(Scanner<char> chars)
+        {
+            Debug.Assert(chars.Current=='.');
+            var p = chars.Position+1;
+            chars.MoveNext();
+       
+            if (chars.Current=='.')
+            {
+                chars.MoveNext();
+                if (chars.Current=='.') 
+                {
+                    chars.MoveNext();
+                    return new AtToken(TokenKind.Ellipsis,p,"...");
+                }
+
+                return new AtToken(TokenKind.DotDot,p,"..");
+            }
+            else
+            {
+                return new AtToken(TokenKind.Dot,p,".");
+            }       
+        }
+
+        public bool MatchesUpTo(IScanner<char> chars,int k) => (k>=0 && k<=2 && chars.LookAhead(k)=='.');
     }
 
     public bool IsAllowedInTokenCluster {get;}
     public TokenKind TokenKind  {get;}
-    public int MatchesUpTo(IScanner<char> input,int positionFromStart)=>matchesUpTo(input,positionFromStart);
+    public bool MatchesUpTo(IScanner<char> chars,int k)=>matchesUpTo(chars,k);
     public AtToken Lex(Scanner<char> input) => lex(input);
     public static TokenDefinition SingleCharacterToken(TokenKind kind,char c, bool allowedInCluster=false) 
-        => new TokenDefinition(kind,(s,k)=>k==0&&s.Current==c?1:-1,s=>new AtToken(kind,s.Position,c.ToString()),allowedInCluster);
+        => new TokenDefinition(kind,(s,k)=>k==0&&s.Current==c,s=>new AtToken(kind,s.Position,c.ToString()),allowedInCluster);       
 }
 
 public class TokenDefinitionList : IList<ITokenDefinition>
@@ -231,7 +267,7 @@ public class TokenDefinitionList : IList<ITokenDefinition>
 
     public IList<ITokenDefinition> Matches(IScanner<char> chars, int k)
     {
-        return list.Where(_=>_.MatchesUpTo(chars,k)>=k).ToList();
+        return list.Where(_=>_.MatchesUpTo(chars,k)).ToList();
     }
 
     public bool Remove(ITokenDefinition item)

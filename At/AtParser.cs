@@ -70,7 +70,7 @@ public class AtParser : IDisposable
             else
             {
                 moveNext();
-                yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})"); 
+                yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})".Replace("{","{{").Replace("}","}}")); 
             }
         }        
     }

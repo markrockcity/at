@@ -41,10 +41,8 @@ public class AtLexer : IDisposable
                     chars.MoveNext();
             }
 
-            
-
             //trivia (non-tokens)
-            var triviaDef = getTriviaDefinition(chars);
+            var triviaDef = getDefinition(TriviaDefinitions,chars);
             if (triviaDef != null)
             {
                 var p = chars.Position;
@@ -56,10 +54,9 @@ public class AtLexer : IDisposable
             }
             
             //tokens
-            
             if (_token == null )
             {
-                var tokenDef = getTokenDefinition(chars);    
+                var tokenDef = getDefinition(TokenDefinitions,chars);    
 
                 if (tokenDef != null)
                 {
@@ -76,10 +73,7 @@ public class AtLexer : IDisposable
             
             if (_token == null)
             {
-                _token =    : c == '.'                        
-                                ? dot()
-
-                            : char.IsDigit(c) || (c=='+'||c=='-') && char.IsDigit(lookAhead(2))
+                _token =     char.IsDigit(c) || (c=='+'||c=='-') && char.IsDigit(lookAhead(2))
 
                 continue;            
             }*/
@@ -127,46 +121,35 @@ public class AtLexer : IDisposable
 
     bool isAllowedInTokenCluster(char c,Scanner<char> chars)
     {
-        return getTokenDefinition(chars)?.IsAllowedInTokenCluster ?? true;
+        return getDefinition(TokenDefinitions,chars)?.IsAllowedInTokenCluster ?? true;
     }
 
     //is trivia (non-tokens)
     bool isTrivia(char c, Scanner<char> chars)
     {
-        return getTriviaDefinition(chars) != null;
+        return getDefinition(TriviaDefinitions,chars) != null;
     }
 
-    ITokenDefinition getTokenDefinition(Scanner<char> chars)
+    ITokenDefinition getDefinition(TokenDefinitionList definitions, Scanner<char> chars)
     {
         int k = -1;
         IList<ITokenDefinition> lastMatches = null, matches;
 
-        if (TokenDefinitions.Count > 0)
+        if (definitions.Count > 0)
         {
             k = -1;
-            while((matches = TokenDefinitions.Matches(chars,++k)).Count>0)
+            //TODO: instead of re-querying {definitions} all the time, just do {lastMatches}
+            while((matches = definitions.Matches(chars,++k)).Count>0)
+            {
                 lastMatches = matches;
+
+                if (chars.End)
+                    break;
+            }
 
             if (lastMatches?.Count > 0)
                 return lastMatches[0];
         }    
-
-        return null;
-    }
-
-    ITokenDefinition getTriviaDefinition(Scanner<char> chars)
-    {
-        int k = -1;
-        IList<ITokenDefinition> lastMatches = null, matches;
-        
-        if (TriviaDefinitions.Count > 0)
-        {
-            while((matches = TriviaDefinitions.Matches(chars,++k)).Count>0)
-                lastMatches = matches;
-
-            if (lastMatches?.Count > 0)
-                return lastMatches[0];
-        }
 
         return null;
     }
@@ -196,30 +179,6 @@ public class AtLexer : IDisposable
         }
 
         return new AtToken(TokenKind.NumericLiteral,p,sb.ToString());
-    }
-
-    // . | .. | ...
-    AtToken dot()
-    {
-        moveNext();
-        assertCurrent('.');
-        var p = position();
-       
-        if (isNext('.'))
-        {
-           moveNext();
-           if (isNext('.')) 
-           {
-              moveNext();
-              return new AtToken(TokenKind.Ellipsis,p,"...");
-           }
-
-           return new AtToken(TokenKind.DotDot,p,"..");
-        }
-        else
-        {
-           return new AtToken(TokenKind.Dot,p,".");
-        }
     }
 */
 

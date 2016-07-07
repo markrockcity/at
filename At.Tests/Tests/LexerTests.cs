@@ -51,7 +51,7 @@ public class LexerTests : Test
         lexerTest("a b",2,tokens=>Write(()=>tokens.Select(_=>new {_, _.leadingTrivia, _.trailingTrivia})));
         
         lexer.TriviaDefinitions.Add(TokenDefinition.EndOfLine);
-        lexerTest("a\r\nb",2);
+        lexerTest("a\r\n b",2);
 
         lexer.TokenDefinitions.Add(TokenDefinition.AtSymbol);
         lexer.TokenDefinitions.Add(TokenDefinition.LessThan);
@@ -67,6 +67,9 @@ public class LexerTests : Test
 
         lexer.TokenDefinitions.Add(TokenDefinition.StringLiteral);
         lexerTest(@"a""b{};\""\ \\""c",3); // a, "b{};\"\ \", c
+
+        lexer.TokenDefinitions.Add(TokenDefinition.Dots);
+        lexerTest(".a ..b ...c",6); //., a, .., b, ..., c
     }
 
 
