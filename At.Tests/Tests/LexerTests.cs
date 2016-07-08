@@ -70,6 +70,9 @@ public class LexerTests : Test
 
         lexer.TokenDefinitions.Add(TokenDefinition.Dots);
         lexerTest(".a ..b ...c",6); //., a, .., b, ..., c
+
+        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+        lexerTest("a 9.0.b c",5); // a, 9.0, ., b, c
     }
 
 
@@ -77,9 +80,11 @@ public class LexerTests : Test
     [TestMethod]
     public void NumericLiteralTest()
     {
+        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+
         foreach(var n in numericLiterals())
         {
-            var token = lexer.Lex(n).First(); //first token = <StartOfFile>
+            var token = lexer.Lex(n).First();
             assert_not_null(()=>token);
             assert_equals(TokenKind.NumericLiteral,()=>token.Kind);
             assert_equals(n,()=>token.Text);
@@ -102,15 +107,14 @@ public class LexerTests : Test
         return tokens;
     }
 
-
     string[] numericLiterals() => new []
     {
         "0",
-        "-1",
+        "1",
         "2.5",
         "10",
-        "+3.6",
-        "-0.0008"
+        "3.6",
+        "0.0008"
     }; 
 }
 }

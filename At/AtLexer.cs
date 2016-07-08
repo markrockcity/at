@@ -68,15 +68,6 @@ public class AtLexer : IDisposable
                 }
             }
 
-
-             /*
-            
-            if (_token == null)
-            {
-                _token =     char.IsDigit(c) || (c=='+'||c=='-') && char.IsDigit(lookAhead(2))
-
-                continue;            
-            }*/
             if (_token == null)
             {
                 _token = tokenCluster(chars);
@@ -153,34 +144,6 @@ public class AtLexer : IDisposable
 
         return null;
     }
-
-    /*
-    //# numeric literal
-    AtToken numericLiteral()
-    {
-        Debug.Assert(char.IsDigit(lookAhead(1)) || isNext('+') || isNext('-'));
-        var p = position()+1;
-        bool dot = false;
-        var sb = new StringBuilder();
-
-        if (isNext('+') || isNext('-'))
-        {
-            moveNext();
-            sb.Append(current());
-        }            
-
-        while (!END() && (char.IsDigit(lookAhead(1)) || !dot && isNext('.')))
-        {            
-            if (isNext('.'))
-                dot = true;         
-
-            moveNext();
-            sb.Append(current());
-        }
-
-        return new AtToken(TokenKind.NumericLiteral,p,sb.ToString());
-    }
-*/
 
     internal static  AtToken token (
         TokenKind kind, 

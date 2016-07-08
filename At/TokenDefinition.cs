@@ -70,9 +70,11 @@ public class TokenDefinition : ITokenDefinition
     );
 
     public readonly static ITokenDefinition StringLiteral = new StringLiteralDefinition('\"');
-    
+    public readonly static ITokenDefinition NumericLiteral = new NumericLiteralDefinition();
+
     //TODO: convert to 3 different token-defs
     public readonly static ITokenDefinition Dots = new DotsDefinition();
+    
 
     public TokenDefinition(TokenKind tokenKind, Func<IScanner<char>,int,bool> matchesUpTo, Func<Scanner<char>,AtToken> lex, bool allowedInCluster = false) 
     {  
@@ -82,7 +84,53 @@ public class TokenDefinition : ITokenDefinition
         this.IsAllowedInTokenCluster = allowedInCluster;
     }
 
-    private class StringLiteralDefinition : ITokenDefinition
+        private class NumericLiteralDefinition:ITokenDefinition
+        {
+            bool alreadyHasDecimalPoint = false;
+        
+            public bool IsAllowedInTokenCluster => true;
+
+            public AtToken Lex(Scanner<char> chars)
+            {
+                Debug.Assert(char.IsDigit(chars.Current));
+                alreadyHasDecimalPoint = false;
+                var p = chars.Position+1;
+                var sb = new StringBuilder();
+                
+                while (!chars.End && (char.IsDigit(chars.Current) || !alreadyHasDecimalPoint && chars.Current=='.' && char.IsDigit(chars.Next)))
+                {            
+                   if (chars.Current=='.')
+                        alreadyHasDecimalPoint = true;         
+
+                    sb.Append(chars.Consume());
+                }
+
+                return new AtToken(TokenKind.NumericLiteral,p,sb.ToString());            
+            }
+
+            public bool MatchesUpTo(IScanner<char> chars,int k)
+            {
+                if (k==0)
+                    alreadyHasDecimalPoint = false; //reset
+            
+                var c = chars.LookAhead(k);
+                var isDigit = char.IsDigit(c);
+
+                if (isDigit)
+                    return true;
+
+                var isDecimalPoint = (c=='.');
+
+                if (k==0 || !isDecimalPoint || alreadyHasDecimalPoint)
+                    return false;
+
+                Debug.Assert(isDecimalPoint);
+                alreadyHasDecimalPoint = true;
+                return char.IsDigit(chars.LookAhead(k+1));
+            }
+        }
+
+        private class StringLiteralDefinition : ITokenDefinition
     {
         readonly char delimiter;    
 
