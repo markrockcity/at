@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace At
 {
@@ -52,9 +53,9 @@ public class AtToken : AtSyntaxNode
         {
             return 
                 string.Concat(
-                    string.Concat(leadingTrivia),
+                    string.Concat(leadingTrivia.Select(_=>_.FullText)),
                     Text,
-                    string.Concat(trailingTrivia));
+                    string.Concat(trailingTrivia.Select(_=>_.FullText)));
         }
     }
 

@@ -39,10 +39,10 @@ namespace At.Tests
     {
         var id = identifier();
         var input = $"@{id}();";
-        var tree = parseTree(input);
-        verifyOutput<atSyntax.MethodDeclarationSyntax>(input,tree,id);
+        var atTree = parseTree(input);
+        verifyOutput<atSyntax.MethodDeclarationSyntax>(input,atTree,id);
 
-        var csharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
+        var csharpTree = new SyntaxTreeConverter(atTree).ConvertToCSharpTree();
         verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
     }
 

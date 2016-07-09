@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace At.Tests
 {
-    [TestClass]
+[TestClass]
 public class LexerTests : Test
 {
     AtLexer lexer;
@@ -75,6 +75,15 @@ public class LexerTests : Test
         lexerTest("a 9.0.b c",5); // a, 9.0, ., b, c
     }
 
+
+    //# Default Lexer Test
+    [TestMethod]
+    public void DefaultLexerTest()
+    {
+        lexer = AtLexer.Default();
+        lexerTest("@X<>",4);
+        
+    }
 
     //# Numeric Literal Test
     [TestMethod]

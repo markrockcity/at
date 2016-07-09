@@ -29,13 +29,13 @@ public class AtTest : Test
     }
 
     //verify output (syntax tree)
-    protected T verifyOutput<T>(string input, AtSyntaxTree tree, string expectedId, Func<T,string> actualId)  where T : AtSyntaxNode
+    protected T verifyOutput<T>(string input, AtSyntaxTree atTree, string expectedId, Func<T,string> actualId)  where T : AtSyntaxNode
     {
-        assert_not_null(()=>tree);
+        assert_not_null(()=>atTree);
 
-        assert_equals(()=>0,()=>tree.GetDiagnostics().Count(),"Syntax tree contains diagnostics: {0}",tree.GetDiagnostics().FirstOrDefault()?.Message);
+        assert_equals(()=>0,()=>atTree.GetDiagnostics().Count(),"Syntax tree contains diagnostics: {0}",atTree.GetDiagnostics().FirstOrDefault()?.Message);
 
-        var root = tree.GetRoot();
+        var root = atTree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
         var node = root.DescendantNodes().OfType<T>().First();
@@ -52,13 +52,13 @@ public class AtTest : Test
                          Func<T,string> getId2 = null) 
         where T : csSyntax.MemberDeclarationSyntax
     {
-        var root = csharpTree.GetRoot();
-        var any = root.DescendantNodes()
+        var csRoot = csharpTree.GetRoot();
+        Write(csRoot);
+
+        var any = csRoot.DescendantNodes()
                         .OfType<T>()
                         .Single(_=>getId(_)==id);
-        assert_not_null(any);
-        
-        Write(root);
+        assert_not_null(any);    
         
         if (id2!=null && getId2!=null)
         {

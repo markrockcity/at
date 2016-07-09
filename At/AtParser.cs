@@ -57,13 +57,16 @@ public class AtParser : IDisposable
             var token = current();
 
             
-            if (token.IsTrivia  || token.Kind==Space || token.Kind==EndOfLine || token.Kind == StartOfFile || token.Kind == EndOfFile)
+            if (token.IsTrivia)
             {
                 moveNext();
                 continue;
             }
 
-            if (token.Kind == AtSymbol || token.Kind == StringLiteral || token.Kind == NumericLiteral || token.Kind ==EndOfFile)
+            if (   token.Kind == AtSymbol 
+                || token.Kind == StringLiteral 
+                || token.Kind == NumericLiteral 
+                || token.Kind == TokenCluster)
             {   
                 yield return expression(); 
             }
@@ -361,7 +364,7 @@ public class AtParser : IDisposable
 
             while(true)
             {
-                if (isCurrentAny(endDelimiters))
+                if (isCurrentAny(endDelimiters) || END())
                     break;  
         
                 list.Add(parseExpr());
@@ -371,7 +374,8 @@ public class AtParser : IDisposable
             }            
         }
 
-        assertCurrentAny(endDelimiters);
+        if (!END())
+            assertCurrentAny(endDelimiters);
         return new SeparatedSyntaxList<T>(null,list);
     }
 

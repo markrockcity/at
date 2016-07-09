@@ -43,12 +43,11 @@ public class AtSyntaxTree
     //parseText(AtSourceText)
     static AtSyntaxTree parseText(string text)
     {
-        using (var lexer  = new AtLexer())
+        using (var lexer  = AtLexer.Default())
         using (var parser = new AtParser(lexer,text))
         {
             var compilationUnit = parser.ParseCompilationUnit();
             var tree = new AtSyntaxTree(text, compilationUnit);
-            //tree.VerifySource();
             return tree;
         }
     }

@@ -37,7 +37,7 @@ class SyntaxTreeConverter
         return (CSharpSyntaxTree) csharpTree;
     }
 
-        cs.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(atSyntax.CompilationUnitSyntax atRoot)
+    cs.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(atSyntax.CompilationUnitSyntax atRoot)
     {
        //160316: this is mainly for making tests fail
        var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
@@ -85,7 +85,7 @@ class SyntaxTreeConverter
                                                          
        csharpSyntax = csharpSyntax.AddUsings(usings.ToArray())
                                   .AddMembers(defaultClass)
-                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax)).ToArray());
+                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
        return csharpSyntax;
     }
 
@@ -123,12 +123,12 @@ class SyntaxTreeConverter
        }
     }
 
-        cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
+    cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
     {
         return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
     }
 
-        cs.Syntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
+    cs.Syntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
     {
         var id = expr as atSyntax.NameSyntax;
         if (id != null) 
@@ -137,7 +137,7 @@ class SyntaxTreeConverter
         throw new NotImplementedException($"{expr.GetType()}: {expr}");
     }
 
-        cs.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
+    cs.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
     {
         var nsDecl = d as atSyntax.NamespaceDeclarationSyntax;
         if (nsDecl != null)
@@ -170,12 +170,12 @@ class SyntaxTreeConverter
         throw new NotSupportedException(d.GetType().ToString());
     }
 
-        cs.Syntax.NameSyntax NameSyntax(atSyntax.NameSyntax atName)
+    cs.Syntax.NameSyntax NameSyntax(atSyntax.NameSyntax atName)
     {
         return IdentifierName(atName.Text);
     }
 
-        cs.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl)
+    cs.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl)
     {
         var classId = classDecl.Identifier;
         var csId = csIdentifer(classId);
@@ -199,7 +199,7 @@ class SyntaxTreeConverter
     }
 
 
-        cs.Syntax.FieldDeclarationSyntax FieldDeclarationSyntax(atSyntax.VariableDeclarationSyntax varDecl)
+    cs.Syntax.FieldDeclarationSyntax FieldDeclarationSyntax(atSyntax.VariableDeclarationSyntax varDecl)
     {
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
@@ -212,7 +212,7 @@ class SyntaxTreeConverter
         return csField;
     }
 
-        cs.Syntax.MethodDeclarationSyntax MethodDeclarationSyntax(atSyntax.MethodDeclarationSyntax methodDecl)
+    cs.Syntax.MethodDeclarationSyntax MethodDeclarationSyntax(atSyntax.MethodDeclarationSyntax methodDecl)
     {
         var methodId = methodDecl.Identifier;
         var returnType = methodDecl.ReturnType != null
@@ -226,7 +226,7 @@ class SyntaxTreeConverter
         return csMethod;
     }
 
-        cs.Syntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
+    cs.Syntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
     {
         var nsId = nsDecl.Identifier;
         var csId = csIdentifer(nsId);
@@ -247,7 +247,7 @@ class SyntaxTreeConverter
         var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
                                          .AddUsings(usings.ToArray())
                                          .AddMembers(defaultClass)
-                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax)).ToArray());
+                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
         
         return csNs;
     }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using static At.TokenKind;
+using static At.TokenDefinition;
 
 namespace At
 {
@@ -12,6 +12,32 @@ public class AtLexer : IDisposable
 {
     public TokenDefinitionList TokenDefinitions  {get;} = new TokenDefinitionList();
     public TokenDefinitionList TriviaDefinitions {get;} = new TokenDefinitionList();
+
+    public static AtLexer Default()
+    {
+        var lexer = new AtLexer();
+
+        lexer.TriviaDefinitions.Add(TokenDefinition.Space);  
+        lexer.TriviaDefinitions.Add(TokenDefinition.EndOfLine);
+        lexer.TriviaDefinitions.Add(StartOfFile);
+        lexer.TriviaDefinitions.Add(EndOfFile);
+
+        lexer.TokenDefinitions.Add(TokenDefinition.SemiColon);
+        lexer.TokenDefinitions.Add(TokenDefinition.LessThan);
+        lexer.TokenDefinitions.Add(TokenDefinition.AtSymbol);
+        lexer.TokenDefinitions.Add(TokenDefinition.GreaterThan);        
+        lexer.TokenDefinitions.Add(TokenDefinition.Dots);
+        lexer.TokenDefinitions.Add(TokenDefinition.Colon);
+        lexer.TokenDefinitions.Add(TokenDefinition.OpenBrace);
+        lexer.TokenDefinitions.Add(TokenDefinition.OpenParenthesis);
+        lexer.TokenDefinitions.Add(TokenDefinition.CloseBrace);
+        lexer.TokenDefinitions.Add(TokenDefinition.CloseParenthesis);
+        lexer.TokenDefinitions.Add(TokenDefinition.Comma);
+        lexer.TokenDefinitions.Add(TokenDefinition.StringLiteral); 
+        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+
+        return lexer;
+    }
 
     public IEnumerable<AtToken> Lex(IEnumerable<char> input)
     {   
@@ -22,7 +48,7 @@ public class AtLexer : IDisposable
         //<StartOfFile>? 
         AtSyntaxTrivia sof = null;
         if (TokenDefinitions.Contains(TokenDefinition.StartOfFile))
-            yield return (sof = new AtSyntaxTrivia(StartOfFile,0));
+            yield return (sof = new AtSyntaxTrivia(TokenKind.StartOfFile,0));
 
         AtToken _token = null;
         while (!chars.End || _token != null)
@@ -33,7 +59,7 @@ public class AtLexer : IDisposable
             if (c == '\0') //NUL is before beginning and after end
             {
                 if (chars.Position<0 && TriviaDefinitions.Contains(TokenDefinition.StartOfFile))
-                    leadingTrivia.Add(sof ?? new AtSyntaxTrivia(StartOfFile,0));                               
+                    leadingTrivia.Add(sof ?? new AtSyntaxTrivia(TokenKind.StartOfFile,0));                               
 
                 if (chars.End)
                     goto end;
@@ -178,14 +204,5 @@ public class AtLexer : IDisposable
     }
 
     void IDisposable.Dispose(){}
-
-    /*
-    char consume()                 => chars.Consume();
-    bool isNext(char c, int k = 1) => chars.LookAhead(k)==c; 
-    bool moveNext()                => chars.MoveNext();
-    char lookAhead(int k)          => chars.LookAhead(k);
-    char current()                 => chars.Current;
-    bool END()                     => chars.End;
-    int  position()                => chars.Position+1;*/
 }
 }
