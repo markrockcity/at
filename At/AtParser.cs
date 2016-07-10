@@ -11,34 +11,22 @@ namespace At
 {
 public class AtParser : IDisposable
 {
-    bool parsing;
 
-    readonly AtLexer            lexer;
-    readonly Scanner<AtToken>    tokens;
-    readonly List<AtDiagnostic> diagnostics = new List<AtDiagnostic>();
-    readonly object             @lock       = new object();
-
-    public AtParser(AtLexer lexer, IEnumerable<char> input)
+    public AtParser() : this(AtLexer.Default()) {}
+    public AtParser(AtLexer lexer)
     {
-        this.lexer  = lexer;
-        this.tokens = new Scanner<AtToken>(lexer.Lex(input));
+        this.Lexer = lexer;
     }
 
+    public AtLexer Lexer {get;}
+
     //ParseCompilationUnit()
-    public CompilationUnitSyntax ParseCompilationUnit()
+    public CompilationUnitSyntax ParseCompilationUnit(IEnumerable<char> input)
     {
-        diagnostics.Clear();
-        CompilationUnitSyntax compilationUnitSyntax;
-
-        lock(@lock)
-        {
-            if (parsing) throw new Exception("PARSING ALREADY");
-            parsing = true;
-
-            compilationUnitSyntax = SyntaxFactory.CompilationUnit(compilationUnit().ToList());
-
-            parsing = false;   
-        }
+        var tokens = new Scanner<AtToken>(Lexer.Lex(input));
+        var diagnostics = new List<AtDiagnostic>();
+        var expressions = this.expressions(tokens,diagnostics);
+        var compilationUnitSyntax = SyntaxFactory.CompilationUnit(expressions.ToList(),diagnostics);
 
         diagnostics.AddRange (compilationUnitSyntax.DescendantNodes()
                                                     .OfType<ExpressionClusterSyntax>()
@@ -47,19 +35,18 @@ public class AtParser : IDisposable
     }
 
     //Compilation Unit
-    IEnumerable<ExpressionSyntax> compilationUnit()
+    IEnumerable<ExpressionSyntax> expressions(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
-        if (position() < 0) 
-            moveNext();
+        if (tokens.Position < 0) 
+            tokens.MoveNext();
 
-        while (!END())
+        while (!tokens.End)
         {
-            var token = current();
-
+            var token = tokens.Current;
             
             if (token.IsTrivia)
             {
-                moveNext();
+                tokens.MoveNext();
                 continue;
             }
 
@@ -68,11 +55,11 @@ public class AtParser : IDisposable
                 || token.Kind == NumericLiteral 
                 || token.Kind == TokenCluster)
             {   
-                yield return expression(); 
+                yield return expression(tokens,diagnostics); 
             }
             else
             {
-                moveNext();
+                tokens.MoveNext();
                 yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})".Replace("{","{{").Replace("}","}}")); 
             }
         }        
@@ -89,61 +76,55 @@ public class AtParser : IDisposable
     }   
 
     //expression (stringLiteral | id)
-    ExpressionSyntax expression()
+    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
-        if (isCurrent(AtSymbol)) 
-            return declarationExpression();        
+        var current = tokens.Current;
+
+        if (current.Kind == (AtSymbol)) 
+            return declarationExpression(tokens,diagnostics);        
             
-        if (isCurrent(TokenCluster) && current().Text[0]=='#')
-            return directiveExpression();
+        if (current.Kind == (TokenCluster) && current.Text[0]=='#')
+            return directiveExpression(tokens,diagnostics);
 
-        if (isCurrentAny(NumericLiteral,StringLiteral))
-            return literalExpression();
+        if (current.Kind==NumericLiteral || current.Kind==StringLiteral)
+            return literalExpression(tokens,diagnostics);
 
-        var x = current();
-
-        throw new NotImplementedException($"{x.Kind}: {x.Text}");
+        throw new NotImplementedException($"{current.Kind}: {current.Text}");
 
         /*return x.Kind==TokenKind.TokenCluster ? new ExpressionSyntax("id",x)
                                                 : new ExpressionSyntax("string literal",x);*/
     }
 
-    LiteralExpressionSyntax literalExpression()
+    LiteralExpressionSyntax literalExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
-        assertCurrentAny(NumericLiteral,StringLiteral);
-        return SyntaxFactory.LiteralExpression(consumeToken());
+        assertCurrentAny(tokens,NumericLiteral,StringLiteral);
+        return SyntaxFactory.LiteralExpression(tokens.Consume());
     }
 
     //#import namespace
-    DirectiveSyntax directiveExpression()
+    DirectiveSyntax directiveExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
         var nodes = new List<AtSyntaxNode>();
-        var directive = consumeToken(TokenCluster); nodes.Add(directive);
-        var name = this.name(); nodes.Add(name);
+        var directive = tokens.Consume()/*(TokenCluster)*/; nodes.Add(directive);
+        var name = this.name(tokens,diagnostics); nodes.Add(name);
 
-        AtToken semi = null;
-        if (isCurrent(SemiColon))
+        AtToken semiColon = null;
+        if (tokens.Current?.Kind == (SemiColon))
         {
-            semi = consumeToken(SemiColon); 
-            nodes.Add(semi);
+            semiColon = tokens.Consume(); //(SemiColon); 
+            nodes.Add(semiColon);
         }
 
-        return SyntaxFactory.Directive(directive,name,semi,nodes);
-    }
-
-    //Expression Cluster: "a { ... } b() { ... } ;"
-    ExpressionClusterSyntax expressionCluster()
-    {
-        throw new NotImplementedException();
+        return SyntaxFactory.Directive(directive,name,semiColon,nodes);
     }
 
     //declarationExpression "@TokenCluster[<...>][(...)][; | { ... }]"
     //declarationExpression "@TokenCluster ColonPair [; | { ... }]"
-    DeclarationSyntax declarationExpression()
+    DeclarationSyntax declarationExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
         var nodes = new List<AtSyntaxNode>();
-        var atSymbol = consumeToken(AtSymbol);
-        var tc = consumeToken(TokenCluster);
+        var atSymbol = tokens.Consume(); //(AtSymbol);
+        var tc = tokens.Consume(); //(TokenCluster);
         var isNamespace = false;
         var isClass = false;
         var isMethod = false;       
@@ -155,15 +136,15 @@ public class AtParser : IDisposable
         AtToken lessThan = null;
         AtToken greaterThan = null;
         ListSyntax<ParameterSyntax> typeParams = null;
-        if (isCurrent(LessThan))
+        if (tokens.Current?.Kind==(LessThan))
         {                
-            lessThan = consumeToken(LessThan);
+            lessThan = tokens.Consume();//(LessThan);
 
             SeparatedSyntaxList<ParameterSyntax> typeParamList = null;
-            if (!isCurrent(GreaterThan))
-                typeParamList = list(Comma,typeParameter,GreaterThan);
+            if (tokens.Current.Kind!=(GreaterThan))
+                typeParamList = list(tokens,diagnostics,Comma,typeParameter,GreaterThan);
                                    
-            greaterThan = consumeToken(GreaterThan);
+            greaterThan =  tokens.Consume();//(GreaterThan);
 
             typeParams = SyntaxFactory.List(lessThan,typeParamList,greaterThan,null);
             nodes.Add(typeParams);
@@ -172,15 +153,15 @@ public class AtParser : IDisposable
 
         //(...)
         ListSyntax<ParameterSyntax> methodParams = null;
-        if (isCurrent(OpenParenthesis))
+        if (tokens.Current?.Kind==(OpenParenthesis))
         {
-            var leftParen = consumeToken(OpenParenthesis);
+            var leftParen = tokens.Consume();//(OpenParenthesis);
 
             SeparatedSyntaxList<ParameterSyntax> methodParamList = null;
-            if(!isCurrent(CloseParenthesis))
-                methodParamList = list(TokenKind.Comma,methodParameter,CloseParenthesis);
+            if(tokens.Current.Kind!=(CloseParenthesis))
+                methodParamList = list(tokens,diagnostics,TokenKind.Comma,methodParameter,CloseParenthesis);
 
-            var rightParen = consumeToken(CloseParenthesis);
+            var rightParen = tokens.Consume();//(CloseParenthesis);
             methodParams = SyntaxFactory.List<ParameterSyntax>(leftParen,methodParamList,rightParen);
             nodes.Add(methodParams);
             isMethod = true;
@@ -192,13 +173,13 @@ public class AtParser : IDisposable
         AtToken colon = null;
         ListSyntax<NameSyntax> baseList = null; 
         NameSyntax type = null;
-        if (isCurrent(Colon))
+        if (tokens.Current?.Kind==(Colon))
         {
-            colon = consumeToken(Colon);
+            colon = tokens.Consume();//(Colon);
                 
             if (isClass)
             {
-                var baseTypeList = list(Comma,name,SemiColon,OpenBrace,EndOfFile);
+                var baseTypeList = list(tokens,diagnostics,Comma,name,SemiColon,OpenBrace,EndOfFile);
 
                 //TODO: remove colon from list? (PairSyntax<Colon>)
                 baseList = SyntaxFactory.List<NameSyntax>(colon,baseTypeList,null,null);
@@ -206,7 +187,7 @@ public class AtParser : IDisposable
             }
             else
             {
-                type = name();
+                type = name(tokens,diagnostics);
                 if (type.Text == "namespace")
                     isNamespace = true;
                 nodes.Add(colon);
@@ -218,29 +199,29 @@ public class AtParser : IDisposable
         //";" | "{...}"
         //members:  
         var members = new List<DeclarationSyntax>();
-        if (isCurrent(SemiColon))
+        if (tokens.Current?.Kind==(SemiColon))
         {                
-            nodes.Add(consumeToken(SemiColon));
+            nodes.Add(tokens.Consume());//(SemiColon));
         }
-        else if (isCurrent(OpenBrace))
+        else if (tokens.Current?.Kind==(OpenBrace))
         {
-            nodes.Add(consumeToken(TokenKind.OpenBrace));
+            nodes.Add(tokens.Consume());//(TokenKind.OpenBrace));
 
-            while(!isCurrent(TokenKind.CloseBrace))
+            while(tokens.Current.Kind!=(TokenKind.CloseBrace))
             {               
-                if (!isCurrent(TokenKind.AtSymbol))
+                if (tokens.Current.Kind!=(TokenKind.AtSymbol))
                 {
-                    nodes.Add(error(diagnostics,DiagnosticIds.UnexpectedToken,consumeToken(),"Expected an '@'."));
+                    nodes.Add(error(diagnostics,DiagnosticIds.UnexpectedToken,tokens.Consume(),"Expected an '@'."));
                     continue;
                 }
             
                 //TODO: support for ".ctor { }" expression 
-                var member = declarationExpression();
+                var member = declarationExpression(tokens,diagnostics);
                 members.Add(member);
                 nodes.Add(member);
             }
 
-            nodes.Add(consumeToken(TokenKind.CloseBrace)); 
+            nodes.Add(tokens.Consume());//(TokenKind.CloseBrace)); 
         }
 
 
@@ -257,8 +238,8 @@ public class AtParser : IDisposable
         //TODO: @<assignmentExpression> (decl (assign (colon-pair newid type) value))
         //TODO: @x : T { P = v, ...}
         //TODO: [(+ | -)]@x;
-        if (isCurrent(TokenKind.SemiColon))
-            nodes.Add(current(TokenKind.SemiColon));        
+        if (tokens.Current?.Kind==(TokenKind.SemiColon))
+            nodes.Add(tokens.Current);        
 
         if (isMethod)
             return SyntaxFactory.MethodDeclaration(atSymbol,tc, methodParams, returnType: null, nodes: nodes);
@@ -272,37 +253,9 @@ public class AtParser : IDisposable
 
     }
 
-       
-    AtToken current()        => tokens.Current;
-    int     position()       => tokens.Position;
-    AtToken lookAhead(int k) => tokens.LookAhead(k);
-    bool    moveNext()       => tokens.MoveNext();
-    bool    END()            => tokens.End;
-
-    AtToken current(TokenKind assertedToken) 
-    {
-        assertCurrent(assertedToken);
-        return tokens.Current;
-    }
-
-    AtToken consumeToken(TokenKind? assumedToken = null)
-    {
-        if (assumedToken != null)
-            assertCurrent(assumedToken.Value);
-
-        var c = tokens.Current;
-        tokens.MoveNext();
-        return c;
-    }
-
-
-    private T error<T>() 
-    {
-        throw new NotImplementedException();
-    }
-
+    /*
     //{Curly Block}
-    private BlockSyntax curlyBlock()
+    private BlockSyntax curlyBlock(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
         var leftBrace = consumeToken(OpenBrace);
         var p = position();
@@ -314,28 +267,29 @@ public class AtParser : IDisposable
         }
 
         return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(CloseBrace));
-    }
+    }*/
 
-    ParameterSyntax methodParameter()
+    //used by declarationExpression()
+    ParameterSyntax methodParameter(Scanner<AtToken> tokens,List<AtDiagnostic> diagnostics)
     {
         throw new NotImplementedException();
     }
 
-    NameSyntax name()
+    NameSyntax name(Scanner<AtToken> tokens,List<AtDiagnostic> diagnostics)
     {
-        assertCurrent(TokenCluster);
-        var identifier = consumeToken(TokenCluster);
+        Debug.Assert(tokens.Current.Kind==TokenCluster);
+        var identifier = tokens.Consume(); //(TokenCluster);
 
         //type args <T, U, V>
         SeparatedSyntaxList<NameSyntax> typeArgs = null;
         AtToken lessThan = null;
         AtToken greaterThan = null;
 
-        if (isCurrent(LessThan))
+        if (tokens.Current?.Kind==(LessThan))
         {
-           lessThan = consumeToken(); 
-           typeArgs = list(Comma,name,GreaterThan);
-           greaterThan = consumeToken(GreaterThan);
+           lessThan = tokens.Consume(); //)
+           typeArgs = list(tokens,diagnostics,Comma,name,GreaterThan);
+           greaterThan = tokens.Consume(); //(GreaterThan);
         }
 
         return (lessThan != null) ?
@@ -343,81 +297,61 @@ public class AtParser : IDisposable
                     SyntaxFactory.NameSyntax(identifier);
     }
 
-    ParameterSyntax typeParameter()
+    ParameterSyntax typeParameter(Scanner<AtToken> tokens,List<AtDiagnostic> diagnostics)
     {
-        assertCurrent(TokenCluster);
-        return SyntaxFactory.Parameter(consumeToken());
+        Debug.Assert(tokens.Current.Kind==TokenCluster);
+        return SyntaxFactory.Parameter(tokens.Consume());
     }
 
-    SeparatedSyntaxList<T> list<T>(TokenKind separator, Func<T> parseExpr, params TokenKind[] endDelimiters)
+    SeparatedSyntaxList<T> list<T>(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, TokenKind separator, Func<Scanner<AtToken>,List<AtDiagnostic>,T> parseExpr, params TokenKind[] endDelimiters)
         where T : AtSyntaxNode
     {
         var list = new List<AtSyntaxNode>();
     
-        if (!isCurrentAny(endDelimiters))
+        if (!endDelimiters.Any(_=>tokens.Current.Kind==_))
         {
-            if (isCurrent(separator))
+            if (tokens.Current.Kind==(separator))
             {
-                error(diagnostics,DiagnosticIds.UnexpectedToken,current(),$"Unexpected token: {separator}");
-                moveNext();
+                error(diagnostics,DiagnosticIds.UnexpectedToken,tokens.Consume(),$"Unexpected token: {separator}");
             }
 
             while(true)
             {
-                if (isCurrentAny(endDelimiters) || END())
+                if (tokens.End || endDelimiters.Any(_=>tokens.Current.Kind==_))
                     break;  
         
-                list.Add(parseExpr());
+                list.Add(parseExpr(tokens,diagnostics));
 
-                if (isCurrent(separator))
-                    list.Add(consumeToken(separator));
+                if (tokens.Current?.Kind==(separator))
+                    list.Add(tokens.Consume()); 
             }            
         }
 
-        if (!END())
-            assertCurrentAny(endDelimiters);
+        if (!tokens.End)
+            assertCurrentAny(tokens,endDelimiters);
         return new SeparatedSyntaxList<T>(null,list);
     }
 
+    
+    void assertCurrent(Scanner<AtToken> tokens,  TokenKind tokenKind) => Debug.Assert(tokens.Current.Kind == tokenKind);
+    void assertCurrentAny(Scanner<AtToken> tokens, TokenKind tokenKind, params TokenKind[] tokenKinds) => Debug.Assert(tokens.Current.Kind == tokenKind || tokenKinds.Contains(tokens.Current.Kind));
+    void assertCurrentAny(Scanner<AtToken> tokens, IEnumerable<TokenKind> tokenKinds) => Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
+    
 
-    void assertCurrent(TokenKind tokenKind) => Debug.Assert(tokens.Current.Kind == tokenKind);
-    void assertCurrentAny(TokenKind tokenKind, params TokenKind[] tokenKinds) => Debug.Assert(tokens.Current.Kind == tokenKind || tokenKinds.Contains(tokens.Current.Kind));
-    void assertCurrentAny(IEnumerable<TokenKind> tokenKinds) => Debug.Assert(tokenKinds.Contains(tokens.Current.Kind));
-
-    bool skip(params TokenKind[] tokenKinds)
+    bool skip(Scanner<AtToken> tokens, params TokenKind[] tokenKinds)
     {
         for(int i=1;i < tokenKinds.Length+1;++i) 
         {
-            if (lookAhead(i).Kind!=tokenKinds[i-1]) 
+            if (tokens.LookAhead(i).Kind!=tokenKinds[i-1]) 
                 return false;
         }
 
         for(int i=0; i < tokenKinds.Length; ++i) 
-            moveNext();
+            tokens.MoveNext();
 
         return true;
     }
 
-
-    bool isNext(TokenKind kind, int k = 1)
-    {
-        return lookAhead(k)?.Kind==kind;
-    }
-
-    bool isCurrent(TokenKind tokenKind)
-    {
-        return tokens.Current?.Kind==tokenKind;
-    }
-
-    bool isCurrentAny(TokenKind tokenKind, params TokenKind[] tokenKinds)
-    {
-        return tokens.Current?.Kind==tokenKind || tokenKinds.Any(_=>tokens.Current?.Kind==_);
-    }
-
-    bool isCurrentAny(IEnumerable<TokenKind> tokenKinds)
-    {
-        return tokenKinds.Any(_=>tokens.Current?.Kind==_);
-    }
 
     void IDisposable.Dispose()
     {
