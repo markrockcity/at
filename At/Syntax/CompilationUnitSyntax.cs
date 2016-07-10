@@ -9,7 +9,9 @@ public class CompilationUnitSyntax : AtSyntaxNode
 {
     internal CompilationUnitSyntax(IEnumerable<ExpressionSyntax> exprs, IEnumerable<AtDiagnostic> diagnostics) : base(exprs, diagnostics)
     {
-        
+        Expressions = new AtSyntaxList<ExpressionSyntax>(this,exprs);
     }   
+
+    public AtSyntaxList<ExpressionSyntax> Expressions {get;}
 }
 }
