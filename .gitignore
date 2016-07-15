@@ -1,4 +1,5 @@
 ﻿
+**/Backup/
 **/packages/
 **/bin/**
 **/obj/**
@@ -9,6 +10,7 @@
 *.vsp
 
 x.dll
+UpgradeLog.htm
 
 
 
