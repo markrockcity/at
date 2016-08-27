@@ -10,8 +10,6 @@
 *.vsp
 
 x.dll
-UpgradeLog.htm
-
-
-
+UpgradeLog*
+AtVs2015.sln
 
