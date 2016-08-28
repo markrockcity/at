@@ -2,9 +2,9 @@
 
 namespace At.Syntax
 {
-public class ExpressionClusterSyntax : AtSyntaxNode
+public class ExpressionClusterSyntax : ExpressionSyntax
 {
-    internal ExpressionClusterSyntax(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) : base(nodes,diagnostics)
+    internal ExpressionClusterSyntax(IEnumerable<AtSyntaxNode> nodes, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) : base(nodes,expDef,diagnostics)
     {
     }
 }

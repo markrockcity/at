@@ -12,16 +12,18 @@ public class TypeDeclarationSyntax: DeclarationSyntax
                                 ListSyntax<ParameterSyntax> typeParameterList, 
                                 ListSyntax<NameSyntax> baseList,
                                 IEnumerable<DeclarationSyntax> members,
+                                IExpressionSource expDef,
                                 IEnumerable<AtSyntaxNode> nodes,
                                 IEnumerable<AtDiagnostic> diagnostics) : 
-        base(atSymbol, identifier, nodes, diagnostics)
+        base(atSymbol, new NameSyntax(identifier), nodes, expDef, diagnostics)
     {
+        Identifier = identifier;
         TypeParameters = typeParameterList;
         BaseTypes = baseList;
         Members = new AtSyntaxList<DeclarationSyntax>(this,members);
     }
 
-
+    public AtToken Identifier {get;}
     public ListSyntax<NameSyntax> BaseTypes {get;}
     public ListSyntax<ParameterSyntax> TypeParameters {get;}
     public AtSyntaxList<DeclarationSyntax> Members {get;}

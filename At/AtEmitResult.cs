@@ -9,7 +9,7 @@ public class AtEmitResult
     bool success = false;
     IEnumerable<string> convertedSources;
 
-    public AtEmitResult(bool success,ImmutableArray<Diagnostic> diagnostics,IEnumerable<string> convertedSources)
+    public AtEmitResult(bool success,ImmutableArray<AtDiagnostic> diagnostics,IEnumerable<string> convertedSources)
     {
         this.success     = success;
         this.Diagnostics = diagnostics;
@@ -21,7 +21,7 @@ public class AtEmitResult
         get { return this.success; }
     }
 
-    public ImmutableArray<Diagnostic> Diagnostics {get;}
+    public ImmutableArray<AtDiagnostic> Diagnostics {get;}
 
     public IEnumerable<string>  ConvertedSources() {return convertedSources;}
 

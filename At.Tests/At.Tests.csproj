@@ -73,9 +73,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\At\At.csproj">
+    <ProjectReference Include="..\At\at.csproj">
       <Project>{52c0a647-013f-477b-9b10-fd0c28c089ce}</Project>
-      <Name>At</Name>
+      <Name>at</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

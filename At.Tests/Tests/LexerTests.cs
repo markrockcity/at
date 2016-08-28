@@ -24,7 +24,7 @@ public class LexerTests : Test
         lexerTest("@x = 5\r\n5", expectedTokenCount:  1);
 
 
-        lexer.TriviaDefinitions.Add(TokenDefinition.StartOfFile);
+        lexer.TriviaRules.Add(TokenRule.StartOfFile);
         lexerTest("x", 1,tokens =>
         {
             Write(()=>tokens[0].leadingTrivia);
@@ -32,10 +32,10 @@ public class LexerTests : Test
             assert_equals(TokenKind.StartOfFile,sof.Kind);
         });  
         
-        lexer.TokenDefinitions.Add(TokenDefinition.StartOfFile);  
+        lexer.TokenRules.Add(TokenRule.StartOfFile);  
         lexerTest("x",expectedTokenCount: 2); // <StartOfFile> & 'x'
 
-        lexer.TriviaDefinitions.Add(TokenDefinition.EndOfFile);
+        lexer.TriviaRules.Add(TokenRule.EndOfFile);
         lexerTest("x",a:tokens=>
         {            
             Write(()=>tokens[1].trailingTrivia);
@@ -43,35 +43,35 @@ public class LexerTests : Test
             assert_equals(TokenKind.EndOfFile,eof.Kind);  
         });
 
-        lexer.TokenDefinitions.Add(TokenDefinition.EndOfFile);   
+        lexer.TokenRules.Add(TokenRule.EndOfFile);   
         lexerTest("x",3); // <StartOfFile> & 'x' & <EOF>
 
-        lexer.TokenDefinitions.Clear();
-        lexer.TriviaDefinitions.Add(TokenDefinition.Space);   
+        lexer.TokenRules.Clear();
+        lexer.TriviaRules.Add(TokenRule.Space);   
         lexerTest("a b",2,tokens=>Write(()=>tokens.Select(_=>new {_, _.leadingTrivia, _.trailingTrivia})));
         
-        lexer.TriviaDefinitions.Add(TokenDefinition.EndOfLine);
+        lexer.TriviaRules.Add(TokenRule.EndOfLine);
         lexerTest("a\r\n b",2);
 
-        lexer.TokenDefinitions.Add(TokenDefinition.AtSymbol);
-        lexer.TokenDefinitions.Add(TokenDefinition.LessThan);
-        lexer.TokenDefinitions.Add(TokenDefinition.GreaterThan);
-        lexer.TokenDefinitions.Add(TokenDefinition.SemiColon);
-        lexer.TokenDefinitions.Add(TokenDefinition.Colon);
-        lexer.TokenDefinitions.Add(TokenDefinition.OpenBrace);
-        lexer.TokenDefinitions.Add(TokenDefinition.OpenParenthesis);
-        lexer.TokenDefinitions.Add(TokenDefinition.CloseBrace);
-        lexer.TokenDefinitions.Add(TokenDefinition.CloseParenthesis);
-        lexer.TokenDefinitions.Add(TokenDefinition.Comma);
+        lexer.TokenRules.Add(TokenRule.AtSymbol);
+        lexer.TokenRules.Add(TokenRule.LessThan);
+        lexer.TokenRules.Add(TokenRule.GreaterThan);
+        lexer.TokenRules.Add(TokenRule.SemiColon);
+        lexer.TokenRules.Add(TokenRule.Colon);
+        lexer.TokenRules.Add(TokenRule.OpenBrace);
+        lexer.TokenRules.Add(TokenRule.OpenParenthesis);
+        lexer.TokenRules.Add(TokenRule.CloseBrace);
+        lexer.TokenRules.Add(TokenRule.CloseParenthesis);
+        lexer.TokenRules.Add(TokenRule.Comma);
         lexerTest("a;<>,\r\n@b:{}(c)",13);
 
-        lexer.TokenDefinitions.Add(TokenDefinition.StringLiteral);
+        lexer.TokenRules.Add(TokenRule.StringLiteral);
         lexerTest(@"a""b{};\""\ \\""c",3); // a, "b{};\"\ \", c
 
-        lexer.TokenDefinitions.Add(TokenDefinition.Dots);
+        lexer.TokenRules.Add(TokenRule.Dots);
         lexerTest(".a ..b ...c",6); //., a, .., b, ..., c
 
-        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+        lexer.TokenRules.Add(TokenRule.NumericLiteral);
         lexerTest("a 9.0.b c",5); // a, 9.0, ., b, c
     }
 
@@ -89,7 +89,7 @@ public class LexerTests : Test
     [TestMethod]
     public void NumericLiteralTest()
     {
-        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+        lexer.TokenRules.Add(TokenRule.NumericLiteral);
 
         foreach(var n in numericLiterals())
         {

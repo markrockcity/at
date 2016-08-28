@@ -6,8 +6,8 @@ namespace At.Syntax
 //TODO: remove ErrorNode class
 public class ErrorNode : ExpressionSyntax
 {
-    public ErrorNode(IList<AtDiagnostic> diagnostics, string message, AtSyntaxNode node) : 
-        base(new[] {node},diagnostics)
+    public ErrorNode(IList<AtDiagnostic> diagnostics, string message, AtSyntaxNode node, IExpressionSource expDef=null) : 
+        base(new[] {node},expDef,diagnostics)
     {
         Diagnostics = diagnostics;
         Message = message;

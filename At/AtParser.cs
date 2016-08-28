@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using At;
 using At.Syntax;
-using static At.TokenKind;
-//using static At.KnownTokenKind;
+using static At.OperatorAssociativity;
+using static At.OperatorPosition;
 
 namespace At
 {
 public class AtParser : IDisposable
 {
+    const int initialPrescedence = 0;
 
     public AtParser() : this(AtLexer.Default()) {}
     public AtParser(AtLexer lexer)
@@ -19,53 +19,55 @@ public class AtParser : IDisposable
     }
 
     public AtLexer Lexer {get;}
+    public OperatorDefinitionList Operators {get;}   = new OperatorDefinitionList();
+    public ExpressionRuleList ExpressionRules {get;} = new ExpressionRuleList();
 
-    //ParseCompilationUnit()
+    //ParseCompilationUnit(input)
     public CompilationUnitSyntax ParseCompilationUnit(IEnumerable<char> input)
     {
         var tokens = new Scanner<AtToken>(Lexer.Lex(input));
         var diagnostics = new List<AtDiagnostic>();
-        var expressions = this.expressions(tokens,diagnostics);
+        var expressions = this.expressions(tokens,diagnostics,initialPrescedence);
         var compilationUnitSyntax = SyntaxFactory.CompilationUnit(expressions.ToList(),diagnostics);
 
         diagnostics.AddRange (compilationUnitSyntax.DescendantNodes()
                                                     .OfType<ExpressionClusterSyntax>()
-                                                    .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,"Compiler","Expression cluster: "+_,DiagnosticSeverity.Error,0,true)));   
+                                                    .Select(_=> AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,(AtToken) _.ChildNodes().FirstOrDefault(x=>x.IsToken),"Expression cluster: "+_)));   
         return compilationUnitSyntax;
     }
 
-    //Compilation Unit
-    IEnumerable<ExpressionSyntax> expressions(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
+    public static AtParser Default(AtLexer lexer = null)
+    {
+        var p = new AtParser(lexer ?? AtLexer.Default());
+        p.Operators.Add(0,OperatorDefinition.StartDeclaration);
+        p.Operators.Add(1,OperatorDefinition.PrefixDeclaration);
+        return p;
+    }
+
+    //ParseExpression(input)
+    public ExpressionSyntax ParseExpression(IEnumerable<char> input)
+    {
+        var tokens = new Scanner<AtToken>(Lexer.Lex(input));
+        var diagnostics = new List<AtDiagnostic>();
+
+        tokens.MoveNext(); //move to first token
+        Debug.Assert(tokens.Position==0);
+        var expr = expression(tokens,diagnostics,initialPrescedence);
+        return expr;
+    }
+
+    // **expressions()**
+    IEnumerable<ExpressionSyntax> expressions(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics,int prescendence)
     {
         if (tokens.Position < 0) 
             tokens.MoveNext();
 
         while (!tokens.End)
-        {
-            var token = tokens.Current;
-            
-            if (token.IsTrivia)
-            {
-                tokens.MoveNext();
-                continue;
-            }
-
-            if (   token.Kind == AtSymbol 
-                || token.Kind == StringLiteral 
-                || token.Kind == NumericLiteral 
-                || token.Kind == TokenCluster)
-            {   
-                yield return expression(tokens,diagnostics); 
-            }
-            else
-            {
-                tokens.MoveNext();
-                yield return error(diagnostics, DiagnosticIds.UnexpectedToken,token,$"char {token.Position}: Unexpected token: '{token.Text}' ({token.Kind})".Replace("{","{{").Replace("}","}}")); 
-            }
-        }        
+            yield return expression(tokens,diagnostics,prescendence);      
     }
 
-    ErrorNode error(List<AtDiagnostic> diagnostics,string diagnosticId,AtToken token,string f, params object[] args) 
+    //error()
+    internal static ErrorNode error(List<AtDiagnostic> diagnostics,string diagnosticId,AtToken token,string f, params object[] args) 
     {
         diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
 
@@ -75,10 +77,142 @@ public class AtParser : IDisposable
                                 token);
     }   
 
-    //expression (stringLiteral | id)
-    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
-    {
-        var current = tokens.Current;
+    //expression()
+    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int p = -1)
+    {           
+        AtToken start = null;
+        IOperatorDefinition startOp = null;
+        ExpressionSyntax leftOperand = null;
+
+        //predicate() - closes over {prescendence}
+        Func<IOperatorDefinition,bool> predicate = (IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
+        //bool predicate(IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
+
+        //BEGIN PARSING:
+
+        //No Operators??
+        if (Operators.Count==0)
+        return expressionCluster(new AtToken[0],tokens,null,diagnostics);
+
+        //End operator at beginning? (e.g., ";;")
+        var endOps = Operators.Where(_=>_.OperatorPosition==End);   
+        var endOp = endOps.FirstOrDefault(predicate);
+        if (endOp != null)
+            return endOp.CreateExpression(tokens.Consume());
+        
+        //Start operator? ("@[x;]", "if[(x){ ... }]", etc.)
+        var startOps = Operators.Where(_=>_.OperatorPosition==Start);
+        startOp = startOps.FirstOrDefault(predicate);
+        if (startOp != null)
+            start = tokens.Consume();
+        
+        //Prefix op ?
+        var prefixOps = Operators.SelectMany(_=>_).Where(_=>_.OperatorPosition==Prefix);
+        var prefixOp = prefixOps.FirstOrDefault(predicate);
+        if (prefixOp != null)
+        {
+            var prefixOpToken = tokens.Consume();
+            var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp));
+            leftOperand = prefixOp.CreateExpression(prefixOpToken, e);
+        }
+        else
+        {
+            //Expression-Definitions???
+
+            //checks passed-in position from recursive call to prevent stack overflow
+            if  (p != tokens.Position) 
+            {
+                leftOperand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position);
+            }
+            
+            //same position as before? check rules
+            else
+            {
+               //check expression/syntax definitions? based on previous call's operator?
+               //... based on whether current/next token is End/PostFix/Binary?
+
+                var exprRule = getRule(tokens);
+                if (exprRule != null)
+                {
+                    var pos = tokens.Position;
+
+                    leftOperand = exprRule.ParseExpression(tokens);
+
+                    if (pos == tokens.Position && leftOperand.Text.Length > 0)
+                        tokens.MoveNext();
+                }
+
+                if (leftOperand ==null)
+                {
+                    leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics); 
+                }
+
+               /*
+               if (tokens.Current.Kind==TokenKind.TokenCluster)
+               {    
+               
+                    //throw new NotImplementedException();
+
+                    
+                    leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics);
+                    
+               }
+               else
+               {
+                   //add to a tokens list and keep checking?
+               }*/
+
+                 // expressionCluster(new AtToken[0],tokens,null,diagnostics)
+            }
+        }
+
+        //End?
+        endOp = endOps.FirstOrDefault(predicate);
+        if (endOp != null)
+            return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
+
+        //Postfix?
+        var postfixOps = Operators.SelectMany(_=>_).Where(_=>_.OperatorPosition==Postfix);
+        var postfixOp = postfixOps.FirstOrDefault(predicate);
+        if (postfixOp != null)
+        {
+            var postfixOpToken = tokens.Consume();
+            leftOperand = postfixOp.CreateExpression(leftOperand,postfixOpToken);
+        }
+
+        //Binary op?
+        IOperatorDefinition binaryOp = null;
+        foreach(var ops in Operators)
+        {
+            binaryOp = ops.FirstOrDefault(_=>predicate(_) && _.OperatorPosition==Infix);
+            if (binaryOp != null)
+            {
+               //Same precedence, but not right-associative—deal with this "later"
+               if (Operators.Prescedence(binaryOp)==prescedence && binaryOp.Associativity!=Right)
+                 break;
+               
+               var opToken = tokens.Consume();
+               var rightOperand = expression(tokens,diagnostics,Operators.Prescedence(binaryOp));
+               leftOperand = binaryOp.CreateExpression(leftOperand, opToken, rightOperand);
+            }
+        }
+
+        //End?
+        endOp = endOps.FirstOrDefault(predicate);
+        if (endOp != null)
+            return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
+
+        return    endOp != null 
+                    ? endOp.CreateExpression(leftOperand != null 
+                                                ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} 
+                                                : new AtSyntaxNode[]{tokens.Consume()})
+                : start != null 
+                    ? startOp.CreateExpression(start,leftOperand) 
+
+                : leftOperand 
+                    ?? expressionCluster(new AtToken[0], tokens, null, diagnostics);
+
+         /*
 
         if (current.Kind == (AtSymbol)) 
             return declarationExpression(tokens,diagnostics);        
@@ -90,11 +224,42 @@ public class AtParser : IDisposable
             return literalExpression(tokens,diagnostics);
 
         throw new NotImplementedException($"{current.Kind}: {current.Text}");
-
-        /*return x.Kind==TokenKind.TokenCluster ? new ExpressionSyntax("id",x)
-                                                : new ExpressionSyntax("string literal",x);*/
+       */
     }
 
+    IExpressionRule getRule(Scanner<AtToken> tokens)
+    {
+        int k = -1;
+        IList<IExpressionRule> lastMatches = null, matches;
+
+        if (ExpressionRules.Count > 0)
+        {
+            k = -1;
+            //TODO: instead of re-querying {ExpressionRules} all the time, just do {lastMatches}
+            while((matches = ExpressionRules.Matches(tokens,++k)).Count>0)
+            {
+                lastMatches = matches;
+
+                if (tokens.End)
+                    break;
+            }
+
+            if (lastMatches?.Count > 0)
+                return lastMatches[0];
+        }    
+
+        return null;    
+    }
+
+    ExpressionClusterSyntax expressionCluster(IEnumerable<AtToken> tokens1, Scanner<AtToken> tokens2, IExpressionSource expSrc, List<AtDiagnostic> diagnostics)
+    {
+        var nodes = new List<AtSyntaxNode>(tokens1);
+        while (!tokens2?.End ?? false)
+            nodes.Add(tokens2.Consume());
+        return new ExpressionClusterSyntax(nodes,expSrc,diagnostics);
+    }
+
+    /*
     LiteralExpressionSyntax literalExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
         assertCurrentAny(tokens,NumericLiteral,StringLiteral);
@@ -105,7 +270,7 @@ public class AtParser : IDisposable
     DirectiveSyntax directiveExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
     {
         var nodes = new List<AtSyntaxNode>();
-        var directive = tokens.Consume()/*(TokenCluster)*/; nodes.Add(directive);
+        var directive = tokens.Consume()/*(TokenCluster)* /; nodes.Add(directive);
         var name = this.name(tokens,diagnostics); nodes.Add(name);
 
         AtToken semiColon = null;
@@ -267,7 +432,7 @@ public class AtParser : IDisposable
         }
 
         return SyntaxFactory.Block(leftBrace,contents,rightBrace:consumeToken(CloseBrace));
-    }*/
+    }* /
 
     //used by declarationExpression()
     ParameterSyntax methodParameter(Scanner<AtToken> tokens,List<AtDiagnostic> diagnostics)
@@ -352,6 +517,7 @@ public class AtParser : IDisposable
         return true;
     }
 
+    */
 
     void IDisposable.Dispose()
     {

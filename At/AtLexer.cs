@@ -4,37 +4,37 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using static At.TokenDefinition;
+using static At.TokenRule;
 
 namespace At
 {
 public class AtLexer : IDisposable
 {
-    public TokenDefinitionList TokenDefinitions  {get;} = new TokenDefinitionList();
-    public TokenDefinitionList TriviaDefinitions {get;} = new TokenDefinitionList();
+    public TokenRuleList TokenRules  {get;} = new TokenRuleList();
+    public TokenRuleList TriviaRules {get;} = new TokenRuleList();
 
     public static AtLexer Default()
     {
         var lexer = new AtLexer();
 
-        lexer.TriviaDefinitions.Add(TokenDefinition.Space);  
-        lexer.TriviaDefinitions.Add(TokenDefinition.EndOfLine);
-        lexer.TriviaDefinitions.Add(StartOfFile);
-        lexer.TriviaDefinitions.Add(EndOfFile);
+        lexer.TriviaRules.Add(TokenRule.Space);  
+        lexer.TriviaRules.Add(TokenRule.EndOfLine);
+        lexer.TriviaRules.Add(StartOfFile);
+        lexer.TriviaRules.Add(EndOfFile);
 
-        lexer.TokenDefinitions.Add(TokenDefinition.SemiColon);
-        lexer.TokenDefinitions.Add(TokenDefinition.LessThan);
-        lexer.TokenDefinitions.Add(TokenDefinition.AtSymbol);
-        lexer.TokenDefinitions.Add(TokenDefinition.GreaterThan);        
-        lexer.TokenDefinitions.Add(TokenDefinition.Dots);
-        lexer.TokenDefinitions.Add(TokenDefinition.Colon);
-        lexer.TokenDefinitions.Add(TokenDefinition.OpenBrace);
-        lexer.TokenDefinitions.Add(TokenDefinition.OpenParenthesis);
-        lexer.TokenDefinitions.Add(TokenDefinition.CloseBrace);
-        lexer.TokenDefinitions.Add(TokenDefinition.CloseParenthesis);
-        lexer.TokenDefinitions.Add(TokenDefinition.Comma);
-        lexer.TokenDefinitions.Add(TokenDefinition.StringLiteral); 
-        lexer.TokenDefinitions.Add(TokenDefinition.NumericLiteral);
+        lexer.TokenRules.Add(TokenRule.SemiColon);
+        lexer.TokenRules.Add(TokenRule.LessThan);
+        lexer.TokenRules.Add(TokenRule.AtSymbol);
+        lexer.TokenRules.Add(TokenRule.GreaterThan);        
+        lexer.TokenRules.Add(TokenRule.Dots);
+        lexer.TokenRules.Add(TokenRule.Colon);
+        lexer.TokenRules.Add(TokenRule.OpenBrace);
+        lexer.TokenRules.Add(TokenRule.OpenParenthesis);
+        lexer.TokenRules.Add(TokenRule.CloseBrace);
+        lexer.TokenRules.Add(TokenRule.CloseParenthesis);
+        lexer.TokenRules.Add(TokenRule.Comma);
+        lexer.TokenRules.Add(TokenRule.StringLiteral); 
+        lexer.TokenRules.Add(TokenRule.NumericLiteral);
 
         return lexer;
     }
@@ -47,7 +47,7 @@ public class AtLexer : IDisposable
 
         //<StartOfFile>? 
         AtSyntaxTrivia sof = null;
-        if (TokenDefinitions.Contains(TokenDefinition.StartOfFile))
+        if (TokenRules.Contains(TokenRule.StartOfFile))
             yield return (sof = new AtSyntaxTrivia(TokenKind.StartOfFile,0));
 
         AtToken _token = null;
@@ -58,7 +58,7 @@ public class AtLexer : IDisposable
 
             if (c == '\0') //NUL is before beginning and after end
             {
-                if (chars.Position<0 && TriviaDefinitions.Contains(TokenDefinition.StartOfFile))
+                if (chars.Position<0 && TriviaRules.Contains(TokenRule.StartOfFile))
                     leadingTrivia.Add(sof ?? new AtSyntaxTrivia(TokenKind.StartOfFile,0));                               
 
                 if (chars.End)
@@ -68,7 +68,7 @@ public class AtLexer : IDisposable
             }
 
             //trivia (non-tokens)
-            var triviaDef = getDefinition(TriviaDefinitions,chars);
+            var triviaDef = getRule(TriviaRules,chars);
             if (triviaDef != null)
             {
                 var p = chars.Position;
@@ -82,12 +82,12 @@ public class AtLexer : IDisposable
             //tokens
             if (_token == null )
             {
-                var tokenDef = getDefinition(TokenDefinitions,chars);    
+                var tokenRule = getRule(TokenRules,chars);    
 
-                if (tokenDef != null)
+                if (tokenRule != null)
                 {
                     var p = chars.Position;
-                    _token = tokenDef.Lex(chars);
+                    _token = tokenRule.Lex(chars);
                     if (p == chars.Position && _token.Text.Length > 0)
                         chars.MoveNext();
                     continue;
@@ -102,7 +102,7 @@ public class AtLexer : IDisposable
 
             end:
             {
-                if (chars.End && TriviaDefinitions.Contains(TokenDefinition.EndOfFile))
+                if (chars.End && TriviaRules.Contains(TokenRule.EndOfFile))
                     trailingTrivia.Add(new AtSyntaxTrivia(TokenKind.EndOfFile,chars.Position+1));
             
                 if (leadingTrivia.Count > 0)
@@ -120,15 +120,15 @@ public class AtLexer : IDisposable
             }
         }  
 
-        if (TokenDefinitions.Contains(TokenDefinition.EndOfFile))
+        if (TokenRules.Contains(TokenRule.EndOfFile))
             yield return new AtSyntaxTrivia(TokenKind.EndOfFile,chars.Position+1);
     }
 
 
-    //# token cluster
+    // **token cluster**
     AtToken tokenCluster(Scanner<char> chars)
     {
-        return token(TokenKind.TokenCluster,chars,c=>isPartOfTokenCluster(c,chars));
+        return token(TokenKind.TokenCluster,chars,null,c=>isPartOfTokenCluster(c,chars));
     }
 
     bool isPartOfTokenCluster(char c,Scanner<char> chars)
@@ -138,25 +138,25 @@ public class AtLexer : IDisposable
 
     bool isAllowedInTokenCluster(char c,Scanner<char> chars)
     {
-        return getDefinition(TokenDefinitions,chars)?.IsAllowedInTokenCluster ?? true;
+        return getRule(TokenRules,chars)?.IsAllowedInTokenCluster ?? true;
     }
 
     //is trivia (non-tokens)
     bool isTrivia(char c, Scanner<char> chars)
     {
-        return getDefinition(TriviaDefinitions,chars) != null;
+        return getRule(TriviaRules,chars) != null;
     }
 
-    ITokenDefinition getDefinition(TokenDefinitionList definitions, Scanner<char> chars)
+    ITokenRule getRule(TokenRuleList rules, Scanner<char> chars)
     {
         int k = -1;
-        IList<ITokenDefinition> lastMatches = null, matches;
+        IList<ITokenRule> lastMatches = null, matches;
 
-        if (definitions.Count > 0)
+        if (rules.Count > 0)
         {
             k = -1;
-            //TODO: instead of re-querying {definitions} all the time, just do {lastMatches}
-            while((matches = definitions.Matches(chars,++k)).Count>0)
+            //TODO: instead of re-querying {rules} all the time, just do {lastMatches}
+            while((matches = rules.Matches(chars,++k)).Count>0)
             {
                 lastMatches = matches;
 
@@ -171,17 +171,20 @@ public class AtLexer : IDisposable
         return null;
     }
 
-    internal static  AtToken token (
+    internal static  AtToken token 
+    (
         TokenKind kind, 
         Scanner<char> buffer, 
+        ITokenRule tokendef,
         Func<char,bool> predicate=null) {
         
-            return token<AtToken>(kind,buffer,predicate);
-        }
+        return token<AtToken>(kind,buffer,tokendef,predicate);
+    }
     internal static  T token<T>
     (
         TokenKind kind, 
         Scanner<char> buffer, 
+        ITokenRule tokendef,
         Func<char,bool> predicate=null)
         
         where T : AtToken {
@@ -199,8 +202,8 @@ public class AtLexer : IDisposable
         var text = sb.ToString();
 
         return typeof(T)==typeof(AtSyntaxTrivia)
-                ? (T) (object) new AtSyntaxTrivia(kind,pos,text)
-                : (T) new AtToken(kind,pos,text);
+                ? (T) (object) new AtSyntaxTrivia(kind,pos,text,tokendef)
+                : (T) new AtToken(kind,pos,text,tokendef);
     }
 
     void IDisposable.Dispose(){}

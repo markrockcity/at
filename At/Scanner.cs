@@ -22,9 +22,10 @@ public class Scanner<T> : IScanner<T>, IEnumerator<T>
     T current;
     int position = -1;
 
-    public Scanner(IEnumerable<T> input)
+    public Scanner(IEnumerable<T> input) : this(input.GetEnumerator()) {}
+    public Scanner(IEnumerator<T> input)
     {
-        enumerator = input.GetEnumerator();
+        enumerator = input;
     }
 
     public T    Current  {get {return current;}}

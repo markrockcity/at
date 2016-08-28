@@ -9,8 +9,8 @@ namespace At.Syntax
 public class NameSyntax : ExpressionSyntax
 {
     
-    internal NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null, IEnumerable<AtDiagnostic> diagnostics = null) :
-         base(_nodes(identifier,typeArgs),diagnostics)
+    internal NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null,IExpressionSource expDef = null, IEnumerable<AtDiagnostic> diagnostics = null) :
+         base(_nodes(identifier,typeArgs),expDef,diagnostics)
     {
         Debug.Assert(identifier!= null);
     

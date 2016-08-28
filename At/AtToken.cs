@@ -17,54 +17,35 @@ public class AtToken : AtSyntaxNode
         TokenKind kind, 
         int       position,
         string    text=null, 
+        ITokenRule tokenDefinition = null,
         IEnumerable<AtDiagnostic> diagnostics = null) 
 
         : base(new AtSyntaxNode[0],diagnostics){
 
-        this.Text     = text;
-        this.Position = position;
-        this._kind    = kind;
+        Text            = text;
+        TokenDefinition = tokenDefinition;
+        Position        = position;
+        _kind           = kind;
     }
 
-    public override bool IsToken
-    {
-        get
-        {
-            return true;
-        }
-    }
+    public override bool   IsToken => true;
+    public override int    Position {get;}
+    public override string Text     {get;}
 
-    public TokenKind Kind => _kind;
-    public int RawKind => _kind.value;
+    public TokenKind Kind    => _kind;
+    public int       RawKind => _kind.value;
 
-    public override int Position
-    {
-        get;
-    }
+    /// <summary>The token definition used by the lexer to extract this token.</summary>
+    public ITokenRule TokenDefinition {get;}
 
-    public override string Text
-    {
-        get;
-    }
+    public override string FullText =>
+        string.Concat(string.Concat(leadingTrivia.Select(_=>_.FullText)),
+                        Text,
+                        string.Concat(trailingTrivia.Select(_=>_.FullText)));
 
-    public override string FullText
-    {
-        get
-        {
-            return 
-                string.Concat(
-                    string.Concat(leadingTrivia.Select(_=>_.FullText)),
-                    Text,
-                    string.Concat(trailingTrivia.Select(_=>_.FullText)));
-        }
-    }
-
-    public override string ToString()
-    {
-        return 
-            Kind==TokenKind.EndOfFile ? "<EOF>" :
-            Kind==TokenKind.StartOfFile ? "<StartOfFile>" :
-            $"{Kind.Name}({Text})";
-    }
+    public override string ToString() =>
+        Kind==TokenKind.EndOfFile ? "<EOF>" :
+        Kind==TokenKind.StartOfFile ? "<StartOfFile>" :
+        $"{Kind.Name}({Text})";
 }
 }

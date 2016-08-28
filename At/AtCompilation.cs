@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using At.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -56,6 +57,8 @@ public class AtCompilation
 
     public AtEmitResult Emit(CancellationToken cancellationToken = default(CancellationToken))
     {
+        checkForExpressionClusters();
+    
         var cSharpTrees = csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
  
         var cSharpCompilation = CSharpCompilation.Create(  assemblyName
@@ -69,6 +72,8 @@ public class AtCompilation
 
     public AtEmitResult Emit(Stream peStream, CancellationToken cancellationToken = default(CancellationToken)) 
     {
+        checkForExpressionClusters();
+    
         if (peStream == null)
         {
             throw new ArgumentNullException(nameof(peStream));
@@ -90,7 +95,14 @@ public class AtCompilation
         return atEmitREsult(result, cSharpTrees,cancellationToken);
     }
 
-    private IEnumerable<CSharpSyntaxTree> csharpSyntaxTrees(ImmutableArray<AtSyntaxTree> atSyntaxTrees)
+    void checkForExpressionClusters()
+    {
+        var cluster = _syntaxAndDeclarations.syntaxTrees.SelectMany(_=>_.GetRoot().DescendantNodes().OfType<ExpressionClusterSyntax>()).FirstOrDefault();
+        if (cluster != null)
+            throw new CompilationException(new AtEmitResult(false,ImmutableArray<AtDiagnostic>.Empty.Add(AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,cluster,"Cannot compile syntax trees with expression clusters")),new string[0]));
+    }
+
+    IEnumerable<CSharpSyntaxTree> csharpSyntaxTrees(ImmutableArray<AtSyntaxTree> atSyntaxTrees)
     {
        
         foreach(var tree in atSyntaxTrees)
@@ -103,7 +115,7 @@ public class AtCompilation
     AtEmitResult atEmitREsult(EmitResult result, IEnumerable<SyntaxTree> syntaxTrees,CancellationToken cancellationToken)
     {
         return new AtEmitResult(  result.Success
-                                 ,result.Diagnostics
+                                 ,ImmutableArray<AtDiagnostic>.Empty.AddRange(result.Diagnostics.Select(_=>new MsDiagnostic(_)))
                                  ,syntaxTrees.Select(_=>_.GetRoot().NormalizeWhitespace().ToFullString()));
     }
 }

@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using At.Syntax;
 
 namespace At
 {
@@ -17,6 +19,7 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
         if (nodes == null)
             return;
         
+        var nodeList = new List<TNode>();
         foreach(var node in nodes)
         {
             if (node == null)
@@ -24,17 +27,21 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
 
             // - this might give a false negative where the parent wasn't changed
             //   but the child nodes have changed (e.g., in another thread)... maybe?
-            if (node.Parent == owner)
-                continue;
-
             if (node.Parent != null)
-                throw new Exception("Adding nodes that already have parents is not allowed");
-            
-            node.Parent = owner;
+            {                
+               var _node = (TNode) node.Clone();
+               _node.Parent = owner;
+               nodeList.Add(_node);
+            }
+            else
+            {
+               node.Parent = owner;
+               nodeList.Add(node);
+            }
         }
 
-    
-        this.nodes = this.nodes.AddRange(nodes);
+        Debug.Assert(nodeList.TrueForAll(_=>_.Parent==owner));
+        this.nodes = this.nodes.AddRange(nodeList);
     }
 
     public TNode this[int index]

@@ -8,7 +8,7 @@ namespace At
 //SyntaxNode + CSharpSyntaxNode + GreenNode
 public abstract class AtSyntaxNode
 {
-    readonly AtSyntaxList<AtSyntaxNode> nodes;
+    readonly AtSyntaxList<AtSyntaxNode>   nodes;
     readonly ImmutableArray<AtDiagnostic> diagnostics;
 
     protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) 
@@ -20,36 +20,11 @@ public abstract class AtSyntaxNode
             this.diagnostics = this.diagnostics.AddRange(diagnostics.Where(_=>_!=null));
     }
 
-    public AtSyntaxNode(AtToken[] atToken)
-    {
-        this.atTokens = atToken;
-    }
-
-    public AtSyntaxNode Parent {get; internal set;}
-
-    public virtual bool IsTrivia
-    {
-        get
-        {
-            return false;
-        }
-    }
-
-    public virtual bool IsToken
-    {
-        get
-        {
-            return false;
-        }
-    }
-
-    public virtual int Position
-    {
-        get
-        {
-            return nodes[0].Position;
-        }
-    }
+    public AtSyntaxNode   Parent {get; internal set;}
+    public virtual bool   IsTrivia => false;
+    public virtual bool   IsToken  => false;
+    public virtual int    Position => nodes[0].Position;
+    public virtual string Text => FullText.Trim();
 
     /// <summary>Includes trivia</summary>
     public virtual string FullText
@@ -63,47 +38,24 @@ public abstract class AtSyntaxNode
         }
     } string _text;
 
-    AtToken[] atTokens;
+    public AtToken AsToken() => this as AtToken;
+    public virtual AtSyntaxNode Clone() => (AtSyntaxNode) MemberwiseClone();
+    public override string ToString() => FullText;
+    public IEnumerable<AtDiagnostic> GetDiagnostics() => diagnostics;
+    public IReadOnlyList<AtSyntaxNode> ChildNodes(bool includeTokens = false) => nodes.Where(_=>includeTokens || !_.IsToken).ToImmutableList(); 
+    public IEnumerable<AtSyntaxNode> DescendantNodes(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false) => nodesRecursive(this,includeTokens,filter);
 
-    public virtual string Text
-    {
-        get
-        {
-            return FullText.Trim();
-        }
-    } 
-
-    public IEnumerable<AtDiagnostic> GetDiagnostics()
-    {
-        return diagnostics;
-    }
-
-    public IEnumerable<AtSyntaxNode> ChildNodes(bool includeTokens = false)
-    {
-        return nodes.Where(_=>includeTokens || !_.IsToken); 
-    }
-
-    public IEnumerable<AtSyntaxNode> DescendantNodes(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false)
-    {
-        return nodesRecursive(this,includeTokens,filter);
-    }
-
-    public override string ToString()
-    {
-        return FullText;
-    }
-
-    private IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> filter)
+    IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> predicate)
     {
         foreach(var node in parent?.nodes.Where
-        (_=>   
-               (_!=null) 
-            && (includeTokens || !_.IsToken) 
-            && (filter==null  || filter(_)))) {
+        (ifNode=>  
+               (ifNode!=null)
+            && (includeTokens   || !ifNode.IsToken) 
+            && (predicate==null || predicate(ifNode)))) {
 
             yield return node;
 
-            foreach(var descendant in nodesRecursive(node,includeTokens, filter))
+            foreach(var descendant in nodesRecursive(node,includeTokens, predicate))
                 yield return descendant;
         }
     }

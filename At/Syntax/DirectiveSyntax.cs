@@ -12,9 +12,10 @@ public class DirectiveSyntax : ExpressionSyntax
         AtToken   directive, 
         NameSyntax ns,
         IEnumerable<AtSyntaxNode> nodes=null,
+        IExpressionSource expDef = null,
         IEnumerable<AtDiagnostic> diagnostics=null) 
         
-        : base(nodes??new AtSyntaxNode[] {directive,ns},diagnostics){    
+        : base(nodes??new AtSyntaxNode[] {directive,ns},expDef,diagnostics){    
 
         this.Directive = directive;
         this.Name = ns;

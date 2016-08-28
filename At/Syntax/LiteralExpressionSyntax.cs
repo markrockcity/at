@@ -9,9 +9,10 @@ public class LiteralExpressionSyntax : ExpressionSyntax
     (
         AtToken literalToken,
         IEnumerable<AtSyntaxNode> nodes,
+        IExpressionSource expSrc,
         IEnumerable<AtDiagnostic> diagnostics) 
 
-        : base(nodes, diagnostics) {
+        : base(nodes, expSrc, diagnostics) {
 
         this.Literal = literalToken;
     }

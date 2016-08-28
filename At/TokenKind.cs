@@ -10,6 +10,7 @@ public struct TokenKind : IEquatable<TokenKind>
 {
     internal int value;
 
+    static HashSet<TokenKind> builtin = new HashSet<TokenKind>();
     static HashSet<int> values = new HashSet<int>();
     static Lazy<Dictionary<int,string>> names = new Lazy<Dictionary<int,string>>(()=>
     {
@@ -48,6 +49,11 @@ public struct TokenKind : IEquatable<TokenKind>
     public static readonly TokenKind Ellipsis= 7;
     public static readonly TokenKind Comma= 8216;
 
+    static TokenKind()
+    {
+        foreach(var f in typeof(TokenKind).GetFields().Where(_=>_.IsStatic && _.IsPublic))
+            builtin.Add((TokenKind) f.GetValue(null));
+    }
 
     public TokenKind(int value, string name = null)
     {
@@ -63,12 +69,12 @@ public struct TokenKind : IEquatable<TokenKind>
 
     public string Name => name();
 
-    //TODO: implement
-    public bool IsBuiltIn(TokenKind kind) => true; 
+    public bool IsBuiltIn(TokenKind kind) => builtin.Contains(kind); 
     public bool Equals(TokenKind tk) => (tk.value == value);
     public override bool Equals(object obj) => obj is TokenKind && Equals((TokenKind)obj);
     public override int GetHashCode() => value.GetHashCode();
     public override string ToString() => $"{{TokenKind: {name()}}}";
+
     public static bool operator==(TokenKind a, TokenKind b) => a.Equals(b);
     public static bool operator!=(TokenKind a, TokenKind b) => !a.Equals(b);
     public static implicit operator TokenKind(int value) => new TokenKind(value);

@@ -9,9 +9,14 @@ namespace At
 public class BlockSyntax : ExpressionSyntax 
 {
 
-    internal BlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics) : 
-        base(new AtSyntaxNode[] {startDelimiter}.Concat(contents).Concat(new[] {endDelimiter}), diagnostics) 
+    internal BlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) : 
+        base(new AtSyntaxNode[] {startDelimiter}.Concat(contents).Concat(new[] {endDelimiter}), expDef,diagnostics) 
     {
+        StartDelimiter = startDelimiter;
+        EndDelimiter = endDelimiter;
     }
+
+    public AtToken StartDelimiter {get;}
+    public AtToken EndDelimiter {get;}
 }
 }

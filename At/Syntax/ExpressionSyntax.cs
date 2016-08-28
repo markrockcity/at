@@ -7,9 +7,12 @@ namespace At.Syntax
 public abstract class ExpressionSyntax : AtSyntaxNode
 {
 
-    protected ExpressionSyntax(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) : base(nodes,diagnostics)
+    protected ExpressionSyntax(IEnumerable<AtSyntaxNode> nodes, IExpressionSource expressionSource, IEnumerable<AtDiagnostic> diagnostics) : base(nodes,diagnostics)
     {
+        ExpressionSource = expressionSource;
     }
 
+    //The expression definition that created this expression
+    public IExpressionSource ExpressionSource {get;}
 }
 }

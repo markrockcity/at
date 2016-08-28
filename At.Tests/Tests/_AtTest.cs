@@ -25,7 +25,7 @@ public class AtTest : Test
     //verify output (syntax tree - declaration)
     protected T verifyOutput<T>(string input, AtSyntaxTree tree, string id) where T : atSyntax.DeclarationSyntax
     {
-        return verifyOutput<T>(input,tree,id,decl=>decl.Identifier.Text);
+        return verifyOutput<T>(input,tree,id,decl=>((IHasIdentifier)decl).Identifier.Text);
     }
 
     //verify output (syntax tree)
@@ -38,20 +38,25 @@ public class AtTest : Test
         var root = atTree.GetRoot();
         assert_equals(()=>input,()=>root.FullText);
 
-        var node = root.DescendantNodes().OfType<T>().First();
+        var node = root.DescendantNodes().OfType<T>().FirstOrDefault();
+        if (node == null)
+            
         assert_equals(()=>expectedId, ()=>actualId(node));
 
         return node;
     }
 
     //verify output (C# tree)
-    protected void verifyOutput<T>(cs.CSharpSyntaxTree csharpTree,
-                         string id,
-                         Func<T,string> getId,
-                         string id2 = null,
-                         Func<T,string> getId2 = null) 
-        where T : csSyntax.MemberDeclarationSyntax
-    {
+    protected void verifyOutput<T>
+    (
+        cs.CSharpSyntaxTree csharpTree,
+        string              id,
+        Func<T,string>      getId,
+        string              id2    = null,
+        Func<T,string>      getId2 = null) 
+
+        where T : csSyntax.MemberDeclarationSyntax {
+
         var csRoot = csharpTree.GetRoot();
         Write(csRoot);
 

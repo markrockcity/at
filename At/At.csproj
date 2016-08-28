@@ -22,6 +22,8 @@
     <AssemblyVersionSettings>None.None.None.Increment</AssemblyVersionSettings>
     <AssemblyFileVersionSettings>None.None.None.Increment</AssemblyFileVersionSettings>
     <AssemblyInfoVersionSettings>None.None.None.Increment</AssemblyInfoVersionSettings>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -32,6 +34,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -41,6 +44,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CodeAnalysis, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -112,10 +116,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AtCompilation.cs" />
+    <Compile Include="AtCompiler.cs" />
+    <Compile Include="DeclaratorDefinition.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="AtSyntaxNode.cs" />
     <Compile Include="AtSyntaxList.cs" />
     <Compile Include="AtSyntaxTrivia.cs" />
+    <Compile Include="ExpressionRule.cs" />
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="OperatorDefinition.cs" />
+    <Compile Include="SyntaxDefinition.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />
     <Compile Include="Syntax\DirectiveSyntax.cs" />
@@ -127,7 +137,6 @@
     <Compile Include="SyntaxTreeConverter.cs" />
     <Compile Include="Syntax\BlockSyntax.cs" />
     <Compile Include="DiagnosticIds.cs" />
-    <Compile Include="DiagnosticSeverity.cs" />
     <Compile Include="Syntax\ExpressionSyntax.cs" />
     <Compile Include="SyntaxFactory.cs" />
     <Compile Include="Syntax\CompilationUnitSyntax.cs" />
@@ -146,7 +155,8 @@
     <Compile Include="Syntax\ListSyntax.cs" />
     <Compile Include="Syntax\ParameterSyntax.cs" />
     <Compile Include="Syntax\VariableDeclarationSyntax.cs" />
-    <Compile Include="TokenDefinition.cs" />
+    <Compile Include="Syntax\TokenClusterSyntax.cs" />
+    <Compile Include="TokenRule.cs" />
     <Compile Include="TokenKind.cs" />
   </ItemGroup>
   <ItemGroup>

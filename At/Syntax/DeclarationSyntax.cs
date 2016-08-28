@@ -4,16 +4,16 @@ namespace At.Syntax
 {
 public abstract class DeclarationSyntax : ExpressionSyntax
 {
-    protected DeclarationSyntax(
-                        AtToken atSymbol, 
-                        AtToken identifier, 
-                        IEnumerable<AtSyntaxNode> nodes,
-                        IEnumerable<AtDiagnostic> diagnostics) : 
-        base(nodes, diagnostics)
-    {
-        this.Identifier = identifier;
-    }
+    protected DeclarationSyntax
+    (
+        AtToken delcarationOperator, // "@"
+        ExpressionSyntax expression, 
+        IEnumerable<AtSyntaxNode> nodes,
+        IExpressionSource expDef,
+        IEnumerable<AtDiagnostic> diagnostics ) : 
 
-    public AtToken Identifier {get;}
+        base(nodes, expDef, diagnostics) {
+
+    }
 }
 }

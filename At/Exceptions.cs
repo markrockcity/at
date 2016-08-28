@@ -29,7 +29,7 @@ public class CompilationException : AtException
 
     internal CompilationException(AtEmitResult result) : base
     (
-       result.ConvertedSources().First()+result.Diagnostics[0].GetMessage()){
+       result.ConvertedSources().FirstOrDefault()+result.Diagnostics[0].Message){
        this.result = result;
     }
 

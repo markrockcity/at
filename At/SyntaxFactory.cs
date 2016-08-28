@@ -36,7 +36,7 @@ public class SyntaxFactory
         return new ListSyntax<T>(startDelimiter,list,endDelimiter,diagnostics);
     }
 
-    public static BlockSyntax Block(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static BlockSyntax Block(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IExpressionSource expDef,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         if (leftBrace == null)
             throw new ArgumentNullException(nameof(leftBrace));
@@ -48,23 +48,23 @@ public class SyntaxFactory
         if (contents.Any(_=>_==null))
             throw new ArgumentException(nameof(contents),"contents contains a null reference");
 
-        return new BlockSyntax(leftBrace,contents,rightBrace,diagnostics);
+        return new BlockSyntax(leftBrace,contents,rightBrace,expDef,diagnostics);
     }
 
-    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(atToken,nameof(atToken)); 
-        return new LiteralExpressionSyntax(atToken,new[] {atToken},diagnostics);
+        return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
     }
 
-    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
-       return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,diagnostics);
+       return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,expDef,diagnostics);
     }
 
-    public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, List<DeclarationSyntax> members,List<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, List<DeclarationSyntax> members,List<AtSyntaxNode> nodes,IExpressionSource expDef/* = null*/, IEnumerable<AtDiagnostic> diagnostics = null)
     {
-        return new NamespaceDeclarationSyntax(atSymbol,identifier,members,nodes,diagnostics);
+        return new NamespaceDeclarationSyntax(atSymbol,identifier,members,nodes,expDef,diagnostics);
     }
 
     public static NameSyntax NameSyntax(AtToken identifier, ListSyntax<NameSyntax> typeArgs = null)
@@ -87,24 +87,25 @@ public class SyntaxFactory
                                                 ListSyntax<NameSyntax> baseList,
                                                 IEnumerable<DeclarationSyntax> members,
                                                 IEnumerable<AtSyntaxNode> nodes,
+                                                IExpressionSource expDef,
                                                 IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));
-        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,nodes,diagnostics);
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,expDef,nodes,diagnostics);
     }
 
-    //#directive n[;]
-    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,AtToken semi,List<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
+    // **directive n[;]**
+    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,AtToken semi,List<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(directive,nameof(directive));
         checkNull(n,nameof(n));
-        return new DirectiveSyntax(directive,n,nodes,diagnostics);
+        return new DirectiveSyntax(directive,n,nodes,expSrc,diagnostics);
     }
 
-    public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));
-        return new VariableDeclarationSyntax(atSymbol,identifier,type,nodes,diagnostics);
+        return new VariableDeclarationSyntax(atSymbol,identifier,type,nodes,expSrc,diagnostics);
     }
 
     private static void checkNull(object obj, string name)

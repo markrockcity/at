@@ -8,7 +8,7 @@ namespace At
 {
 class AtScanner : IScanner
 {
-    AtLexer lexer;
+    //AtLexer lexer;
     IVsTextLines buffer;
     string source;
 
