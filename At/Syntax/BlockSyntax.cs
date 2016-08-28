@@ -6,17 +6,68 @@ using At.Syntax;
 namespace At 
 {
 //"{ ... }"
-public class BlockSyntax : ExpressionSyntax 
+public abstract class BlockSyntax : ExpressionSyntax 
 {
 
-    internal BlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) : 
-        base(new AtSyntaxNode[] {startDelimiter}.Concat(contents).Concat(new[] {endDelimiter}), expDef,diagnostics) 
-    {
+    protected BlockSyntax
+    (
+        AtToken startDelimiter, 
+        IEnumerable<ExpressionSyntax> contents, 
+        AtToken endDelimiter, 
+        IExpressionSource expDef, 
+        IEnumerable<AtDiagnostic> diagnostics) 
+        
+        : base(nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
+
         StartDelimiter = startDelimiter;
-        EndDelimiter = endDelimiter;
+        EndDelimiter   = endDelimiter;
     }
 
     public AtToken StartDelimiter {get;}
     public AtToken EndDelimiter {get;}
+
+    static IEnumerable<AtSyntaxNode> nodes(AtSyntaxNode startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter)
+    {
+        var r = new AtSyntaxNode[] {startDelimiter}.AsEnumerable();
+        if (contents != null)
+            r = r.Concat(contents);
+        return r.Concat(new[] {endDelimiter});
+    }
+}
+
+//"( ... )"
+public class RoundBlockSyntax : BlockSyntax 
+{
+    public RoundBlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) 
+     : base(startDelimiter,contents,endDelimiter,expDef,diagnostics) {}
+
+    
+}
+
+//"< ... >"
+public class PointyBlockSyntax : BlockSyntax 
+{
+    public PointyBlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) 
+     : base(startDelimiter,contents,endDelimiter,expDef,diagnostics) {}
+
+    
+}
+
+//"[ ... ]"
+public class SquareBlockSyntax : BlockSyntax 
+{
+    public SquareBlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) 
+     : base(startDelimiter,contents,endDelimiter,expDef,diagnostics) {}
+
+    
+}
+
+//"{ ... }"
+public class CurlyBlockSyntax : BlockSyntax 
+{
+    public CurlyBlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) 
+     : base(startDelimiter,contents,endDelimiter,expDef,diagnostics) {}
+
+    
 }
 }

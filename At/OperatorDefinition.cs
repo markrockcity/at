@@ -51,10 +51,28 @@ public interface ICircumfixOperator : IOperatorDefinition
     TokenKind EndDelimiterKind {get;}
 }
 
+public class BlockSyntaxDefinition : OperatorDefinition, ICircumfixOperator
+{
+    public BlockSyntaxDefinition
+    (
+        TokenKind startDelimiterKind, 
+        TokenKind endDelimiterKind, 
+        Func<OperatorDefinition, AtSyntaxNode[],ExpressionSyntax> createExpression,
+        bool isPostCircumfix = false)
+
+        : base(startDelimiterKind,isPostCircumfix ? OperatorPosition.PostCircumfix : OperatorPosition.Circumfix,OperatorAssociativity.Unspecified,createExpression) {
+        
+        EndDelimiterKind = endDelimiterKind;   
+    }
+    
+    public TokenKind EndDelimiterKind {get;}
+}
+
 public class OperatorDefinition : IOperatorDefinition
 {
-    public readonly static DeclaratorDefinition StartDeclaration  = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Start);
-    public readonly static DeclaratorDefinition PrefixDeclaration = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Prefix);
+    public readonly static DeclaratorDefinition  StartDeclaration  = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Start);
+    public readonly static DeclaratorDefinition  PrefixDeclaration = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Prefix);
+    public readonly static BlockSyntaxDefinition RoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,SyntaxFactory.RoundBlock);
     
     readonly Func<OperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
 

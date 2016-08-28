@@ -36,20 +36,6 @@ public class SyntaxFactory
         return new ListSyntax<T>(startDelimiter,list,endDelimiter,diagnostics);
     }
 
-    public static BlockSyntax Block(AtToken leftBrace, IEnumerable<ExpressionSyntax> contents, AtToken rightBrace,IExpressionSource expDef,IEnumerable<AtDiagnostic> diagnostics = null)
-    {
-        if (leftBrace == null)
-            throw new ArgumentNullException(nameof(leftBrace));
-        if (contents == null)
-            throw new ArgumentNullException(nameof(contents));
-        if (rightBrace == null)
-            throw new ArgumentNullException(nameof(rightBrace));
-
-        if (contents.Any(_=>_==null))
-            throw new ArgumentException(nameof(contents),"contents contains a null reference");
-
-        return new BlockSyntax(leftBrace,contents,rightBrace,expDef,diagnostics);
-    }
 
     public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
@@ -79,19 +65,74 @@ public class SyntaxFactory
         return new ParameterSyntax(identifier, diagnostics);
     }
 
-    
-    public static TypeDeclarationSyntax TypeDeclaration(
-                                                AtToken atSymbol, 
-                                                AtToken identifier, 
-                                                ListSyntax<ParameterSyntax>  typeParameterList,
-                                                ListSyntax<NameSyntax> baseList,
-                                                IEnumerable<DeclarationSyntax> members,
-                                                IEnumerable<AtSyntaxNode> nodes,
-                                                IExpressionSource expDef,
-                                                IEnumerable<AtDiagnostic> diagnostics = null)
+    public static PointyBlockSyntax PointyBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
     {
+        if (nodes.Length < 2)
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+
+        var contents = (nodes.Length > 2)
+                            ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()
+                            : null;
+
+        return new PointyBlockSyntax(nodes[0].AsToken(),contents,nodes.Last().AsToken(),expSrc,null);
+    }
+
+    public static PointyBlockSyntax PointyBlock(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        if (startDelimiter == null)
+            throw new ArgumentNullException(nameof(startDelimiter));
+        if (contents == null)
+            throw new ArgumentNullException(nameof(contents));
+        if (endDelimiter == null)
+            throw new ArgumentNullException(nameof(endDelimiter));
+
+        if (contents.Any(_=>_==null))
+            throw new ArgumentException(nameof(contents),"contents contains a null reference");
+
+        return new PointyBlockSyntax(startDelimiter,contents,endDelimiter,expSrc,diagnostics);
+    }
+
+    public static RoundBlockSyntax RoundBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
+    {
+        if (nodes.Length < 2)
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+
+        var contents = (nodes.Length > 2)
+                            ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()
+                            : null;
+
+        return new RoundBlockSyntax(nodes[0].AsToken(),contents,nodes.Last().AsToken(),expSrc,null);
+    }
+
+
+    public static RoundBlockSyntax RoundBlock(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken rightDelimiter,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        if (startDelimiter == null)
+            throw new ArgumentNullException(nameof(startDelimiter));
+        if (contents == null)
+            throw new ArgumentNullException(nameof(contents));
+        if (rightDelimiter == null)
+            throw new ArgumentNullException(nameof(rightDelimiter));
+
+        if (contents.Any(_=>_==null))
+            throw new ArgumentException(nameof(contents),"contents contains a null reference");
+
+        return new RoundBlockSyntax(startDelimiter,contents,rightDelimiter,expSrc,diagnostics);
+    }
+    
+    public static TypeDeclarationSyntax TypeDeclaration
+    (
+        AtToken atSymbol, 
+        AtToken identifier, 
+        ListSyntax<ParameterSyntax>  typeParameterList,
+        ListSyntax<NameSyntax> baseList,
+        IEnumerable<DeclarationSyntax> members,
+        IEnumerable<AtSyntaxNode> nodes,
+        IExpressionSource expSrc,
+        IEnumerable<AtDiagnostic> diagnostics = null){
+
         checkNull(identifier,nameof(identifier));
-        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,expDef,nodes,diagnostics);
+        return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,expSrc,nodes,diagnostics);
     }
 
     // **directive n[;]**

@@ -31,12 +31,28 @@ public class ParserTests : AtTest
         assert_type<VariableDeclarationSyntax>(()=>expr1);  
         
         //TODO: implement CurlyBlock postcircumfix op &  MethodDeclaration rule
+        //parser.Operators.Add(0,OperatorDefinition.RoundBlock);
         var expr2 = parser.ParseExpression("@X()");
         assert_type<MethodDeclarationSyntax>(()=>expr2);    
 
         //TODO: implement PointyBlock postcircumfix op & TypeDeclaration rule
         var expr3 = parser.ParseExpression("@X<>");
         assert_type<TypeDeclarationSyntax>(()=>expr3);    
+    }
+
+    //Circumfix test
+    [TestMethod]
+    public void CircumfixTest()
+    {
+        parser.Operators.Add(0,OperatorDefinition.RoundBlock);
+        var e1 = parser.ParseExpression("()");
+        assert_type<RoundBlockSyntax>(()=>e1);
+
+        var e2 = parser.ParseExpression(" ( @x ) ");
+        assert_type<RoundBlockSyntax>(()=>e2);
+
+        var e3 = parser.ParseExpression("(())");
+        assert_type<RoundBlockSyntax>(()=>e3);
     }
 
     //ImportTest
