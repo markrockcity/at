@@ -125,6 +125,7 @@
     <Compile Include="ExpressionRule.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="OperatorDefinition.cs" />
+    <Compile Include="Syntax\PostBlockSyntax.cs" />
     <Compile Include="SyntaxDefinition.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
     <Compile Include="Syntax\DeclarationSyntax.cs" />

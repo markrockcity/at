@@ -30,8 +30,9 @@ public class ParserTests : AtTest
         var expr1 = parser.ParseExpression("@X");
         assert_type<VariableDeclarationSyntax>(()=>expr1);  
         
-        //TODO: implement CurlyBlock postcircumfix op &  MethodDeclaration rule
-        //parser.Operators.Add(0,OperatorDefinition.RoundBlock);
+        //TODO: MethodDeclaration rule
+        OperatorDefinition.StartDeclaration.AddRule(_=>_.MethodDeclaration);
+        parser.Operators.Add(0,OperatorDefinition.PostRoundBlock);
         var expr2 = parser.ParseExpression("@X()");
         assert_type<MethodDeclarationSyntax>(()=>expr2);    
 
@@ -51,7 +52,7 @@ public class ParserTests : AtTest
         var e2 = parser.ParseExpression(" ( @x ) ");
         assert_type<RoundBlockSyntax>(()=>e2);
 
-        var e3 = parser.ParseExpression("(())");
+        var e3 = parser.ParseExpression("(()()())");
         assert_type<RoundBlockSyntax>(()=>e3);
     }
 

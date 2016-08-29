@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using At.Syntax;
+using static At.SyntaxFactory;
 
 namespace At
 {
@@ -35,6 +34,7 @@ public class DeclarationRule : IDeclarationRule
 public class DeclaratorDefinition : OperatorDefinition
 {
     public readonly DeclarationRule VariableDeclaration;
+    public readonly DeclarationRule MethodDeclaration;
 
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
@@ -48,7 +48,32 @@ public class DeclaratorDefinition : OperatorDefinition
                                     && nodes[0].AsToken()?.Kind==declaratorKind
                                     && nodes[1] is TokenClusterSyntax,
 
-            create:  nodes  => SyntaxFactory.VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)nodes[1]).TokenCluster,null,null,nodes,this)
+            create:  nodes  => VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)nodes[1]).TokenCluster,null,null,nodes,this)
+        );
+
+        MethodDeclaration = new DeclarationRule
+        (
+            declaratorKind,
+        
+            matches: (tk,nodes) =>  
+            {
+                if(nodes.Length != 2 || nodes[0].AsToken()?.Kind!=declaratorKind) 
+                    return false;
+
+                var postBlock = nodes[1] as PostBlockSyntax; 
+                return (postBlock?.Block is RoundBlockSyntax && postBlock.Operand is TokenClusterSyntax);
+            },
+
+            create:  nodes  => 
+            {
+                var postBlock = nodes[1] as PostBlockSyntax; 
+
+                //TODO: method parameters
+                if (postBlock.Block.Contents.Count > 0)
+                    throw new NotImplementedException("method paramters");
+
+                return MethodDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)postBlock.Operand).TokenCluster,null,null,nodes,this);
+            }
         );
 
     }

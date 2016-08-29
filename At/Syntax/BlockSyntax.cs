@@ -20,10 +20,12 @@ public abstract class BlockSyntax : ExpressionSyntax
         : base(nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
 
         StartDelimiter = startDelimiter;
+        Contents       = contents?.ToList().AsReadOnly() ?? new List<ExpressionSyntax>().AsReadOnly();
         EndDelimiter   = endDelimiter;
     }
 
     public AtToken StartDelimiter {get;}
+    public IReadOnlyList<ExpressionSyntax> Contents {get;}
     public AtToken EndDelimiter {get;}
 
     static IEnumerable<AtSyntaxNode> nodes(AtSyntaxNode startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter)

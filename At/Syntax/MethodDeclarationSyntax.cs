@@ -7,7 +7,7 @@ public class MethodDeclarationSyntax:DeclarationSyntax, IHasIdentifier
 {
     ListSyntax<ParameterSyntax> methodParams;
 
-    public MethodDeclarationSyntax(AtToken atSymbol,AtToken identifier,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes,IExpressionSource expDef,IEnumerable<AtDiagnostic> diagnostics)
+    public MethodDeclarationSyntax(AtToken atSymbol,AtToken identifier,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expDef,IEnumerable<AtDiagnostic> diagnostics)
         : base(atSymbol,new NameSyntax(identifier),nodes,expDef,diagnostics)
     {
         this.methodParams = methodParams;

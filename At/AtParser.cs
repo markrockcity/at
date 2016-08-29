@@ -56,7 +56,7 @@ public class AtParser : IDisposable
         return expr;
     }
 
-    // **expressions()**
+    //expressions()
     IEnumerable<ExpressionSyntax> expressions(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics,int prescendence)
     {
         if (tokens.Position < 0) 
@@ -88,7 +88,7 @@ public class AtParser : IDisposable
         Func<IOperatorDefinition,bool> predicate = (IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
         //bool predicate(IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
 
-        //BEGIN PARSING:        
+        //BEGIN PARSING:
 
         //No Operators??
         if (Operators.Count==0)
@@ -114,93 +114,94 @@ public class AtParser : IDisposable
                 return startOp.CreateExpression(start);
         }
         
+        //Prefix op ?
         var prefixOps = Operators.Where(_=>_.OperatorPosition==Prefix);
         var prefixOp = prefixOps.FirstOrDefault(predicate);
-
-        var circumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.Circumfix);
-        var circumfixOp =  circumfixOps.FirstOrDefault(predicate);
-
-        //Prefix op ?
         if (prefixOp != null)
         {
             var prefixOpToken = tokens.Consume();
             var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp));
             leftOperand = prefixOp.CreateExpression(prefixOpToken, e);
         }        
-
-        //Circumfix op?
-        else if (circumfixOp != null)
+        else 
         {
-            var startDelimiter = tokens.Consume();
-            var op = circumfixOp as ICircumfixOperator;
-            var _endDelimiterKind = op != null ? op.EndDelimiterKind : circumfixOp.TokenKind;
-            var list = new List<AtSyntaxNode> {startDelimiter, };
-            while(tokens.Current.Kind != _endDelimiterKind)
-            {
-                var e = expression(tokens,diagnostics,Operators.Prescedence(circumfixOp),tokens.Position,_endDelimiterKind);
-                if (e != null)
-                    list.Add(e);
-            } 
-            list.Add(tokens.Consume()); //assuming end delimiter
-            leftOperand = circumfixOp.CreateExpression(list.ToArray());
-        }
+           //Circumfix op?
+           var circumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.Circumfix);
+           var circumfixOp =  circumfixOps.FirstOrDefault(predicate);
+           if (circumfixOp != null)
+           {
 
-        //...
-        else
-        {
-            //Expression-Definitions???
-
-            //checks passed-in position from recursive call to prevent stack overflow
-            if  (lastPosition != tokens.Position) 
-            {
-                leftOperand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position);
+                var startDelimiter = tokens.Consume();
+                var op = circumfixOp as ICircumfixOperator;
+                var _endDelimiterKind = op != null ? op.EndDelimiterKind : circumfixOp.TokenKind;
+                var list = new List<AtSyntaxNode> {startDelimiter, };
+                while(tokens.Current.Kind != _endDelimiterKind)
+                {
+                    var e = expression(tokens,diagnostics,Operators.Prescedence(circumfixOp),tokens.Position,_endDelimiterKind);
+                    if (e != null)
+                        list.Add(e);
+                } 
+                list.Add(tokens.Consume()); //assuming end delimiter
+                leftOperand = circumfixOp.CreateExpression(list.ToArray());
             }
-            
-            //same position as before? check rules
+
+            //...
             else
             {
-               //check expression/syntax definitions? based on previous call's operator?
-               //... based on whether current/next token is End/PostFix/Binary?
+                //Expression-Definitions???
 
-                var exprRule = getRule(tokens);
-                if (exprRule != null)
+                //checks passed-in position from recursive call to prevent stack overflow
+                if  (lastPosition != tokens.Position) 
                 {
-                    var pos = tokens.Position;
-
-                    leftOperand = exprRule.ParseExpression(tokens);
-
-                    if (pos == tokens.Position && leftOperand.Text.Length > 0)
-                        tokens.MoveNext();
+                    leftOperand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position);
                 }
-
-                if (leftOperand ==null)
+            
+                //same position as before? check rules
+                else
                 {
-                    leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics); 
+                    var exprRule = getRule(tokens);
+                    if (exprRule != null)
+                    {
+                        var pos = tokens.Position;
+
+                        leftOperand = exprRule.ParseExpression(tokens);
+
+                        if (pos == tokens.Position && leftOperand.Text.Length > 0)
+                            tokens.MoveNext();
+                    }
+
+                    if (leftOperand == null)
+                    {
+                        leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics); 
+                    }
                 }
-
-               /*
-               if (tokens.Current.Kind==TokenKind.TokenCluster)
-               {    
-               
-                    //throw new NotImplementedException();
-
-                    
-                    leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics);
-                    
-               }
-               else
-               {
-                   //add to a tokens list and keep checking?
-               }*/
-
-                 // expressionCluster(new AtToken[0],tokens,null,diagnostics)
             }
         }
+    
 
         //End?
         endOp = endOps.FirstOrDefault(predicate);
         if (endOp != null)
             return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
+
+        //Postcircumfix?
+        var postCircumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.PostCircumfix);
+        var postCircumfixOp =  postCircumfixOps.FirstOrDefault(predicate);
+        if (postCircumfixOp != null)
+        {
+            var startDelimiter = tokens.Consume();
+            var op = postCircumfixOp as ICircumfixOperator;
+            var _endDelimiterKind = op != null ? op.EndDelimiterKind : postCircumfixOp.TokenKind;
+            var list = new List<AtSyntaxNode> {leftOperand, startDelimiter, };
+            while(tokens.Current.Kind != _endDelimiterKind)
+            {
+                var e = expression(tokens,diagnostics,Operators.Prescedence(postCircumfixOp),tokens.Position,_endDelimiterKind);
+                if (e != null)
+                    list.Add(e);
+            } 
+            list.Add(tokens.Consume()); //assuming end delimiter
+            leftOperand = postCircumfixOp.CreateExpression(list.ToArray());
+        }
 
         //Postfix?
         var postfixOps = Operators.SelectMany(_=>_).Where(_=>_.OperatorPosition==Postfix);
@@ -233,6 +234,8 @@ public class AtParser : IDisposable
         if (endOp != null)
             return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
 
+        Debug.Assert(leftOperand != null);
+
         return    endOp != null 
                     ? endOp.CreateExpression(leftOperand != null 
                                                 ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} 
@@ -240,21 +243,15 @@ public class AtParser : IDisposable
                 : start != null 
                     ? startOp.CreateExpression(start,leftOperand) 
 
-                : leftOperand 
-                    ?? expressionCluster(new AtToken[0], tokens, null, diagnostics);
+                : leftOperand;
 
-         /*
-
-        if (current.Kind == (AtSymbol)) 
-            return declarationExpression(tokens,diagnostics);        
+         /* 
             
         if (current.Kind == (TokenCluster) && current.Text[0]=='#')
             return directiveExpression(tokens,diagnostics);
 
         if (current.Kind==NumericLiteral || current.Kind==StringLiteral)
             return literalExpression(tokens,diagnostics);
-
-        throw new NotImplementedException($"{current.Kind}: {current.Text}");
        */
     }
 

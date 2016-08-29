@@ -43,7 +43,7 @@ public class SyntaxFactory
         return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
     }
 
-    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,List<AtSyntaxNode> nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,AtSyntaxNode[] nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
        return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,expDef,diagnostics);
     }
@@ -92,7 +92,21 @@ public class SyntaxFactory
         return new PointyBlockSyntax(startDelimiter,contents,endDelimiter,expSrc,diagnostics);
     }
 
-    public static RoundBlockSyntax RoundBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
+    internal static ExpressionSyntax PostBlock(OperatorDefinition expSrc, params AtSyntaxNode[] nodes)
+    {
+        if (nodes.Length != 2)
+            throw new ArgumentException(nameof(nodes),"Should have 2 nodes.");
+        
+         return new PostBlockSyntax((ExpressionSyntax) nodes[0],(BlockSyntax) nodes[1],expSrc ,null);                        
+    }
+
+    public static ExpressionSyntax PostBlock(ExpressionSyntax operand, BlockSyntax postBlock,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+         return new PostBlockSyntax(operand,postBlock,expSrc,diagnostics);
+    }
+
+
+    internal static RoundBlockSyntax RoundBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
     {
         if (nodes.Length < 2)
             throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
