@@ -38,10 +38,30 @@ public class AtParser : IDisposable
 
     public static AtParser Default(AtLexer lexer = null)
     {
-        var p = new AtParser(lexer ?? AtLexer.Default());
-        p.Operators.Add(0,OperatorDefinition.StartDeclaration);
-        p.Operators.Add(1,OperatorDefinition.PrefixDeclaration);
-        return p;
+        var parser = new AtParser(lexer ?? AtLexer.Default());
+
+        parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
+        parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
+
+        parser.Operators.Add
+        (
+            0,
+
+            OperatorDefinition.StartDeclaration.AddRules
+            (
+                _=>_.VariableDeclaration,
+                _=>_.MethodDeclaration,
+                _=>_.TypeDeclaration
+            )
+        );
+
+        parser.Operators.Add(1,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(1,OperatorDefinition.PostPointyBlock);
+        parser.Operators.Add(1,OperatorDefinition.PrefixDeclaration);
+
+        parser.Operators.Add(10,OperatorDefinition.RoundBlock);
+
+        return parser;
     }
 
     //ParseExpression(input)
@@ -166,7 +186,7 @@ public class AtParser : IDisposable
 
                         leftOperand = exprRule.ParseExpression(tokens);
 
-                        if (pos == tokens.Position && leftOperand.Text.Length > 0)
+                        if (leftOperand != null && pos == tokens.Position && leftOperand.Text.Length > 0)
                             tokens.MoveNext();
                     }
 

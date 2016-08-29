@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using At;
 using At.Syntax;
+using static At.SyntaxFactory;
 
 namespace At
 {
@@ -24,7 +24,8 @@ public class ExpressionRule : IExpressionRule
     Func<IScanner<AtToken>,int,bool> matchesUpTo;
     Func<ExpressionRule,Scanner<AtToken>,ExpressionSyntax> parse;  
 
-    public readonly static ExpressionRule TokenClusterSyntax = SingleTokenExpression(TokenKind.TokenCluster,(ExpressionRule r,AtToken t)=>new TokenClusterSyntax(t,expSrc:r));
+    public readonly static ExpressionRule TokenClusterSyntax = SingleTokenExpression(TokenKind.TokenCluster,(ExpressionRule r,AtToken t)=>TokenClusterExpression(tokenCluster:t,expSrc:r));
+    public readonly static ExpressionRule NumericLiteral = SingleTokenExpression(TokenKind.NumericLiteral,(rule,token)=>LiteralExpression(token,rule));
 
     /// <summary>Initializes an ExpressionRule object</summary>
     /// <param name="matchesUpTo">A delegate that accepts an IScanner&lt;AtToken> and a character position and returns a boolean saying whether the expression rule matches all characters up to the given look-ahead position.</param>

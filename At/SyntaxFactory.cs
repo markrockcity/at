@@ -13,6 +13,11 @@ public class SyntaxFactory
         return new CompilationUnitSyntax(exprs,diagnostics);
     }
 
+    public static ExpressionSyntax TokenClusterExpression(AtToken tokenCluster,ExpressionRule expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new TokenClusterSyntax(tokenCluster,expSrc,diagnostics);
+    }
+
     public static ErrorNode ErrorNode(IList<AtDiagnostic> diagnostics,string msg, AtSyntaxNode node)
     {
          return new ErrorNode(diagnostics, msg,node);
@@ -23,6 +28,7 @@ public class SyntaxFactory
     {
         return new ListSyntax<T>(startDelimiter,new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),endDelimiter,diagnostics);
     }
+
 
     public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
