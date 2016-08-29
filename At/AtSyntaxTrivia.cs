@@ -13,10 +13,10 @@ public class AtSyntaxTrivia : AtToken
         TokenKind kind, 
         int       position,
         string    text=null, 
-        ITokenRule tokenDefinition = null,
+        ITokenSource tokenSrc = null,
         IEnumerable<AtDiagnostic> diagnostics = null) 
 
-        : base(kind,position,text,tokenSrc: tokenDefinition,diagnostics: diagnostics) {
+        : base(kind,position,text,tokenSrc: tokenSrc,diagnostics: diagnostics) {
     }
 
     public override bool IsTrivia => true;
