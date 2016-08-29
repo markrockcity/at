@@ -23,6 +23,10 @@ public class SyntaxFactory
          return new ErrorNode(diagnostics, msg,node);
     }
 
+    internal static ListSyntax<T> List<T>(string leftToken,string rightToken) where T : AtSyntaxNode
+    {
+        return new ListSyntax<T>(ParseToken(leftToken,markAsMissing:true),new SeparatedSyntaxList<T>(null,new AtSyntaxNode[0]),ParseToken(rightToken,markAsMissing:true),null);
+    }
 
     public static ListSyntax<T> List<T>(AtToken startDelimiter,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
@@ -69,6 +73,16 @@ public class SyntaxFactory
     {
         checkNull(identifier,nameof(identifier));
         return new ParameterSyntax(identifier, diagnostics);
+    }
+
+    public static AtToken ParseToken(string text, bool markAsMissing = false)
+    {
+        using (var lexer = AtLexer.Default())
+        {
+            var token = lexer.Lex(text).FirstOrDefault();
+            token.IsMissing = markAsMissing;
+            return token;
+        }
     }
 
     public static PointyBlockSyntax PointyBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
