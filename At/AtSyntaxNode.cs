@@ -11,13 +11,15 @@ public abstract class AtSyntaxNode
     readonly AtSyntaxList<AtSyntaxNode>   nodes;
     readonly ImmutableArray<AtDiagnostic> diagnostics;
 
-    protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics) 
+    protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics, bool isMissing = false) 
     { 
         this.nodes = new AtSyntaxList<AtSyntaxNode>(this,nodes);
         this.diagnostics = ImmutableArray<AtDiagnostic>.Empty;
         
         if (diagnostics != null) 
             this.diagnostics = this.diagnostics.AddRange(diagnostics.Where(_=>_!=null));
+    
+        IsMissing = isMissing;
     }
 
     public AtSyntaxNode   Parent {get; internal set;}
@@ -25,6 +27,9 @@ public abstract class AtSyntaxNode
     public virtual bool   IsToken  => false;
     public virtual int    Position => nodes[0].Position;
     public virtual string Text => FullText.Trim();
+
+    /// <summary>True if absent from source.</summary>
+    public bool IsMissing {get; internal set;}
 
     /// <summary>Includes trivia</summary>
     public virtual string FullText
