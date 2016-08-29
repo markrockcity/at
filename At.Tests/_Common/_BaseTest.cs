@@ -14,54 +14,52 @@ using static System.Linq.Expressions.ExpressionType;
 
 namespace At.Tests
 {
-
-
 //Test base class
 [TestClass] public partial class Test
 {
-   //ctor
-   protected Test()
-   {
-      At.Tests.TestData.Init();
-      TestData = new TestData(this);
-   }
+    //ctor
+    protected Test()
+    {
+        At.Tests.TestData.Init();
+        TestData = new TestData(this);
+    }
 
-   public TestData TestData {get;}
+    public TestData TestData {get;}
 
-   //Stopwatch
-   public Stopwatch Stopwatch {get {return stopwatch;}}
-   Stopwatch stopwatch = new Stopwatch();
+    //Stopwatch
+    public Stopwatch Stopwatch {get {return stopwatch;}}
+    Stopwatch stopwatch = new Stopwatch();
    
-   //TestContext
-   public TestContext TestContext {get; set;}
+    //TestContext
+    public TestContext TestContext {get; set;}
 
-   //TestContextWriter
-   public TestContextTextWriter TestContextWriter
-   { get
-      { if (_TestContextWriter == null) _TestContextWriter = new TestContextTextWriter(this);
-         return _TestContextWriter;
-      }
-   } TestContextTextWriter _TestContextWriter;
+    //TestContextWriter
+    public TestContextTextWriter TestContextWriter
+    { get
+        { if (_TestContextWriter == null) _TestContextWriter = new TestContextTextWriter(this);
+            return _TestContextWriter;
+        }
+    } TestContextTextWriter _TestContextWriter;
 
 
-   //Initialize()
-   [TestInitialize] public void Initialize()
-   { Setup();
-   }
+    //Initialize()
+    [TestInitialize] public void Initialize()
+    { Setup();
+    }
    
-   //Cleanup()
-   [TestCleanup] public void Cleanup() 
-   {
-      if (_TestContextWriter != null && _TestContextWriter.Buffered) 
+    //Cleanup()
+    [TestCleanup] public void Cleanup() 
+    {
+        if (_TestContextWriter != null && _TestContextWriter.Buffered) 
         _TestContextWriter.flush2();
-      TearDown();
-      TestData.Cleanup();
-   }
+        TearDown();
+        TestData.Cleanup();
+    }
   
-   //TearDown()
-   protected virtual void TearDown()
-   { 
-   }
+    //TearDown()
+    protected virtual void TearDown()
+    { 
+    }
 
     //assert_equals()
     public void assert_equals<T>(T expected, T actual, string f = null, params object[] a)
@@ -73,34 +71,34 @@ namespace At.Tests
         assert_equals(()=>expected,actual,f,a);
     }
     public void assert_equals<T>( Expression<Func<T>> expected
-                                 ,Expression<Func<T>> actual
-                                 ,string              format = null
-                                 ,params object[]     args) 
-   { var f = expected.Compile();
-     var g = actual.Compile();
-     var x = f();
-     var y = g();
+                                    ,Expression<Func<T>> actual
+                                    ,string              format = null
+                                    ,params object[]     args) 
+    { var f = expected.Compile();
+        var g = actual.Compile();
+        var x = f();
+        var y = g();
 
-     var _x = expected.Body is ConstantExpression || expected.Body.NodeType == ExpressionType.MemberAccess ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ⩵ «{x}»";
-     var _y = actual.Body is ConstantExpression || actual.Body.NodeType == ExpressionType.MemberAccess ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ⩵ «{y}»";
-     Write($"assert EQUAL: ({_x}) == ({_y})");
+        var _x = expected.Body is ConstantExpression || expected.Body.NodeType == ExpressionType.MemberAccess ? exprStr(expected.Body) : $"{exprStr(expected.Body)} ⩵ «{x}»";
+        var _y = actual.Body is ConstantExpression || actual.Body.NodeType == ExpressionType.MemberAccess ? exprStr(actual.Body) : $"{exprStr(actual.Body)} ⩵ «{y}»";
+        Write($"assert EQUAL: ({_x}) == ({_y})");
 
-     if (format == null)
+        if (format == null)
         Assert.AreEqual(x,y);
-     else
+        else
         Assert.AreEqual(x,y,string.Format(format,args));
-   } 
+    } 
 
-  //assert_true()
-  public void assert_true(bool b) => Assert.IsTrue(b);
-  public void assert_true(Expression<Func<bool>> e, Expression<Func<object>> ifFail = null) 
-   { var b = e.Body;
-     Write("assert TRUE: {0}",exprStr(e.Body));
+    //assert_true()
+    public void assert_true(bool b) => Assert.IsTrue(b);
+    public void assert_true(Expression<Func<bool>> e, Expression<Func<object>> ifFail = null) 
+    { var b = e.Body;
+        Write("assert TRUE: {0}",exprStr(e.Body));
 
-     switch(b.NodeType)
-      { 
+        switch(b.NodeType)
+        { 
         case ExpressionType.Equal:
-         {
+            {
             var be = (BinaryExpression) b;
             var l1 = Expression.Lambda(be.Left);
             var l2 = Expression.Lambda(be.Right);
@@ -118,115 +116,120 @@ namespace At.Tests
             
             Assert.AreEqual(v2,v1);
             break;
-         }
+            }
 
         default: var f = e.Compile();
-                 var x = f();
+                    var x = f();
 
-                 if (ifFail!=null && !x)
-                 {
+                    if (ifFail!=null && !x)
+                    {
                     Write("FAIL!");
                     Write(exprStr(ifFail));
                     Write(ifFail.Compile()());
-                 }
+                    }
 
-                 Assert.IsTrue(x);
-                 break;
-      }
+                    Assert.IsTrue(x);
+                    break;
+        }
 
 
-   } 
+    } 
    
-  //assert_type()
-  public void assert_type<T>(Expression<Func<object>> e)
-  {
-     var t = typeof(T);
-     Write("assert TYPE({0}): {1}",t,exprStr(e.Body));
-     var f = e.Compile();
-     var x = f();
-     Assert.IsInstanceOfType(x, t);
-  }
+    //assert_type()
+    public void assert_type<T>(Expression<Func<object>> e)
+    {
+        var t = typeof(T);
+        Write("assert TYPE({0}): {1}",t,exprStr(e.Body));
+        var f = e.Compile();
+        var x = f();
+        Assert.IsInstanceOfType(x, t);
+    }
 
-  //assert_false()
-  public void assert_false(Expression<Func<bool>> e) 
-   { Write("assert FALSE: {0}",exprStr(e.Body));
-     var f = e.Compile();
-     var x = f();
-     Assert.IsFalse(x);
-   } 
+    //assert_false()
+    public void assert_false(Expression<Func<bool>> e) 
+    { 
+        Write("assert FALSE: {0}",exprStr(e.Body));
+        var f = e.Compile();
+        var x = f();
+        Assert.IsFalse(x);
+    } 
 
    
-  //ASSERT_NULL()
-  public void assert_null<T>(Expression<Func<T>> e) where T : class
-   { Write("assert NULL: {0}",exprStr(e.Body));
-     var f = e.Compile();
-     var x = f();
-     Assert.IsNull(x);
-   }
+    //ASSERT_NULL()
+    public void assert_null<T>(Expression<Func<T>> e) where T : class
+    { 
+        Write("assert NULL: {0}",exprStr(e.Body));
+        var f = e.Compile();
+        var x = f();
+        Assert.IsNull(x);
+    }
    
-  //AssertNotNull
-  public void assert_not_null<T>(T o) => Assert.IsNotNull(o);
-  public void assert_not_null<T>(Expression<Func<T>> e, Expression<Func<object>> ifFail = null) where T : class
-   { Write("assert NOT NULL: {0}",exprStr(e.Body));
-     var f = e.Compile();
-     var x = f();
+    //AssertNotNull
+    public void assert_not_null<T>(T o) => Assert.IsNotNull(o);
+    public void assert_not_null<T>(Expression<Func<T>> e, Expression<Func<object>> ifFail = null) where T : class
+    { 
+        var _str = exprStr(e.Body);
+        Write("assert NOT NULL: {0}",_str);
+        var f = e.Compile();
+        var x = f();
 
-     if (ifFail!=null && x==null)
-     {
-        Write("FAIL!");
-        Write(exprStr(ifFail));
-        Write(ifFail.Compile()());
-     }
+        if (ifFail!=null && x==null)
+        {
+            Write("FAIL!");
+            Write(exprStr(ifFail));
+            Write(ifFail.Compile()());
+        }
 
-     Assert.IsNotNull(x);
-   }
+        Assert.IsNotNull(x,_str);
+    }
 
-   //Property(username, defaultValue)
-   protected string Property(string name, string defaultValue)
-   { var setting =  TestContext.Properties.Contains(name) 
-                     ? TestContext.Properties[name].ToString()
-                     : null;
-      return (!string.IsNullOrEmpty(setting)) ? setting : defaultValue;
-   }
+    //Property(username, defaultValue)
+    protected string Property(string name, string defaultValue)
+    { 
+        var setting = TestContext.Properties.Contains(name) 
+                        ? TestContext.Properties[name].ToString()
+                        : null;
+        return (!string.IsNullOrEmpty(setting)) ? setting : defaultValue;
+    }
 
-   //Property(username)
-   /// <summary>For test properties that may have null or empty string as a legal value,
-   /// use the overload that accepts a default value.</summary>
-   protected  string Property(string name)
-   { var setting =  TestContext.Properties.Contains(name) 
-                     ? TestContext.Properties[name].ToString()
-                     : null;
+    //Property(username)
+    /// <summary>For test properties that may have null or empty string as a legal value,
+    /// use the overload that accepts a default value.</summary>
+    protected  string Property(string name)
+    { var setting =  TestContext.Properties.Contains(name) 
+                        ? TestContext.Properties[name].ToString()
+                        : null;
 
-      if (!string.IsNullOrEmpty(setting))
-      { 
-         throw new Exception("Test property "+setting+" is null.");     
-      }
+        if (!string.IsNullOrEmpty(setting))
+        { 
+            throw new Exception("Test property "+setting+" is null.");     
+        }
      
-      return setting;
-   }
+        return setting;
+    }
 
    
-   //Setup()
-   protected virtual void Setup()
-   { 
+    //Setup()
+    protected virtual void Setup()
+    { 
 
-   }
+    }
 
-   //Wait()
-   protected internal void Wait(float seconds)
-   {
-      Thread.Sleep((int)(seconds*1000f));
-   }
+    //Wait()
+    protected internal void Wait(float seconds)
+    {
+        Thread.Sleep((int)(seconds*1000f));
+    }
    
-   //Write()
-   protected internal void Write(string msg)
-   {
-      TestContext.WriteLine("[{0}] {1}",DateTime.Now, msg);
-   }
-   protected internal void Write(string f, params object[] args)
-   { 
-      TestContext.WriteLine("[{0}] {1}",DateTime.Now, string.Format(f,args));
-   }
+    //Write()
+    protected internal void Write(string msg)
+    {
+        TestContext.WriteLine("[{0}] {1}",DateTime.Now, msg);
+    }
+    protected internal void Write(string f, params object[] args)
+    { 
+        TestContext.WriteLine("[{0}] {1}",DateTime.Now, string.Format(f,args));
+    }
 
     //Write()
     protected internal void Write<T>(Expression<Func<T>> exp)
@@ -234,10 +237,10 @@ namespace At.Tests
         TestContext.WriteLine($"[{DateTime.Now}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")}");
     }
    
-   //Write()
-   protected internal void Write(object o)
-   { TestContext.WriteLine("[{0}] {1}",DateTime.Now,objStr(o));
-   }
+    //Write()
+    protected internal void Write(object o)
+    { TestContext.WriteLine("[{0}] {1}",DateTime.Now,objStr(o));
+    }
 
 
     //objStr()
@@ -348,11 +351,11 @@ namespace At.Tests
                 return (m.Name=="expected" || m.Name=="actual") 
                             ? objStr(getValue(mae)) 
 
-                      : (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
-                         || o.Length == 0) 
+                        : (   m.DeclaringType.IsDefined(typeof(CompilerGeneratedAttribute))
+                            || o.Length == 0) 
                             ? (mae.Expression.NodeType!= Parameter? $"{m.Name} ⩵ «{objStr(getValue(mae))}»" : m.Name) 
 
-                      : (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ⩵ «{objStr(getValue(mae))}»" : $"{o}.{m.Name}");
+                        : (mae.Expression.NodeType!= Parameter ? $"{o}.{m.Name} ⩵ «{objStr(getValue(mae))}»" : $"{o}.{m.Name}");
             }
 
             //New
@@ -407,55 +410,55 @@ namespace At.Tests
 //TestContextTextWriter class
 public class TestContextTextWriter : TextWriter
 {
-   readonly Test test;
+    readonly Test test;
 
-   List<char> charBuffer   = new List<char>();
-   List<string> lineBuffer = new List<string>(); //if Buffered = true
+    List<char> charBuffer   = new List<char>();
+    List<string> lineBuffer = new List<string>(); //if Buffered = true
 
-   //.ctor (TestContextTextWriter)
-   internal TestContextTextWriter(Test test) 
-   { this.test = test;
-      Buffered = false;
-      BufferedMaxOutput = 5;
-   }
+    //.ctor (TestContextTextWriter)
+    internal TestContextTextWriter(Test test) 
+    { this.test = test;
+        Buffered = false;
+        BufferedMaxOutput = 5;
+    }
 
-   //BufferedMaxOutput
-   /// <summary>Maximum number of lines to write if Buffered = true</summary>
-   public int BufferedMaxOutput {get; set;}
+    //BufferedMaxOutput
+    /// <summary>Maximum number of lines to write if Buffered = true</summary>
+    public int BufferedMaxOutput {get; set;}
 
-   //Buffered
-   /// <summary>If true, output is buffered until end of test. Calling Flush()
-   /// won't flush the buffer.</summary>
-   public bool Buffered {get; set;}
+    //Buffered
+    /// <summary>If true, output is buffered until end of test. Calling Flush()
+    /// won't flush the buffer.</summary>
+    public bool Buffered {get; set;}
 
-   public override void Write(char value) 
-   { if (Buffered) lineBuffer[lineBuffer.Count-1] += value;      
-      else charBuffer.Add(value); 
-   }
+    public override void Write(char value) 
+    { if (Buffered) lineBuffer[lineBuffer.Count-1] += value;      
+        else charBuffer.Add(value); 
+    }
 
-   public override void Flush() 
-   { if (charBuffer.Count==0) return;
-      WriteLine(new string(charBuffer.ToArray()));
-      charBuffer.Clear();
-   }
+    public override void Flush() 
+    { if (charBuffer.Count==0) return;
+        WriteLine(new string(charBuffer.ToArray()));
+        charBuffer.Clear();
+    }
 
-   public override void WriteLine()
-   { Flush();
-      if (Buffered) Write(new string(base.CoreNewLine));
-      else test.Write("");       
-   }
+    public override void WriteLine()
+    { Flush();
+        if (Buffered) Write(new string(base.CoreNewLine));
+        else test.Write("");       
+    }
 
-   public override void WriteLine(string value)
-   { Flush();
-      if (Buffered) lineBuffer.Add(value);
-      else test.Write(value);
-   }
+    public override void WriteLine(string value)
+    { Flush();
+        if (Buffered) lineBuffer.Add(value);
+        else test.Write(value);
+    }
    
-   public override Encoding  Encoding {get {  return Encoding.Default; }}
+    public override Encoding  Encoding {get {  return Encoding.Default; }}
 
-   //called from test.Cleanup()
-   internal void flush2()
-   { foreach(var s in lineBuffer.Skip(lineBuffer.Count-BufferedMaxOutput)) test.Write(s);
-   }
+    //called from test.Cleanup()
+    internal void flush2()
+    { foreach(var s in lineBuffer.Skip(lineBuffer.Count-BufferedMaxOutput)) test.Write(s);
+    }
 }
 }
