@@ -39,8 +39,7 @@ public class AtTest : Test
         assert_equals(()=>input,()=>root.FullText);
 
         var node = root.DescendantNodes().OfType<T>().FirstOrDefault();
-        if (node == null)
-            
+        assert_not_null(()=>node);
         assert_equals(()=>expectedId, ()=>actualId(node));
 
         return node;
