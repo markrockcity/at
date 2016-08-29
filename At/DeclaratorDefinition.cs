@@ -35,6 +35,7 @@ public class DeclaratorDefinition : OperatorDefinition
 {
     public readonly DeclarationRule VariableDeclaration;
     public readonly DeclarationRule MethodDeclaration;
+    public readonly DeclarationRule TypeDeclaration;
 
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
@@ -72,7 +73,36 @@ public class DeclaratorDefinition : OperatorDefinition
                 if (postBlock.Block.Contents.Count > 0)
                     throw new NotImplementedException("method paramters");
 
+                //TODO: return type and body
+
                 return MethodDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)postBlock.Operand).TokenCluster,null,null,nodes,this);
+            }
+        );
+
+        TypeDeclaration = new DeclarationRule
+        (
+            declaratorKind,
+        
+            matches: (tk,nodes) =>  
+            {
+                if(nodes.Length != 2 || nodes[0].AsToken()?.Kind!=declaratorKind) 
+                    return false;
+
+                var postBlock = nodes[1] as PostBlockSyntax; 
+                return (postBlock?.Block is PointyBlockSyntax && postBlock.Operand is TokenClusterSyntax);
+            },
+
+            create:  nodes  => 
+            {
+                var postBlock = nodes[1] as PostBlockSyntax; 
+
+                //TODO: type parameters
+                if (postBlock.Block.Contents.Count > 0)
+                    throw new NotImplementedException("type paramters");
+
+                //TODO: base types and members
+
+                return TypeDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)postBlock.Operand).TokenCluster,null,null,null,nodes,this);
             }
         );
 

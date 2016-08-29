@@ -36,7 +36,9 @@ public class ParserTests : AtTest
         var expr2 = parser.ParseExpression("@X()");
         assert_type<MethodDeclarationSyntax>(()=>expr2);    
 
-        //TODO: implement PointyBlock postcircumfix op & TypeDeclaration rule
+        //TODO: implement PointyBlock postcircumfix op & TypeDeclaration 
+        OperatorDefinition.StartDeclaration.AddRule(_=>_.TypeDeclaration);
+        parser.Operators.Add(0,OperatorDefinition.PostPointyBlock);
         var expr3 = parser.ParseExpression("@X<>");
         assert_type<TypeDeclarationSyntax>(()=>expr3);    
     }
