@@ -96,14 +96,16 @@ class SyntaxTreeConverter
     {
        foreach(var node in nodes)
        {
+          //#directive
           var directive = node as atSyntax.DirectiveSyntax;
           if (directive?.Directive.Text==DirectiveSyntax.importDirective)
           {
-             var usingDir = cs.SyntaxFactory.UsingDirective(NameSyntax(directive.Name));
+             var usingDir = UsingDirective(NameSyntax(directive.Name));
              usings.Add(usingDir);
              continue;
           }
        
+          //@declaration
           var d = node as DeclarationSyntax;
           if (d != null)
           {
@@ -113,6 +115,7 @@ class SyntaxTreeConverter
           }
 
           //! SHOULD ALWAYS BE LAST
+          //statement
           var expr = node as atSyntax.ExpressionSyntax;
           if (expr != null)
           {
@@ -127,7 +130,7 @@ class SyntaxTreeConverter
 
     cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
     {
-        return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
+        return ExpressionStatement(ExpressionSyntax(expr));
     }
 
     cs.Syntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
@@ -208,10 +211,10 @@ class SyntaxTreeConverter
         
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
-        var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
-        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
+        var csVarDeclr = VariableDeclarator(csId);
+        var csVarDecl = VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
                             .AddVariables(csVarDeclr);
-        var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl)
+        var csField = FieldDeclaration(csVarDecl)
                                                 .AddModifiers(cs.SyntaxFactory.ParseToken("public"),cs.SyntaxFactory.ParseToken("static"));
         
         return csField;
@@ -222,11 +225,11 @@ class SyntaxTreeConverter
         
         var methodId = methodDecl.Identifier;
         var returnType = methodDecl.ReturnType != null
-                            ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
+                            ? ParseTypeName(methodDecl.ReturnType.Text)
                             : PredefinedType(Token(SyntaxKind.ObjectKeyword));
-        var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
-                                            .AddModifiers(ParseToken("public"))
-                                            .AddBodyStatements(ParseStatement("return null;"));
+        var csMethod = MethodDeclaration(returnType,csIdentifer(methodId))
+                        .AddModifiers(ParseToken("public"))
+                        .AddBodyStatements(ParseStatement("return null;"));
                             
 
         return csMethod;
@@ -251,16 +254,16 @@ class SyntaxTreeConverter
                                                 .AddModifiers(Token(InternalKeyword),Token(StaticKeyword))
                                                 .AddBodyStatements(statements.ToArray()));
                                                          
-        var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
-                                         .AddUsings(usings.ToArray())
-                                         .AddMembers(defaultClass)
-                                         .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
+        var csNs = NamespaceDeclaration(IdentifierName(csId))
+                    .AddUsings(usings.ToArray())
+                    .AddMembers(defaultClass)
+                    .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
         
         return csNs;
     }
 
     SyntaxToken csIdentifer(AtToken classId) => cs.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));       
-    SyntaxTriviaList lTrivia(AtToken token)  => cs.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.leadingTrivia.Select(_=>_.FullText)));
-    SyntaxTriviaList tTrivia(AtToken token)  => cs.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.trailingTrivia.Select(_=>_.FullText)));
+    SyntaxTriviaList lTrivia(AtToken token)  => cs.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.LeadingTrivia.Select(_=>_.FullText)));
+    SyntaxTriviaList tTrivia(AtToken token)  => cs.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.TrailingTrivia.Select(_=>_.FullText)));
 }
 }

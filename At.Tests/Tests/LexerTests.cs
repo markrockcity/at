@@ -27,8 +27,8 @@ public class LexerTests : Test
         lexer.TriviaRules.Add(TokenRule.StartOfFile);
         lexerTest("x", 1,tokens =>
         {
-            Write(()=>tokens[0].leadingTrivia);
-            var sof = tokens[0].leadingTrivia.Single();
+            Write(()=>tokens[0].LeadingTrivia);
+            var sof = tokens[0].LeadingTrivia.Single();
             assert_equals(TokenKind.StartOfFile,sof.Kind);
         });  
         
@@ -38,8 +38,8 @@ public class LexerTests : Test
         lexer.TriviaRules.Add(TokenRule.EndOfFile);
         lexerTest("x",a:tokens=>
         {            
-            Write(()=>tokens[1].trailingTrivia);
-            var eof = tokens[1].trailingTrivia.Single();
+            Write(()=>tokens[1].TrailingTrivia);
+            var eof = tokens[1].TrailingTrivia.Single();
             assert_equals(TokenKind.EndOfFile,eof.Kind);  
         });
 
@@ -48,7 +48,7 @@ public class LexerTests : Test
 
         lexer.TokenRules.Clear();
         lexer.TriviaRules.Add(TokenRule.Space);   
-        lexerTest("a b",2,tokens=>Write(()=>tokens.Select(_=>new {_, _.leadingTrivia, _.trailingTrivia})));
+        lexerTest("a b",2,tokens=>Write(()=>tokens.Select(_=>new {_, _.LeadingTrivia, _.TrailingTrivia})));
         
         lexer.TriviaRules.Add(TokenRule.EndOfLine);
         lexerTest("a\r\n b",2);

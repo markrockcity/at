@@ -8,22 +8,24 @@ namespace At
 public class AtToken : AtSyntaxNode
 {
     TokenKind _kind;
-    
-    internal AtSyntaxList<AtSyntaxTrivia> leadingTrivia  = AtSyntaxList<AtSyntaxTrivia>.Empty;
-    internal AtSyntaxList<AtSyntaxTrivia> trailingTrivia = AtSyntaxList<AtSyntaxTrivia>.Empty;
 
     internal AtToken
     (
-        TokenKind kind, 
-        int       position,
-        string    text=null, 
-        ITokenRule tokenDefinition = null,
-        IEnumerable<AtDiagnostic> diagnostics = null) 
+        TokenKind kind,
+        int position,
+        string text = null,
+        AtSyntaxList<AtSyntaxTrivia> leadingTrivia = null,
+        AtSyntaxList<AtSyntaxTrivia> trailingTrivia = null,
+        ITokenSource tokenSrc = null,
+        IEnumerable<AtDiagnostic> diagnostics = null,
+        bool isMissing = false)
 
-        : base(new AtSyntaxNode[0],diagnostics){
+        : base(new AtSyntaxNode[0],diagnostics,isMissing){
 
+        LeadingTrivia   = leadingTrivia  ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
+        TrailingTrivia  = trailingTrivia ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
         Text            = text;
-        TokenDefinition = tokenDefinition;
+        TokenSource     = tokenSrc;
         Position        = position;
         _kind           = kind;
     }
@@ -35,13 +37,16 @@ public class AtToken : AtSyntaxNode
     public TokenKind Kind    => _kind;
     public int       RawKind => _kind.value;
 
-    /// <summary>The token definition used by the lexer to extract this token.</summary>
-    public ITokenRule TokenDefinition {get;}
+    /// <summary>The token source used by the lexer to extract this token.</summary>
+    public ITokenSource TokenSource {get;}
 
     public override string FullText =>
-        string.Concat(string.Concat(leadingTrivia.Select(_=>_.FullText)),
+        string.Concat(string.Concat(LeadingTrivia.Select(_=>_.FullText)),
                         Text,
-                        string.Concat(trailingTrivia.Select(_=>_.FullText)));
+                        string.Concat(TrailingTrivia.Select(_=>_.FullText)));
+
+    public AtSyntaxList<AtSyntaxTrivia> LeadingTrivia {get;internal set;}
+    public AtSyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
 
     public override string ToString() =>
         Kind==TokenKind.EndOfFile ? "<EOF>" :
