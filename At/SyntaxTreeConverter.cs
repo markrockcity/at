@@ -100,7 +100,7 @@ class SyntaxTreeConverter
           var directive = node as atSyntax.DirectiveSyntax;
           if (directive?.Directive.Text==DirectiveSyntax.importDirective)
           {
-             var usingDir = UsingDirective(NameSyntax(directive.Name));
+             var usingDir = cs.SyntaxFactory.UsingDirective(NameSyntax(directive.Name));
              usings.Add(usingDir);
              continue;
           }
@@ -130,7 +130,7 @@ class SyntaxTreeConverter
 
     cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
     {
-        return ExpressionStatement(ExpressionSyntax(expr));
+        return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
     }
 
     cs.Syntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
@@ -211,10 +211,10 @@ class SyntaxTreeConverter
         
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
-        var csVarDeclr = VariableDeclarator(csId);
-        var csVarDecl = VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
+        var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
+        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
                             .AddVariables(csVarDeclr);
-        var csField = FieldDeclaration(csVarDecl)
+        var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl)
                                                 .AddModifiers(cs.SyntaxFactory.ParseToken("public"),cs.SyntaxFactory.ParseToken("static"));
         
         return csField;
@@ -225,9 +225,9 @@ class SyntaxTreeConverter
         
         var methodId = methodDecl.Identifier;
         var returnType = methodDecl.ReturnType != null
-                            ? ParseTypeName(methodDecl.ReturnType.Text)
+                            ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
                             : PredefinedType(Token(SyntaxKind.ObjectKeyword));
-        var csMethod = MethodDeclaration(returnType,csIdentifer(methodId))
+        var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
                         .AddModifiers(ParseToken("public"))
                         .AddBodyStatements(ParseStatement("return null;"));
                             
@@ -254,7 +254,7 @@ class SyntaxTreeConverter
                                                 .AddModifiers(Token(InternalKeyword),Token(StaticKeyword))
                                                 .AddBodyStatements(statements.ToArray()));
                                                          
-        var csNs = NamespaceDeclaration(IdentifierName(csId))
+        var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
                     .AddUsings(usings.ToArray())
                     .AddMembers(defaultClass)
                     .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());

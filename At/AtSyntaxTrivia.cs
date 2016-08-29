@@ -16,7 +16,7 @@ public class AtSyntaxTrivia : AtToken
         ITokenRule tokenDefinition = null,
         IEnumerable<AtDiagnostic> diagnostics = null) 
 
-        : base(kind,position,text,tokenDefinition,diagnostics){
+        : base(kind,position,text,tokenSrc: tokenDefinition,diagnostics: diagnostics) {
     }
 
     public override bool IsTrivia => true;

@@ -12,20 +12,19 @@ public class AtToken : AtSyntaxNode
     internal AtToken
     (
         TokenKind kind,
-        int position,
-        string text = null,
+        int       position,
+        string    text=null, 
+        ITokenRule tokenDefinition = null,
         AtSyntaxList<AtSyntaxTrivia> leadingTrivia = null,
         AtSyntaxList<AtSyntaxTrivia> trailingTrivia = null,
-        ITokenSource tokenSrc = null,
-        IEnumerable<AtDiagnostic> diagnostics = null,
-        bool isMissing = false)
+        IEnumerable<AtDiagnostic> diagnostics = null)
 
-        : base(new AtSyntaxNode[0],diagnostics,isMissing){
+        : base(new AtSyntaxNode[0],diagnostics){
 
         LeadingTrivia   = leadingTrivia  ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
         TrailingTrivia  = trailingTrivia ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
         Text            = text;
-        TokenSource     = tokenSrc;
+        TokenDefinition = tokenDefinition;
         Position        = position;
         _kind           = kind;
     }
@@ -37,8 +36,8 @@ public class AtToken : AtSyntaxNode
     public TokenKind Kind    => _kind;
     public int       RawKind => _kind.value;
 
-    /// <summary>The token source used by the lexer to extract this token.</summary>
-    public ITokenSource TokenSource {get;}
+    /// <summary>The token definition used by the lexer to extract this token.</summary>
+    public ITokenRule TokenDefinition {get;}
 
     public override string FullText =>
         string.Concat(string.Concat(LeadingTrivia.Select(_=>_.FullText)),

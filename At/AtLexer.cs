@@ -203,7 +203,7 @@ public class AtLexer : IDisposable
 
         return typeof(T)==typeof(AtSyntaxTrivia)
                 ? (T) (object) new AtSyntaxTrivia(kind,pos,text,tokendef)
-                : (T) new AtToken(kind,pos,text,tokenSrc: tokendef);
+                : (T) new AtToken(kind,pos,text,tokendef);
     }
 
     void IDisposable.Dispose(){}

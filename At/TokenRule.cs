@@ -246,7 +246,7 @@ public class TokenRule : ITokenRule
     public bool MatchesUpTo(IScanner<char> chars,int k)=>matchesUpTo(chars,k);
     public AtToken Lex(Scanner<char> input) => lex(this,input);
     public static TokenRule SingleCharacterToken(TokenKind kind,char c, bool allowedInCluster=false) 
-        => new TokenRule(kind,(s,k)=>k==0&&s.Current==c,(rule,s)=>new AtToken(kind,s.Position,c.ToString(),rule),allowedInCluster);       
+        => new TokenRule(kind,(s,k)=>k==0&&s.Current==c,(rule,s)=>new AtToken(kind,s.Position,c.ToString(),tokenSrc: rule),allowedInCluster);       
     AtToken ITokenSource.CreateToken(IEnumerable<char> chars) => Lex(new Scanner<char>(chars));
 }
 
