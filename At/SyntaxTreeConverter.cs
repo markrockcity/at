@@ -42,11 +42,11 @@ class SyntaxTreeConverter
        //160316: this is mainly for making tests fail
        var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
        if (error != null)
-            throw new Exception(error.GetDiagnostics().FirstOrDefault()?.Message ?? error.Message);
+            throw new AtException(error.GetDiagnostics().FirstOrDefault()?.Message ?? error.Message);
        
        var cluster = atRoot.DescendantNodes().OfType<ExpressionClusterSyntax>().FirstOrDefault();
        if (cluster != null)
-            throw new Exception("Can't convert ExpressionClusterSyntax to C# :"+cluster);
+            throw new AtException("Can't convert ExpressionClusterSyntax to C# :"+cluster);
     
        var csharpSyntax = CompilationUnit();
        var usings       = new List<UsingDirectiveSyntax>();
