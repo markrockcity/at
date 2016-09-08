@@ -170,7 +170,7 @@ public class SyntaxFactory
     }
 
     // **directive n[;]**
-    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,AtToken semi,List<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,List<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(directive,nameof(directive));
         checkNull(n,nameof(n));

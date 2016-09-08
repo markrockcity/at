@@ -42,6 +42,7 @@ public class AtParser : IDisposable
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
+        parser.ExpressionRules.Add(ExpressionRule.Directive);
 
         parser.Operators.Add
         (

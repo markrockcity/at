@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using At.Syntax;
 using static At.SyntaxFactory;
+using static At.TokenKind;
 
 namespace At
 {
@@ -26,6 +28,7 @@ public class ExpressionRule : IExpressionRule
 
     public readonly static ExpressionRule TokenClusterSyntax = SingleTokenExpression(TokenKind.TokenCluster,(ExpressionRule r,AtToken t)=>TokenClusterExpression(tokenCluster:t,expSrc:r));
     public readonly static ExpressionRule NumericLiteral = SingleTokenExpression(TokenKind.NumericLiteral,(rule,token)=>LiteralExpression(token,rule));
+    public readonly static ExpressionRule Directive = new ExpressionRule((s,k)=>matchDirective(s,k), (rule,s)=>directiveExpression(rule,s));
 
     /// <summary>Initializes an ExpressionRule object</summary>
     /// <param name="matchesUpTo">A delegate that accepts an IScanner&lt;AtToken> and a character position and returns a boolean saying whether the expression rule matches all characters up to the given look-ahead position.</param>
@@ -46,6 +49,22 @@ public class ExpressionRule : IExpressionRule
     {
         var s = new Scanner<AtToken>(nodes.Cast<AtToken>());
         return ParseExpression(s);
+    }
+
+    static bool matchDirective(IScanner<AtToken> s,int k)
+    {
+       return    k==0 && s.Current?.Kind==TokenKind.TokenCluster && s.Current?.Text[0]=='#'
+              || k==1 && s.Current?.Kind==TokenKind.TokenCluster;
+    }
+
+    static ExpressionSyntax directiveExpression(ExpressionRule rule,Scanner<AtToken> tokens)
+    {
+        var nodes = new List<AtSyntaxNode>();
+        var directive = tokens.Consume()/*(TokenCluster)*/; 
+        nodes.Add(directive);
+        var name = NameSyntax(tokens.Consume()); 
+        nodes.Add(name);
+        return Directive(directive,name,nodes,rule);   
     }
 }
 
