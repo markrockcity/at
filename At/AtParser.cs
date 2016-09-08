@@ -43,6 +43,8 @@ public class AtParser : IDisposable
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
         parser.ExpressionRules.Add(ExpressionRule.Directive);
+        
+        parser.Operators.Add(0,OperatorDefinition.SemiColon);
 
         parser.Operators.Add
         (
@@ -61,7 +63,7 @@ public class AtParser : IDisposable
         parser.Operators.Add(1,OperatorDefinition.PrefixDeclaration);
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
-
+       
         return parser;
     }
 

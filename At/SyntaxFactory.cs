@@ -68,7 +68,12 @@ public class SyntaxFactory
         checkNull(identifier,nameof(identifier));  
         return new NameSyntax(identifier, typeArgs);    
     }
-                                                   
+
+    public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)
+    {
+        return new EmptyExpressionSyntax(expSrc,endToken);    
+    }
+
     public static ParameterSyntax Parameter(AtToken identifier,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));

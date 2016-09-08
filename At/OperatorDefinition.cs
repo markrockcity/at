@@ -76,8 +76,10 @@ public class OperatorDefinition : IOperatorDefinition
     public readonly static BlockSyntaxDefinition PostRoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
     public readonly static BlockSyntaxDefinition PointyBlock = new BlockSyntaxDefinition(TokenKind.LessThan,TokenKind.GreaterThan,SyntaxFactory.PointyBlock);
     public readonly static BlockSyntaxDefinition PostPointyBlock = new BlockSyntaxDefinition(TokenKind.LessThan,TokenKind.GreaterThan,(src,nodes)=>PostBlock(src,nodes[0],PointyBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
-
+    public readonly static OperatorDefinition    SemiColon = new OperatorDefinition(TokenKind.SemiColon,OperatorPosition.End,(src,nodes)=>nodes.Length>1?((ExpressionSyntax)nodes[0]).WithEndToken((AtToken)nodes[1]):Empty(src,nodes[0]));
+    
     readonly Func<OperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
+        
 
     public OperatorDefinition(TokenKind tokenKind, OperatorPosition opPosition, Func<OperatorDefinition, AtSyntaxNode[],ExpressionSyntax> createExpression = null)
         : this(tokenKind,opPosition,OperatorAssociativity.Unspecified,createExpression) {}

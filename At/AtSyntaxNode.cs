@@ -8,8 +8,9 @@ namespace At
 //SyntaxNode + CSharpSyntaxNode + GreenNode
 public abstract class AtSyntaxNode
 {
-    readonly AtSyntaxList<AtSyntaxNode>   nodes;
+    internal readonly AtSyntaxList<AtSyntaxNode> nodes;
     readonly ImmutableArray<AtDiagnostic> diagnostics;
+
 
     protected AtSyntaxNode(IEnumerable<AtSyntaxNode> nodes, IEnumerable<AtDiagnostic> diagnostics, bool isMissing = false) 
     { 
@@ -41,7 +42,7 @@ public abstract class AtSyntaxNode
 
             return _text;
         }
-    } string _text;
+    } internal string _text;
 
     public AtToken AsToken() => this as AtToken;
     public virtual AtSyntaxNode Clone() => (AtSyntaxNode) MemberwiseClone();
@@ -58,10 +59,10 @@ public abstract class AtSyntaxNode
             && (includeTokens   || !ifNode.IsToken) 
             && (predicate==null || predicate(ifNode)))) {
 
-            yield return node;
+                yield return node;
 
-            foreach(var descendant in nodesRecursive(node,includeTokens, predicate))
-                yield return descendant;
+                foreach(var descendant in nodesRecursive(node,includeTokens, predicate))
+                    yield return descendant;
         }
     }
 }

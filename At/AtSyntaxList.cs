@@ -10,7 +10,7 @@ namespace At
 public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNode
 {
     readonly AtSyntaxNode owner;
-    readonly ImmutableList<TNode> nodes = ImmutableList<TNode>.Empty;
+    ImmutableList<TNode> nodes = ImmutableList<TNode>.Empty;
 
     internal AtSyntaxList(AtSyntaxNode owner, IEnumerable<TNode> nodes)
     {
@@ -78,6 +78,11 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
     IEnumerator IEnumerable.GetEnumerator()
     {
         return nodes.GetEnumerator();
+    }
+
+    internal void append(AtToken endToken)
+    {
+        nodes = nodes.Add((TNode)(object)endToken);
     }
 }
 }

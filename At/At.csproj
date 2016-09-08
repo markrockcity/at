@@ -118,6 +118,7 @@
     <Compile Include="AtCompilation.cs" />
     <Compile Include="AtCompiler.cs" />
     <Compile Include="DeclaratorDefinition.cs" />
+    <Compile Include="Syntax\EmptyExpressionSyntax.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="AtSyntaxNode.cs" />
     <Compile Include="AtSyntaxList.cs" />
