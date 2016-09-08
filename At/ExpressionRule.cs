@@ -53,8 +53,8 @@ public class ExpressionRule : IExpressionRule
 
     static bool matchDirective(IScanner<AtToken> s,int k)
     {
-       return    k==0 && s.Current?.Kind==TokenKind.TokenCluster && s.Current?.Text[0]=='#'
-              || k==1 && s.Current?.Kind==TokenKind.TokenCluster;
+       return    k==0 && s.Current?.Kind==TokenKind.TokenCluster && s.Current?.Text?[0]=='#'
+              || k==1 && s.LookAhead(1)?.Kind==TokenKind.TokenCluster;
     }
 
     static ExpressionSyntax directiveExpression(ExpressionRule rule,Scanner<AtToken> tokens)
