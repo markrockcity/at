@@ -46,7 +46,7 @@ class SyntaxTreeConverter
        
        var cluster = atRoot.DescendantNodes().OfType<ExpressionClusterSyntax>().FirstOrDefault();
        if (cluster != null)
-            throw new AtException("Can't convert ExpressionClusterSyntax to C# :"+cluster);
+            throw new AtException("Can't convert ExpressionClusterSyntax to C# : ❛"+cluster+"❜");
     
        var csharpSyntax = CompilationUnit();
        var usings       = new List<UsingDirectiveSyntax>();
