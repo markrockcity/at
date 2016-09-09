@@ -8,6 +8,22 @@ namespace At
 {
 public class SyntaxFactory
 {
+    internal static BinaryExpressionSyntax Binary(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
+    {
+        return new BinaryExpressionSyntax((ExpressionSyntax)nodes[0],nodes[1].AsToken(),(ExpressionSyntax)nodes[2],expSrc);
+    }
+
+    public static BinaryExpressionSyntax Binary
+    (
+        ExpressionSyntax          leftOperand,
+        AtToken                   @operator,
+        ExpressionSyntax          rightOperand,
+        IExpressionSource         exprSrc = null,
+        IEnumerable<AtDiagnostic> diagnostics = null){
+
+        return new BinaryExpressionSyntax(leftOperand,@operator,rightOperand,exprSrc,diagnostics);
+    }
+
     public static CompilationUnitSyntax CompilationUnit(IEnumerable<ExpressionSyntax> exprs,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         return new CompilationUnitSyntax(exprs,diagnostics);
@@ -47,11 +63,12 @@ public class SyntaxFactory
     }
 
 
-    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(atToken,nameof(atToken)); 
-        return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
+        return new LiteralExpressionSyntax(atToken,new[] {atToken},expSrc,diagnostics);
     }
+
 
     public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,AtSyntaxNode[] nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {

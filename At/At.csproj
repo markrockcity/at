@@ -117,6 +117,7 @@
   <ItemGroup>
     <Compile Include="AtCompilation.cs" />
     <Compile Include="AtCompiler.cs" />
+    <Compile Include="Syntax\BinaryExpressionSyntax.cs" />
     <Compile Include="DeclaratorDefinition.cs" />
     <Compile Include="Syntax\EmptyExpressionSyntax.cs" />
     <Compile Include="Exceptions.cs" />
