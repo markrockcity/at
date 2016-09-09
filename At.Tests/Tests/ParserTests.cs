@@ -82,5 +82,19 @@ public class ParserTests : AtTest
         var t = parseTree(x);
         verifyOutput<LiteralExpressionSyntax>(x,t,x,n=>n.Text);
     }
+
+    //PostCircumfix test
+    [TestMethod]
+    public void PostCircumfixTest()
+    {
+        parser.Operators.Add(0,OperatorDefinition.PostRoundBlock);
+        var e1 = parser.ParseExpression("x()");
+        assert_type<PostBlockSyntax>(()=>e1);
+
+        parser.Operators.Add(0,OperatorDefinition.PostPointyBlock);
+        var e2 = parser.ParseExpression("x< y >");
+        assert_type<PostBlockSyntax>(()=>e2);
+    }
+
 }
 }
