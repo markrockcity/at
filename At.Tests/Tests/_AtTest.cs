@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.CodeAnalysis;
 using cs = Microsoft.CodeAnalysis.CSharp;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using atSyntax = At.Syntax;
+
 
 namespace At.Tests
 {
@@ -57,7 +58,7 @@ public class AtTest : Test
         where T : csSyntax.MemberDeclarationSyntax {
 
         var csRoot = csharpTree.GetRoot();
-        Write(csRoot);
+        Write(csRoot.NormalizeWhitespace());
 
         var any = csRoot.DescendantNodes()
                         .OfType<T>()

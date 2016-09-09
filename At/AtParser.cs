@@ -58,9 +58,11 @@ public class AtParser : IDisposable
             )
         );
 
-        parser.Operators.Add(1,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(1,OperatorDefinition.PostPointyBlock);
-        parser.Operators.Add(1,OperatorDefinition.PrefixDeclaration);
+        parser.Operators.Add(1,OperatorDefinition.ColonPair);
+
+        parser.Operators.Add(2,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(2,OperatorDefinition.PostPointyBlock);
+        parser.Operators.Add(2,OperatorDefinition.PrefixDeclaration);
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
        
@@ -267,15 +269,6 @@ public class AtParser : IDisposable
                     ? startOp.CreateExpression(start,leftOperand) 
 
                 : leftOperand;
-
-         /* 
-            
-        if (current.Kind == (TokenCluster) && current.Text[0]=='#')
-            return directiveExpression(tokens,diagnostics);
-
-        if (current.Kind==NumericLiteral || current.Kind==StringLiteral)
-            return literalExpression(tokens,diagnostics);
-       */
     }
 
     IExpressionRule getRule(Scanner<AtToken> tokens)
@@ -311,29 +304,6 @@ public class AtParser : IDisposable
     }
 
     /*
-    LiteralExpressionSyntax literalExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
-    {
-        assertCurrentAny(tokens,NumericLiteral,StringLiteral);
-        return SyntaxFactory.LiteralExpression(tokens.Consume());
-    }
-
-    //#import namespace
-    DirectiveSyntax directiveExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)
-    {
-        var nodes = new List<AtSyntaxNode>();
-        var directive = tokens.Consume()/*(TokenCluster)* /; nodes.Add(directive);
-        var name = this.name(tokens,diagnostics); nodes.Add(name);
-
-        AtToken semiColon = null;
-        if (tokens.Current?.Kind == (SemiColon))
-        {
-            semiColon = tokens.Consume(); //(SemiColon); 
-            nodes.Add(semiColon);
-        }
-
-        return SyntaxFactory.Directive(directive,name,semiColon,nodes);
-    }
-
     //declarationExpression "@TokenCluster[<...>][(...)][; | { ... }]"
     //declarationExpression "@TokenCluster ColonPair [; | { ... }]"
     DeclarationSyntax declarationExpression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics)

@@ -63,12 +63,11 @@ public class SyntaxFactory
     }
 
 
-    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(atToken,nameof(atToken)); 
-        return new LiteralExpressionSyntax(atToken,new[] {atToken},expSrc,diagnostics);
+        return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
     }
-
 
     public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,AtSyntaxNode[] nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {

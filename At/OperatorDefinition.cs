@@ -68,9 +68,13 @@ public class BlockSyntaxDefinition : OperatorDefinition, ICircumfixOperator
     public TokenKind EndDelimiterKind {get;}
 }
 
+
+
 public class OperatorDefinition : IOperatorDefinition
 {
+    
     public readonly static DeclaratorDefinition  StartDeclaration  = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Start);
+    public readonly static OperatorDefinition    ColonPair = new OperatorDefinition(TokenKind.Colon,OperatorPosition.Infix,OperatorAssociativity.List,Binary);
     public readonly static DeclaratorDefinition  PrefixDeclaration = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Prefix);
     public readonly static BlockSyntaxDefinition RoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,SyntaxFactory.RoundBlock);
     public readonly static BlockSyntaxDefinition PostRoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
@@ -80,7 +84,6 @@ public class OperatorDefinition : IOperatorDefinition
     
     readonly Func<OperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
         
-
     public OperatorDefinition(TokenKind tokenKind, OperatorPosition opPosition, Func<OperatorDefinition, AtSyntaxNode[],ExpressionSyntax> createExpression = null)
         : this(tokenKind,opPosition,OperatorAssociativity.Unspecified,createExpression) {}
     public OperatorDefinition(TokenKind tokenKind, OperatorPosition opPosition, OperatorAssociativity associativity, Func<OperatorDefinition, AtSyntaxNode[], ExpressionSyntax> createExpression = null)
