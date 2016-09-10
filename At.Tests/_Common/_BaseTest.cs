@@ -224,22 +224,22 @@ namespace At.Tests
     //Write()
     protected internal void Write(string msg)
     {
-        TestContext.WriteLine("[{0}] {1}",DateTime.Now, msg);
+        TestContext.WriteLine("[{0:yyyy-MM-dd hh:mm:ss.fff}] {1}",DateTime.Now, msg);
     }
     protected internal void Write(string f, params object[] args)
     { 
-        TestContext.WriteLine("[{0}] {1}",DateTime.Now, string.Format(f,args));
+        TestContext.WriteLine("[{0:yyyy-MM-dd hh:mm:ss.fff}] {1}",DateTime.Now, string.Format(f,args));
     }
 
     //Write()
     protected internal void Write<T>(Expression<Func<T>> exp)
     {
-        TestContext.WriteLine($"[{DateTime.Now}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")}");
+        TestContext.WriteLine($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss.fff}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")}");
     }
    
     //Write()
     protected internal void Write(object o)
-    { TestContext.WriteLine("[{0}] {1}",DateTime.Now,objStr(o));
+    { TestContext.WriteLine("[{0:yyyy-MM-dd hh:mm:ss.fff}] {1}",DateTime.Now,objStr(o));
     }
 
 
