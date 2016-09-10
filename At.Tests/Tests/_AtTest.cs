@@ -72,6 +72,17 @@ public class AtTest : Test
     }
 
     protected string identifier(int? i = null) => TestData.Identifier();
-    protected AtSyntaxTree parseTree(string input) => AtSyntaxTree.ParseText(input);
+    protected AtSyntaxTree parseTree(string input)
+    {
+        try
+        {
+            return AtSyntaxTree.ParseText(input);
+        }
+        catch
+        {
+            Write(()=>input);
+            throw;
+        }
+    }
 }
 }
