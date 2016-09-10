@@ -48,8 +48,21 @@ public class AtToken : AtSyntaxNode
     public AtSyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
 
     public override string ToString() =>
-        Kind==TokenKind.EndOfFile ? "<EOF>" :
-        Kind==TokenKind.StartOfFile ? "<StartOfFile>" :
-        $"{Kind.Name}({Text})";
+            Kind==TokenKind.EndOfFile 
+                ? "<EOF>" 
+            
+        :   Kind==TokenKind.StartOfFile 
+                ? "<StartOfFile>" 
+            
+        :   $"{Kind.Name}({Text})";
+
+    public override IEnumerable<string> PatternStrings()
+    {
+        yield return $"Token({PatternName()})";
+        yield return "Token";
+        yield return "Node";
+    }
+
+    public override string PatternName() => Kind.Name;
 }
 }

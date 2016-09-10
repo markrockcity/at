@@ -17,7 +17,7 @@ public abstract class BlockSyntax : ExpressionSyntax
         IExpressionSource expDef, 
         IEnumerable<AtDiagnostic> diagnostics) 
         
-        : base(nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
+        : base(_nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
 
         StartDelimiter = startDelimiter;
         Contents       = contents?.ToList().AsReadOnly() ?? new List<ExpressionSyntax>().AsReadOnly();
@@ -28,12 +28,57 @@ public abstract class BlockSyntax : ExpressionSyntax
     public IReadOnlyList<ExpressionSyntax> Contents {get;}
     public AtToken EndDelimiter {get;}
 
-    static IEnumerable<AtSyntaxNode> nodes(AtSyntaxNode startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter)
+    static IEnumerable<AtSyntaxNode> _nodes(AtSyntaxNode startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter)
     {
         var r = new AtSyntaxNode[] {startDelimiter}.AsEnumerable();
         if (contents != null)
             r = r.Concat(contents);
         return r.Concat(new[] {endDelimiter});
+    }
+
+    public override IEnumerable<string> PatternStrings()
+    {
+        var name = PatternName();
+        var cs = GetPatternStrings(Contents).ToList();
+
+        if (cs.Any())
+        {
+            foreach(var c in cs)
+            {
+                yield return $"{name}[{StartDelimiter.PatternName()},{EndDelimiter.PatternName()}]({c})";
+                yield return $"{name}({c})";
+            }
+        }
+        else
+        {
+            yield return $"{name}()";
+        }
+
+        yield return name;
+
+        if (cs.Any())
+        {
+            foreach(var c in cs)
+            {
+                yield return $"Block[{StartDelimiter.PatternName()},{EndDelimiter.PatternName()}]({c})";
+                yield return $"Block({c})";
+            }
+        }
+        else
+        {
+            yield return "Block()";
+        }
+
+        yield return "Block";
+
+        foreach(var x in base.PatternStrings())
+            yield return x;
+    }    
+
+    public override string PatternName()
+    {
+        var name = base.PatternName();
+        return name.EndsWith("Block") ? name.Substring(0,name.Length-5) : name;
     }
 }
 

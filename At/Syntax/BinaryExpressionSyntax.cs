@@ -37,5 +37,24 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         get;
         private set;
     }
+
+    public override IEnumerable<string> PatternStrings()
+    {
+        var name = PatternName();
+        var o = Operator.PatternName();
+
+        foreach(var l in Left.PatternStrings())
+        foreach(var r in Right.PatternStrings())
+        {
+            yield return $"{name}[{o}]({l},{r})";
+            yield return $"{name}({l},{r})";
+        }
+        
+        yield return $"{name}[{o}]";
+        yield return name;
+
+        foreach(var b in base.PatternStrings())
+            yield return b;
+    }
 }
 }
