@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using At.Syntax;
+using System.Linq;
 
 namespace At.Tests
 {
@@ -39,6 +40,16 @@ public class ParserTests : AtTest
         parser.Operators.Add(0,OperatorDefinition.PostPointyBlock);
         var expr3 = parser.ParseExpression("@X<>");
         assert_type<TypeDeclarationSyntax>(()=>expr3);    
+    }
+    
+    //CommaTest
+    [TestMethod]
+    public void CommaTest()
+    {
+         parser.Operators.Add(1,OperatorDefinition.Comma);
+         var e1 = parser.ParseExpression("x,y");
+         Write(e1.PatternStrings().First());
+         assert_type<BinaryExpressionSyntax>(()=>e1);
     }
 
     //Circumfix test

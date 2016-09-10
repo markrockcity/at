@@ -58,11 +58,12 @@ public class AtParser : IDisposable
             )
         );
 
-        parser.Operators.Add(1,OperatorDefinition.ColonPair);
+        parser.Operators.Add(1,OperatorDefinition.Comma);
+        parser.Operators.Add(2,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(2,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(2,OperatorDefinition.PostPointyBlock);
-        parser.Operators.Add(2,OperatorDefinition.PrefixDeclaration);
+        parser.Operators.Add(3,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(3,OperatorDefinition.PostPointyBlock);
+        parser.Operators.Add(3,OperatorDefinition.PrefixDeclaration);
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
        
@@ -162,7 +163,7 @@ public class AtParser : IDisposable
                 var list = new List<AtSyntaxNode> {startDelimiter, };
                 while(tokens.Current.Kind != _endDelimiterKind)
                 {
-                    var e = expression(tokens,diagnostics,Operators.Prescedence(circumfixOp),tokens.Position,_endDelimiterKind);
+                    var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
                     if (e != null)
                         list.Add(e);
                 } 
@@ -220,7 +221,7 @@ public class AtParser : IDisposable
             var list = new List<AtSyntaxNode> {leftOperand, startDelimiter, };
             while(tokens.Current.Kind != _endDelimiterKind)
             {
-                var e = expression(tokens,diagnostics,Operators.Prescedence(postCircumfixOp),tokens.Position,_endDelimiterKind);
+                var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
                 if (e != null)
                     list.Add(e);
             } 
