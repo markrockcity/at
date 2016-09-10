@@ -44,10 +44,10 @@ public interface IOperatorDefinition : IExpressionSource
     TokenKind TokenKind {get;}
 }
 
-//implemented by [post]circumfix operator with a different end delimiter than start delimiter
+///<summary>implemented by [post]circumfix operator with a different end delimiter than start delimiter</summary>
+///<remarks>IOperatorDefinition.TokenKind is the start delimiter</remarks>
 public interface ICircumfixOperator : IOperatorDefinition
 {
-    //IOperatorDefinition.TokenKind is the start delimiter
     TokenKind EndDelimiterKind {get;}
 }
 

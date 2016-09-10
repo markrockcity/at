@@ -62,7 +62,6 @@ public class SyntaxFactory
         return new ListSyntax<T>(startDelimiter,list,endDelimiter,diagnostics);
     }
 
-
     public static LiteralExpressionSyntax LiteralExpression(AtToken atToken, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(atToken,nameof(atToken)); 
@@ -94,6 +93,23 @@ public class SyntaxFactory
     {
         checkNull(identifier,nameof(identifier));
         return new ParameterSyntax(identifier, diagnostics);
+    }
+
+    public static ExpressionSyntax ParseExpression(string text)
+    {
+        using (var parser = AtParser.Default())
+        {
+            var expr = parser.ParseExpression(text);
+            return expr;
+        }
+    }
+
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(params TNode[] nodes) where TNode : AtSyntaxNode
+        => SeparatedList(nodes.AsEnumerable());
+
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<TNode> nodes) where TNode : AtSyntaxNode
+    {
+        return new SeparatedSyntaxList<TNode>(null,nodes);
     }
 
     public static AtToken ParseToken(string text, bool markAsMissing = false)

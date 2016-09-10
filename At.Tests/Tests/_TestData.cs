@@ -34,5 +34,13 @@ partial class TestData
         $"@{id} : {className}<{className},{className}>;",
         $"@{id} : {className}<{className},{className}<{className}>>",
     };
+
+    public IEnumerable<string> miscExpressionInputs => new[]
+    {
+        "x : y",
+        "(t)",
+        "u<t>",
+        "x : u<t>",
+    };
 }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,7 +11,38 @@ namespace At
 
 public interface IDeclarationRule : IExpressionSource
 {
-     bool Matches(AtSyntaxNode[] node);
+    bool Matches(AtSyntaxNode[] node);
+}
+
+public class DeclarationDefinition : IDeclarationRule, ICollection
+{
+    //pattern -> (nodes => expr)
+    readonly Dictionary<string,Func<AtSyntaxNode[],DeclarationSyntax>> dict;
+    readonly TokenKind declaratorKind;
+
+    public DeclarationDefinition(TokenKind declaratorKind)
+    {
+        this.declaratorKind = declaratorKind;
+        this.dict = new Dictionary<string, Func<AtSyntaxNode[], DeclarationSyntax>>();
+    }
+
+    public void Add(string pattern,Func<AtSyntaxNode[],DeclarationSyntax> createExpr)=>dict.Add(pattern,createExpr);
+
+    int    ICollection.Count => dict.Count;
+    object ICollection.SyncRoot => ((ICollection)this.dict).SyncRoot;
+    bool   ICollection.IsSynchronized => ((ICollection)this.dict).IsSynchronized;
+    
+    public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes)
+    {
+        var pattern = AtSyntaxNode.GetPatternStrings(nodes).First(dict.ContainsKey);
+        var e = dict[pattern](nodes);
+        return e;
+    }
+
+    public bool Matches(AtSyntaxNode[] nodes) => AtSyntaxNode.GetPatternStrings(nodes).Intersect(dict.Keys).Any();
+
+    void ICollection.CopyTo(Array array,int index) => ((ICollection)this.dict).CopyTo(array,index);
+    IEnumerator IEnumerable.GetEnumerator() => ((ICollection)this.dict).GetEnumerator();
 }
 
 public class DeclarationRule : IDeclarationRule
@@ -28,29 +60,58 @@ public class DeclarationRule : IDeclarationRule
 
     public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes)=>create(nodes);
     public bool Matches(params AtSyntaxNode[] nodes)=>matches(declaratorKind,nodes);
-
 }
 
 public class DeclaratorDefinition : OperatorDefinition
 {
-    public readonly DeclarationRule VariableDeclaration;
-    public readonly DeclarationRule MethodDeclaration;
-    public readonly DeclarationRule TypeDeclaration;
+    public readonly DeclarationDefinition VariableDeclaration;
+    public readonly DeclarationRule       MethodDeclaration;
+    public readonly DeclarationRule       TypeDeclaration;
 
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
         DeclarationRules = new DeclarationRuleList(this);
 
-        VariableDeclaration = new DeclarationRule
-        (
-            declaratorKind,
+        VariableDeclaration = new DeclarationDefinition(declaratorKind)
+        {
+            //@X
+            {$"Token({declaratorKind.Name}),TokenCluster",nodes => VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)nodes[1]).TokenCluster,null,null,nodes,this)},
         
-            matches: (tk,nodes) =>     nodes.Length == 2 
-                                    && nodes[0].AsToken()?.Kind==declaratorKind
-                                    && nodes[1] is TokenClusterSyntax,
 
-            create:  nodes  => VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)nodes[1]).TokenCluster,null,null,nodes,this)
-        );
+            //@X : T
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster)",nodes=>
+                {            
+                    var binaryExp = (BinaryExpressionSyntax) nodes[1];
+                    return VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)binaryExp.Left).TokenCluster,NameSyntax(((TokenClusterSyntax)binaryExp.Right).TokenCluster),null,nodes,this);
+                }
+            },   
+            
+            //@X : Y<T>
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,PostBlock(TokenCluster,Pointy(TokenCluster)))",nodes=>
+                {            
+                    var binaryExp = (BinaryExpressionSyntax) nodes[1];
+                    var postBlock = (PostBlockSyntax)binaryExp.Right;
+                    return VariableDeclaration
+                    (
+                        nodes[0].AsToken(),
+                        ((TokenClusterSyntax)binaryExp.Left).TokenCluster,
+                        NameSyntax
+                        (
+                            ((TokenClusterSyntax)postBlock.Operand).TokenCluster,
+                            List
+                            (
+                                postBlock.Block.StartDelimiter,            
+                                SeparatedList(NameSyntax(((TokenClusterSyntax)postBlock.Block.Contents[0]).TokenCluster)),
+                                postBlock.Block.EndDelimiter
+                            )
+                        ),null,nodes,this
+                    );
+                }
+            },   
+        };
+
 
         MethodDeclaration = new DeclarationRule
         (
@@ -132,12 +193,12 @@ public class DeclaratorDefinition : OperatorDefinition
     public DeclarationRuleList DeclarationRules {get;}
 
     //e.g., AddRule(def => def.VariableDeclaration)
-    public DeclaratorDefinition AddRule(Func<DeclaratorDefinition,DeclarationRule> f)
+    public DeclaratorDefinition AddRule(Func<DeclaratorDefinition,IDeclarationRule> f)
     {
         DeclarationRules.Add(f(this));
         return this;            
     }
-    public DeclaratorDefinition AddRules(params Func<DeclaratorDefinition,DeclarationRule>[] fs)
+    public DeclaratorDefinition AddRules(params Func<DeclaratorDefinition,IDeclarationRule>[] fs)
     {
         foreach(var f in fs)
             DeclarationRules.Add(f(this));
@@ -164,7 +225,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
         var e = def.DeclarationRules.Matches(nodes).FirstOrDefault()?.CreateExpression(nodes);
         if (e == null)
-            throw new NotImplementedException(string.Join(",",nodes.Select(_=>$"{_} : {_.GetType()}")));
+            throw new NotImplementedException(AtSyntaxNode.GetPatternStrings(nodes).First());
         else 
             return (DeclarationSyntax) e;
     }
