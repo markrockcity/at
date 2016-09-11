@@ -84,6 +84,28 @@ public class SyntaxFactory
         return new NameSyntax(identifier, typeArgs);    
     }
 
+    public static NameSyntax NameSyntax(ExpressionSyntax e)
+    {
+        var n = e as NameSyntax;
+        if (n != null)
+            return n;
+
+        var tc = e as TokenClusterSyntax;
+        if (tc != null)
+            return NameSyntax(tc.TokenCluster);
+
+        var pb = e as PostBlockSyntax;
+        if (pb != null)
+        {
+            var identifier = (TokenClusterSyntax) pb.Operand;
+            var typeArgs   = TypeList(pb.Block);
+            return NameSyntax(identifier.TokenCluster,typeArgs);
+        }
+
+        throw new NotImplementedException(e.PatternStrings().First());
+    }
+    
+
     public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)
     {
         return new EmptyExpressionSyntax(expSrc,endToken);    
@@ -104,10 +126,10 @@ public class SyntaxFactory
         }
     }
 
-    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(params TNode[] nodes) where TNode : AtSyntaxNode
-        => SeparatedList(nodes.AsEnumerable());
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(params AtSyntaxNode[] nodes) where TNode : AtSyntaxNode
+        => SeparatedList<TNode>(nodes.AsEnumerable());
 
-    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<TNode> nodes) where TNode : AtSyntaxNode
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<AtSyntaxNode> nodes) where TNode : AtSyntaxNode
     {
         return new SeparatedSyntaxList<TNode>(null,nodes);
     }
@@ -204,6 +226,34 @@ public class SyntaxFactory
 
         checkNull(identifier,nameof(identifier));
         return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,expSrc,nodes,diagnostics);
+    }
+
+    //<T,U<V>>
+    public static ListSyntax<NameSyntax> TypeList(BlockSyntax block)
+    {        
+        var nodes = new List<AtSyntaxNode>();
+        switch(block.Contents.Count)
+        {
+            case 1:
+                 var b = block.Contents[0] as BinaryExpressionSyntax;
+                 if (b != null)
+                 {
+                     nodes.Add(NameSyntax(b.Left));
+                     nodes.Add(b.Operator);
+                     nodes.Add(NameSyntax(b.Right));
+                 }
+                 else
+                 {
+                    nodes.Add(NameSyntax(block.Contents[0]));
+                 }  
+                 break;
+
+            default:
+                nodes.AddRange(block.Contents.Select(NameSyntax));
+                break;
+        }
+
+        return List(block.StartDelimiter,SeparatedList<NameSyntax>(nodes.AsEnumerable()),block.EndDelimiter);    
     }
 
     // **directive n[;]**

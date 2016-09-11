@@ -79,37 +79,17 @@ public class DeclaratorDefinition : OperatorDefinition
         
 
             //@X : T
-            {
-                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster)",nodes=>
-                {            
-                    var binaryExp = (BinaryExpressionSyntax) nodes[1];
-                    return VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)binaryExp.Left).TokenCluster,NameSyntax(((TokenClusterSyntax)binaryExp.Right).TokenCluster),null,nodes,this);
+            {$"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,Expr)",nodes =>
+
+                { 
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
+                    var type       = NameSyntax(colonPair.Right);
+
+                    return VariableDeclaration(declOp,identifier,type,null,nodes,this);
                 }
-            },   
-            
-            //@X : Y<T>
-            {
-                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,PostBlock(TokenCluster,Pointy(TokenCluster)))",nodes=>
-                {            
-                    var binaryExp = (BinaryExpressionSyntax) nodes[1];
-                    var postBlock = (PostBlockSyntax)binaryExp.Right;
-                    return VariableDeclaration
-                    (
-                        nodes[0].AsToken(),
-                        ((TokenClusterSyntax)binaryExp.Left).TokenCluster,
-                        NameSyntax
-                        (
-                            ((TokenClusterSyntax)postBlock.Operand).TokenCluster,
-                            List
-                            (
-                                postBlock.Block.StartDelimiter,            
-                                SeparatedList(NameSyntax(((TokenClusterSyntax)postBlock.Block.Contents[0]).TokenCluster)),
-                                postBlock.Block.EndDelimiter
-                            )
-                        ),null,nodes,this
-                    );
-                }
-            },   
+            },
         };
 
 
