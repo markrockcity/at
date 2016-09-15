@@ -29,9 +29,17 @@ public class SyntaxFactory
         return new CompilationUnitSyntax(exprs,diagnostics);
     }
 
-    public static ExpressionSyntax TokenClusterExpression(AtToken tokenCluster,ExpressionRule expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
+    // **directive n[;]**
+    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,List<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
     {
-        return new TokenClusterSyntax(tokenCluster,expSrc,diagnostics);
+        checkNull(directive,nameof(directive));
+        checkNull(n,nameof(n));
+        return new DirectiveSyntax(directive,n,nodes,expSrc,diagnostics);
+    }
+
+    public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)
+    {
+        return new EmptyExpressionSyntax(expSrc,endToken);    
     }
 
     public static ErrorNode ErrorNode(IList<AtDiagnostic> diagnostics,string msg, AtSyntaxNode node)
@@ -52,7 +60,7 @@ public class SyntaxFactory
 
     public static ListSyntax<T> List<T>(AtToken startDelimiter, SeparatedSyntaxList<T> list,AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics = null) where T : AtSyntaxNode
     {
-        checkNull(startDelimiter,nameof(startDelimiter));        
+        //checkNull(startDelimiter,nameof(startDelimiter));        
         //checkNull(endDelimiter,nameof(endDelimiter));
 
         if (list == null)
@@ -105,11 +113,24 @@ public class SyntaxFactory
         throw new NotImplementedException(e.PatternStrings().First());
     }
     
-
-    public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)
+    public static ParameterSyntax Parameter(ExpressionSyntax e)
     {
-        return new EmptyExpressionSyntax(expSrc,endToken);    
+        var tc = e as TokenClusterSyntax;
+        if (tc != null)
+            return Parameter(tc.TokenCluster);
+
+        /*
+        var pb = e as PostBlockSyntax;
+        if (pb != null)
+        {
+            var identifier = (TokenClusterSyntax) pb.Operand;
+            var typeArgs   = TypeList(pb.Block);
+            return Parameter(identifier.TokenCluster,typeArgs);
+        }*/
+
+        throw new NotImplementedException(e.PatternStrings().First());
     }
+
 
     public static ParameterSyntax Parameter(AtToken identifier,IEnumerable<AtDiagnostic> diagnostics = null)
     {
@@ -124,14 +145,6 @@ public class SyntaxFactory
             var expr = parser.ParseExpression(text);
             return expr;
         }
-    }
-
-    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(params AtSyntaxNode[] nodes) where TNode : AtSyntaxNode
-        => SeparatedList<TNode>(nodes.AsEnumerable());
-
-    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<AtSyntaxNode> nodes) where TNode : AtSyntaxNode
-    {
-        return new SeparatedSyntaxList<TNode>(null,nodes);
     }
 
     public static AtToken ParseToken(string text, bool markAsMissing = false)
@@ -212,7 +225,21 @@ public class SyntaxFactory
 
         return new RoundBlockSyntax(startDelimiter,contents,rightDelimiter,expSrc,diagnostics);
     }
+
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(params AtSyntaxNode[] nodes) where TNode : AtSyntaxNode
+        => SeparatedList<TNode>(nodes.AsEnumerable());
+
+    public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<AtSyntaxNode> nodes) where TNode : AtSyntaxNode
+    {
+        return new SeparatedSyntaxList<TNode>(null,nodes);
+    }
     
+    public static ExpressionSyntax TokenClusterExpression(AtToken tokenCluster,ExpressionRule expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new TokenClusterSyntax(tokenCluster,expSrc,diagnostics);
+
+    }
+
     public static TypeDeclarationSyntax TypeDeclaration
     (
         AtToken atSymbol, 
@@ -228,6 +255,27 @@ public class SyntaxFactory
         return new TypeDeclarationSyntax(atSymbol,identifier,typeParameterList,baseList,members,expSrc,nodes,diagnostics);
     }
 
+    //[... : ] <T,U<V>>, W, X
+    public static ListSyntax<NameSyntax> TypeList(ExpressionSyntax e)
+    {
+        var block = e as BlockSyntax;
+        if (block != null)
+            return TypeList(block);
+
+        var tc = e as TokenClusterSyntax;
+        if (tc != null)
+            return List(null,SeparatedList<NameSyntax>(NameSyntax(tc)),null);
+
+        var pb = e as PostBlockSyntax;
+        if (pb != null)
+        {
+            var identifier = (TokenClusterSyntax) pb.Operand;
+            var typeArgs   = TypeList(pb.Block);
+            return List(null,SeparatedList<NameSyntax>(NameSyntax(identifier.TokenCluster,typeArgs)),null);
+        }
+
+        throw new NotImplementedException(e.PatternStrings().First());        
+    }
     //<T,U<V>>
     public static ListSyntax<NameSyntax> TypeList(BlockSyntax block)
     {        
@@ -256,13 +304,35 @@ public class SyntaxFactory
         return List(block.StartDelimiter,SeparatedList<NameSyntax>(nodes.AsEnumerable()),block.EndDelimiter);    
     }
 
-    // **directive n[;]**
-    public static DirectiveSyntax Directive(AtToken directive,NameSyntax n,List<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    //...<T,U,V,...>
+    public static ListSyntax<ParameterSyntax> TypeParameterList(BlockSyntax block)
     {
-        checkNull(directive,nameof(directive));
-        checkNull(n,nameof(n));
-        return new DirectiveSyntax(directive,n,nodes,expSrc,diagnostics);
+        var nodes = new List<AtSyntaxNode>();
+        switch(block.Contents.Count)
+        {
+            case 1:
+                 var b = block.Contents[0] as BinaryExpressionSyntax;
+                 if (b != null)
+                 {
+                     nodes.Add(Parameter(b.Left));
+                     nodes.Add(b.Operator);
+                     nodes.Add(Parameter(b.Right));
+                 }
+                 else
+                 {
+                    nodes.Add(Parameter(block.Contents[0]));
+                 }  
+                 break;
+
+            default:
+                nodes.AddRange(block.Contents.Select(Parameter));
+                break;
+        }
+
+        return List(block.StartDelimiter,SeparatedList<ParameterSyntax>(nodes.AsEnumerable()),block.EndDelimiter);    
     }
+
+ 
 
     public static VariableDeclarationSyntax VariableDeclaration(AtToken atSymbol,AtToken identifier,NameSyntax type,object value,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
     {

@@ -18,12 +18,10 @@ public class DeclarationDefinition : IDeclarationRule, ICollection
 {
     //pattern -> (nodes => expr)
     readonly Dictionary<string,Func<AtSyntaxNode[],DeclarationSyntax>> dict;
-    readonly TokenKind declaratorKind;
 
-    public DeclarationDefinition(TokenKind declaratorKind)
+    public DeclarationDefinition()
     {
-        this.declaratorKind = declaratorKind;
-        this.dict = new Dictionary<string, Func<AtSyntaxNode[], DeclarationSyntax>>();
+        dict = new Dictionary<string, Func<AtSyntaxNode[], DeclarationSyntax>>();
     }
 
     public void Add(string pattern,Func<AtSyntaxNode[],DeclarationSyntax> createExpr)=>dict.Add(pattern,createExpr);
@@ -66,21 +64,21 @@ public class DeclaratorDefinition : OperatorDefinition
 {
     public readonly DeclarationDefinition VariableDeclaration;
     public readonly DeclarationRule       MethodDeclaration;
-    public readonly DeclarationRule       TypeDeclaration;
+    public readonly DeclarationDefinition TypeDeclaration;
 
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
         DeclarationRules = new DeclarationRuleList(this);
 
-        VariableDeclaration = new DeclarationDefinition(declaratorKind)
+        VariableDeclaration = new DeclarationDefinition
         {
             //@X
             {$"Token({declaratorKind.Name}),TokenCluster",nodes => VariableDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)nodes[1]).TokenCluster,null,null,nodes,this)},
         
 
             //@X : T
-            {$"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,Expr)",nodes =>
-
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,Expr)",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
@@ -120,35 +118,52 @@ public class DeclaratorDefinition : OperatorDefinition
             }
         );
 
-        TypeDeclaration = new DeclarationRule
-        (
-            declaratorKind,
-        
-            matches: (tk,nodes) =>  
+        TypeDeclaration = new DeclarationDefinition
+        {
+            //@X<...>
             {
-                if(nodes.Length != 2 || nodes[0].AsToken()?.Kind!=declaratorKind) 
-                    return false;
+                $"Token({declaratorKind.Name}),PostBlock(TokenCluster,Pointy)",nodes =>
+                {
+                    var declOp  = nodes[0].AsToken();
+                    var pb = (PostBlockSyntax) nodes[1];
+                    var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
+                    var typeArgs = new List<ParameterSyntax>();
 
-                var postBlock = nodes[1] as PostBlockSyntax; 
-                return (postBlock?.Block is PointyBlockSyntax && postBlock.Operand is TokenClusterSyntax);
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        List(pb.Block.StartDelimiter,SeparatedList<ParameterSyntax>(typeArgs),pb.Block.EndDelimiter),
+                        null,null,nodes,this
+                    );
+                }            
             },
 
-            create:  nodes  => 
+            //X<...> : ...
             {
-                var postBlock = nodes[1] as PostBlockSyntax; 
+                $"Token({declaratorKind.Name}),Binary[Colon](PostBlock(TokenCluster,Pointy),Expr)",nodes =>
+                {
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var pb = (PostBlockSyntax) colonPair.Left;
+                    var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb.Block);
+                    var baseTypes = TypeList(colonPair.Right);
 
-                //TODO: type parameters
-                if (postBlock.Block.Contents.Count > 0)
-                    throw new NotImplementedException("type paramters");
-
-                //TODO: base types and members
-
-                return TypeDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)postBlock.Operand).TokenCluster,null,null,null,nodes,this);
-            }
-        );
-
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        null,nodes,this
+                    );
+                }
+            },
+        
+        };
     }
-    
+
     public class DeclarationRuleList : ExpressionSourceList<IDeclarationRule>
     {
         readonly DeclaratorDefinition def;    
