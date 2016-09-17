@@ -15,14 +15,19 @@ internal class PostBlockSyntax : ExpressionSyntax
     public BlockSyntax Block {get;}
     public ExpressionSyntax Operand {get;}
 
-    public override bool MatchesPattern(SyntaxPattern p)
+    public override bool MatchesPattern(SyntaxPattern p, IDictionary<string,AtSyntaxNode> d = null)
     {
-        return     p.Text == PatternName
+        var t =    p.Text == PatternName
                 && p.Token1==null
                 && p.Token2==null
                 && (p.Content==null || MatchesPatterns(p.Content,new[] {Operand,Block}))
                 
                 || base.MatchesPattern(p);
+
+        if (t && d != null && p.Key != null)
+            d[p.Key] = this;
+
+        return t;
     }
 
     public override IEnumerable<string> PatternStrings()

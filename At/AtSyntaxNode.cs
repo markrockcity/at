@@ -70,40 +70,58 @@ public abstract class AtSyntaxNode
     public static IEnumerable<string> PatternStrings(IReadOnlyList<AtSyntaxNode> nodes)
         => getPatternStringsRecursive(0,nodes);
 
-    public virtual bool MatchesPattern(SyntaxPattern pattern)
+    public bool MatchesPattern(string patternString, IDictionary<string,AtSyntaxNode> d = null)
     {
-        return     pattern.Text=="Node"
+        var p = SyntaxFactory.ParseSyntaxPattern(patternString);
+        var r = MatchesPattern(p,d);
+        return r;
+    }
+
+    public virtual bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
+    {
+        var t =    pattern.Text=="Node"
                 && pattern.Token1==null
                 && pattern.Token2==null
                 && pattern.Content==null;
+
+        if (t && d != null && pattern.Key != null)
+            d[pattern.Key] = this;
+
+        return t;
     }
 
-    public static bool MatchesPattern(SyntaxPattern pattern, params AtSyntaxNode[] nodes)
+    
+    public static bool MatchesPattern(SyntaxPattern pattern, IReadOnlyList<AtSyntaxNode> nodes, IDictionary<string,AtSyntaxNode> d = null)
     {
-        if (nodes?.Length > 1)
+        //X,Y...
+        if (nodes?.Count > 1)
         {
-            if (pattern.Text != null || pattern.Content?.Length != nodes?.Length)
+            if (pattern.Text != null || pattern.Content?.Length != nodes?.Count)
                 return false;
 
-            return MatchesPatterns(pattern.Content,nodes);
+            return MatchesPatterns(pattern.Content,nodes,d);
         }
-        else if (nodes?.Length == 1)
+
+        //X
+        else if (nodes?.Count == 1)
         {
-            return nodes[0].MatchesPattern(pattern);
+            return nodes[0].MatchesPattern(pattern,d);
         }
-        else //nodes.Length < 1
+
+        //(none)
+        else //nodes.Count < 1
         {
-            throw new ArgumentException("nodes.Length must be more than 1",nameof(nodes));
+            throw new ArgumentException("nodes.Count must be more than 1",nameof(nodes));
         }
     }
 
-    public static bool MatchesPatterns(SyntaxPattern[] patterns, IReadOnlyList<AtSyntaxNode> nodes)
+    public static bool MatchesPatterns(SyntaxPattern[] patterns, IReadOnlyList<AtSyntaxNode> nodes, IDictionary<string,AtSyntaxNode> d = null)
     {
         if (patterns.Length != nodes.Count)
             return false;
         
         for(int i=0; i < nodes.Count; ++i)
-                if (!nodes[i].MatchesPattern(patterns[i]))
+                if (!nodes[i].MatchesPattern(patterns[i],d))
                     return false;
 
         return true;

@@ -22,12 +22,17 @@ public abstract class ExpressionSyntax : AtSyntaxNode
         return this;
     }
 
-    public override bool MatchesPattern(SyntaxPattern pattern)
+    public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
-        return     (pattern.Text=="Expr" || pattern.Text=="Node")
+        var t =    (pattern.Text=="Expr" || pattern.Text=="Node")
                 && pattern.Token1==null
                 && pattern.Token2==null
                 && pattern.Content==null;
+
+        if (t && d != null && pattern.Key != null)
+            d[pattern.Key] = this;
+
+        return t;
     }
 
     public override IEnumerable<string> PatternStrings()

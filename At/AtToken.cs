@@ -49,10 +49,13 @@ public class AtToken : AtSyntaxNode
     public AtSyntaxList<AtSyntaxTrivia> LeadingTrivia {get;internal set;}
     public AtSyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
 
-    public override bool MatchesPattern(SyntaxPattern pattern)
+    public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
         var s = pattern.ToString();
-        return PatternStrings().Any(_=>_==s);
+        var t = PatternStrings().Any(_=>_==s);
+        if (t && d != null && pattern.Key != null)
+            d[pattern.Key] = this;
+        return t;
     }
 
     public override string ToString() =>

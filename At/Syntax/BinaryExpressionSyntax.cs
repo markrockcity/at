@@ -39,14 +39,19 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         private set;
     }
 
-    public override bool MatchesPattern(SyntaxPattern p)
+    public override bool MatchesPattern(SyntaxPattern p, IDictionary<string,AtSyntaxNode> d = null)
     {
-        return     (p.Text == PatternName)
+        var t =    (p.Text == PatternName)
                &&  (p.Token1 == null || p.Token1 == Operator.PatternName)
                &&  (p.Token2 == null)
                &&  (p.Content == null || MatchesPatterns(p.Content,new[]{Left,Right}))
 
-               ||  base.MatchesPattern(p);
+               ||  base.MatchesPattern(p,d);
+
+         if (t && d != null && p.Key != null)
+            d[p.Key] = this;
+
+        return t;
     }
 
 

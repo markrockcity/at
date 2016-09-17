@@ -36,13 +36,19 @@ public abstract class BlockSyntax : ExpressionSyntax
         return r.Concat(new[] {endDelimiter});
     }
 
-    public override bool MatchesPattern(SyntaxPattern p)
+    public override bool MatchesPattern(SyntaxPattern p, IDictionary<string,AtSyntaxNode> d = null)
     {
-        return     (p.Text == PatternName || p.Text=="Block")
+        var t =    (p.Text == PatternName || p.Text=="Block")
                 && (p.Token1==null && p.Token2==null || p.Token1==StartDelimiter.Kind.Name && p.Token2==EndDelimiter.Kind.Name)
-                && (p.Content==null || MatchesPatterns(p.Content,Content))
+                && (p.Content==null || MatchesPatterns(p.Content,Content,d))
                 
-                || base.MatchesPattern(p);
+                || base.MatchesPattern(p,d);
+
+        
+        if (t && d != null && p.Key != null)
+            d[p.Key] = this;
+
+        return t;
     }
 
     public override IEnumerable<string> PatternStrings()

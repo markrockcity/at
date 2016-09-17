@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using At.Syntax;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace At.Tests
 {
@@ -75,15 +76,20 @@ public class SyntaxPatternTests : AtTest
         var p4 = SyntaxFactory.ParseSyntaxPattern(str4);
         var e4 = SyntaxFactory.ParseExpression("A:B");
         assert_equals(()=>str4,()=>p4.ToString());
-        assert_false(()=>e4.MatchesPattern(p4));
+        assert_false(()=>e4.MatchesPattern(p4,null));
     }
 
     [TestMethod]
     public void SyntaxPatternKeyTest()
     {
-        var str1 = "x:A";
+        var str1 = "x:TokenCluster";
         var p1 = SyntaxFactory.ParseSyntaxPattern(str1);
+        var e1 = SyntaxFactory.ParseExpression("test");
         assert_equals(()=>"x",()=>p1.Key);
+        var d1 = new Dictionary<string,AtSyntaxNode>();
+        assert_true(()=>e1.MatchesPattern(p1,d1));
+        var ex1 =(TokenClusterSyntax) d1["x"];
+        assert_not_null(()=>ex1);
     }
 }
 }

@@ -15,10 +15,15 @@ public class TokenClusterSyntax : ExpressionSyntax
 
     public AtToken TokenCluster {get;}
 
-    public override bool MatchesPattern(SyntaxPattern pattern)
+    public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
         var s =pattern.ToString();
-        return PatternStrings().Any(_=>_==s);
+        var t=PatternStrings().Any(_=>_==s);
+
+        if (t && d != null && pattern.Key != null)
+            d[pattern.Key] = this;
+
+        return t;
     }
 
     public override IEnumerable<string> PatternStrings()
