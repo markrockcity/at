@@ -78,6 +78,8 @@ public class OperatorDefinition : IOperatorDefinition
     public readonly static DeclaratorDefinition  PrefixDeclaration = new DeclaratorDefinition(TokenKind.AtSymbol,OperatorPosition.Prefix);
     public readonly static BlockSyntaxDefinition RoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,SyntaxFactory.RoundBlock);
     public readonly static BlockSyntaxDefinition PostRoundBlock = new BlockSyntaxDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
+    public readonly static BlockSyntaxDefinition CurlyBlock = new BlockSyntaxDefinition(TokenKind.OpenBrace,TokenKind.CloseBrace,SyntaxFactory.CurlyBlock);
+    public readonly static BlockSyntaxDefinition PostCurlyBlock = new BlockSyntaxDefinition(TokenKind.OpenBrace,TokenKind.CloseBrace,(src,nodes)=>PostBlock(src,nodes[0],CurlyBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
     public readonly static BlockSyntaxDefinition SquareBlock = new BlockSyntaxDefinition(TokenKind.OpenBracket,TokenKind.CloseBracket,SyntaxFactory.SquareBlock);
     public readonly static BlockSyntaxDefinition PostSquareBlock = new BlockSyntaxDefinition(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray())),isPostCircumfix:true);
     public readonly static BlockSyntaxDefinition PointyBlock = new BlockSyntaxDefinition(TokenKind.LessThan,TokenKind.GreaterThan,SyntaxFactory.PointyBlock);

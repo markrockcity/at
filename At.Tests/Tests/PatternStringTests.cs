@@ -6,7 +6,7 @@ using System.Linq;
 namespace At.Tests
 {
 [TestClass]
-public class PatternStringTests : AtTest
+public class SyntaxPatternTests : AtTest
 {
     AtParser parser;
 
@@ -19,7 +19,7 @@ public class PatternStringTests : AtTest
 
     //Pattern Strings test 1
     [TestMethod]
-    public void PatternStringsTest1()
+    public void PatternStringsTest()
     {
         var expr0 = SyntaxFactory.ParseExpression("x;");
         Write(()=>expr0);
@@ -52,7 +52,7 @@ public class PatternStringTests : AtTest
 
 
     [TestMethod]
-    public void PatternStringsTest2()
+    public void SyntaxPatternTest1()
     {
         var str1 = "TokenCluster(AtSymbol),Binary[Colon](TokenCluster,Expr)";
         var p1 = SyntaxFactory.ParseSyntaxPattern(str1);
@@ -78,6 +78,12 @@ public class PatternStringTests : AtTest
         assert_false(()=>e4.MatchesPattern(p4));
     }
 
-
+    [TestMethod]
+    public void SyntaxPatternKeyTest()
+    {
+        var str1 = "x:A";
+        var p1 = SyntaxFactory.ParseSyntaxPattern(str1);
+        assert_equals(()=>"x",()=>p1.Key);
+    }
 }
 }

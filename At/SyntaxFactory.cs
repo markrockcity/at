@@ -24,6 +24,34 @@ public class SyntaxFactory
         return new BinaryExpressionSyntax(leftOperand,@operator,rightOperand,exprSrc,diagnostics);
     }
 
+    internal static CurlyBlockSyntax CurlyBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
+    {
+        if (nodes.Length < 2)
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+
+        var contents = (nodes.Length > 2)
+                            ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()
+                            : null;
+
+        return new CurlyBlockSyntax(nodes[0].AsToken(),contents,nodes.Last().AsToken(),expSrc,null);
+    }
+
+
+    public static CurlyBlockSyntax CurlyBlock(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken rightDelimiter,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        if (startDelimiter == null)
+            throw new ArgumentNullException(nameof(startDelimiter));
+        if (contents == null)
+            throw new ArgumentNullException(nameof(contents));
+        if (rightDelimiter == null)
+            throw new ArgumentNullException(nameof(rightDelimiter));
+
+        if (contents.Any(_=>_==null))
+            throw new ArgumentException(nameof(contents),"contents contains a null reference");
+
+        return new CurlyBlockSyntax(startDelimiter,contents,rightDelimiter,expSrc,diagnostics);
+    }
+
     public static CompilationUnitSyntax CompilationUnit(IEnumerable<ExpressionSyntax> exprs,IEnumerable<AtDiagnostic> diagnostics = null)
     {
         return new CompilationUnitSyntax(exprs,diagnostics);
@@ -107,14 +135,18 @@ public class SyntaxFactory
                     throw new NotSupportedException(pb.Block.PatternStrings().First()); 
                 }
             
-                return new SyntaxPattern(text,token1,token2,content:contentSpecified ? content.ToArray() : null);
+                string txt,key; syntaxPatternKey(text,out txt, out key);
+                return new SyntaxPattern(txt,token1,token2,key:key,content:contentSpecified ? content.ToArray() : null);
             }            
         }
 
         //
         var tc = e as TokenClusterSyntax;
         if (tc != null)
-            return new SyntaxPattern(tc.TokenCluster.Text);
+        {
+            string text,key; syntaxPatternKey(tc.TokenCluster.Text,out text, out key);
+            return new SyntaxPattern(text,key:key);
+        }
 
         throw new NotSupportedException(e.PatternStrings().First()); 
      }
@@ -126,6 +158,21 @@ public class SyntaxFactory
             var e = p.ParseExpression(patternString);
             return SyntaxPattern(e);   
         }      
+    }
+
+    static void syntaxPatternKey(string s, out string text, out string key)
+    {
+        if (s.IndexOf(':') > -1) 
+        {
+            var x = s.Split(':');
+            key  = x[0];
+            text = x[1];
+        }
+        else
+        {
+            text = s;
+            key = null;
+        }
     }
 
     public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)

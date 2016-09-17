@@ -65,9 +65,11 @@ public class AtParser : IDisposable
 
         parser.Operators.Add(3,OperatorDefinition.PostRoundBlock);
         parser.Operators.Add(3,OperatorDefinition.PostPointyBlock);
+        parser.Operators.Add(3,OperatorDefinition.PostCurlyBlock);
         parser.Operators.Add(3,OperatorDefinition.PrefixDeclaration);
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
+        parser.Operators.Add(10,OperatorDefinition.CurlyBlock);
        
         return parser;
     }
@@ -99,6 +101,7 @@ public class AtParser : IDisposable
     public static AtParser SyntaxPattern(AtLexer lexer = null)
     {
         var parser = new AtParser(lexer ?? AtLexer.Default());
+        parser.Lexer.TokenRules.Remove(TokenRule.Colon);
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
 
@@ -215,15 +218,13 @@ public class AtParser : IDisposable
             //...
             else
             {
-                //Expression-Definitions???
-
                 //checks passed-in position from recursive call to prevent stack overflow
                 if  (lastPosition != tokens.Position) 
                 {
                     leftOperand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position);
                 }
             
-                //same position as before? check rules
+                //same position as before? check expression rules
                 else
                 {
                     var exprRule = getRule(tokens);
