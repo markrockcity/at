@@ -31,7 +31,7 @@ public interface ITokenRule : ITokenSource
 
 public interface ITokenDefinition : ITokenSource
 {
-    Regex Pattern {get;}
+    string Pattern {get;} //regex
 }
 */
 
@@ -47,7 +47,9 @@ public class TokenRule : ITokenRule
     public readonly static TokenRule Colon = SingleCharacterToken(TokenKind.Colon,':');       
     public readonly static TokenRule CloseBrace = SingleCharacterToken(TokenKind.CloseBrace,'}');       
     public readonly static TokenRule OpenBrace = SingleCharacterToken(TokenKind.OpenBrace,'{');  
-    public readonly static TokenRule OpenParenthesis = SingleCharacterToken(TokenKind.OpenParenthesis,'(');       
+    public readonly static TokenRule OpenBracket = SingleCharacterToken(TokenKind.OpenBracket,'[');     
+    public readonly static TokenRule CloseBracket = SingleCharacterToken(TokenKind.CloseBracket,']');     
+    public readonly static TokenRule OpenParenthesis = SingleCharacterToken(TokenKind.OpenParenthesis,'(');         
     public readonly static TokenRule CloseParenthesis = SingleCharacterToken(TokenKind.CloseParenthesis,')');     
     public readonly static TokenRule Comma  = SingleCharacterToken(TokenKind.Comma,',');     
     public readonly static TokenRule StartOfFile = new TokenRule(TokenKind.StartOfFile,(s,i)=>s.Position<0&&i<1,(td,s)=>new AtSyntaxTrivia(TokenKind.StartOfFile,-1,tokenSrc:td));

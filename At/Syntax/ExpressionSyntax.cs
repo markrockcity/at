@@ -22,18 +22,34 @@ public abstract class ExpressionSyntax : AtSyntaxNode
         return this;
     }
 
+    public override bool MatchesPattern(SyntaxPattern pattern)
+    {
+        return     (pattern.Text=="Expr" || pattern.Text=="Node")
+                && pattern.Token1==null
+                && pattern.Token2==null
+                && pattern.Content==null;
+    }
+
     public override IEnumerable<string> PatternStrings()
     {
         yield return "Expr";
         yield return "Node";
     }
 
-    public override string PatternName()
+    public override string PatternName
     {
-        var name = base.PatternName();
-        return    name.EndsWith("ExpressionSyntax") ? name.Substring(0,name.Length-16)
-                : name.EndsWith("Syntax") ? name.Substring(0,name.Length-6)
-                : name;
+        get
+        {
+            if (_PatternName==null)
+            {
+                var name = base.PatternName;
+                _PatternName=   name.EndsWith("ExpressionSyntax") ? name.Substring(0,name.Length-16)
+                              : name.EndsWith("Syntax") ? name.Substring(0,name.Length-6)
+                              : name;
+            }
+
+            return _PatternName;
+        }
     }
 }
 }

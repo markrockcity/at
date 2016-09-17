@@ -16,6 +16,7 @@ namespace At.Tests
               
         foreach(var input in TestData.classInputs(className,baseClass))
         {
+            Write(()=>input);
             var tree = AtSyntaxTree.ParseText(input);
             verifyOutput<atSyntax.TypeDeclarationSyntax>(input, tree,className);
         }
@@ -66,41 +67,6 @@ namespace At.Tests
 
 
 
-    //Pattern Strings test
-    [TestMethod] public void PatternStringsTest()
-    {
-        var expr0 = SyntaxFactory.ParseExpression("x;");
-        Write(()=>expr0);
-        foreach(var e in expr0.PatternStrings())
-            Write(e);
 
-        Write("----------------------------------");
-
-
-        var expr1 = SyntaxFactory.ParseExpression("(t)");
-        Write(()=>expr1);
-        foreach(var e in expr1.PatternStrings())
-            Write(e);
-
-        Write("----------------------------------");
-
-        var expr2 = SyntaxFactory.ParseExpression("u<t>");
-        Write(()=>expr2);
-        foreach(var e in expr2.PatternStrings())
-            Write(e);
-
-            
-        Write("----------------------------------");
-    
-        var expr3 = SyntaxFactory.ParseExpression("x : u<t>");
-        Write(()=>expr3);
-        foreach(var e in expr3.PatternStrings())
-            Write(e);
-
-        
-        
-
-
-    }
 }
 }

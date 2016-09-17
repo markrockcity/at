@@ -37,6 +37,97 @@ public class SyntaxFactory
         return new DirectiveSyntax(directive,n,nodes,expSrc,diagnostics);
     }
 
+    //TODO: SyntaxPattern.Key (x:Token)
+    public static SyntaxPattern SyntaxPattern(ExpressionSyntax e)
+    {
+        //X,Y
+        var b = e as  BinaryExpressionSyntax;
+        if (b != null)
+            return new SyntaxPattern(null,content:new[]{SyntaxPattern(b.Left),SyntaxPattern(b.Right)});
+   
+        var pb = e as PostBlockSyntax;
+        if (pb!=null)
+        {
+            string token1 = null, token2 = null;        
+
+            //X[Y]
+            if(pb.Block is SquareBlockSyntax)
+            {
+                throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+            }
+
+            //X(...)
+            else if (pb.Block is RoundBlockSyntax)
+            {
+                var text = pb.Operand.Text;  
+                var contentSpecified = false;
+                var content = new List<SyntaxPattern>();
+               
+                //X[Y](...)         
+                var  pb2   = pb.Operand as PostBlockSyntax;
+                if (pb2 != null)
+                {
+                    text = pb2.Operand.Text;
+
+                    //X[Y,Z](...)
+                    var b2 = pb2.Block.Content[0] as BinaryExpressionSyntax;
+                    if (b2 != null) //X[Y,Z]
+                    {
+                        token1 = b2.Left.Text;
+                        token2 = b2.Right.Text;
+                    }
+                    else //X[Y]
+                    {
+                        token1 = pb2.Block.Content[0].Text;
+                    }
+                }
+
+                //X(Y,Z)
+                if (pb.Block.Content.Count==1)
+                {
+                    var b2 = pb.Block.Content[0] as BinaryExpressionSyntax;
+                    if (b2 != null)
+                    {
+                        contentSpecified = true;
+                        content.Add(SyntaxPattern(b2.Left));
+                        content.Add(SyntaxPattern(b2.Right));
+                    }
+                    else if ( pb.Block.Content[0] is TokenClusterSyntax)
+                    {
+                        contentSpecified = true;
+                        content.Add(SyntaxPattern(pb.Block.Content[0]));
+                    }
+                    else
+                    {
+                        throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+                }
+            
+                return new SyntaxPattern(text,token1,token2,content:contentSpecified ? content.ToArray() : null);
+            }            
+        }
+
+        //
+        var tc = e as TokenClusterSyntax;
+        if (tc != null)
+            return new SyntaxPattern(tc.TokenCluster.Text);
+
+        throw new NotSupportedException(e.PatternStrings().First()); 
+     }
+
+    public static SyntaxPattern ParseSyntaxPattern(string patternString)
+    {
+        using (var p = AtParser.SyntaxPattern())
+        {    
+            var e = p.ParseExpression(patternString);
+            return SyntaxPattern(e);   
+        }      
+    }
+
     public static EmptyExpressionSyntax Empty(IExpressionSource expSrc, AtSyntaxNode endToken)
     {
         return new EmptyExpressionSyntax(expSrc,endToken);    
@@ -81,7 +172,7 @@ public class SyntaxFactory
        return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,expDef,diagnostics);
     }
 
-    public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, List<DeclarationSyntax> members,List<AtSyntaxNode> nodes,IExpressionSource expDef/* = null*/, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, IEnumerable<DeclarationSyntax> members, IEnumerable<AtSyntaxNode> nodes, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         return new NamespaceDeclarationSyntax(atSymbol,identifier,members,nodes,expDef,diagnostics);
     }
@@ -184,7 +275,7 @@ public class SyntaxFactory
         return new PointyBlockSyntax(startDelimiter,contents,endDelimiter,expSrc,diagnostics);
     }
 
-    internal static ExpressionSyntax PostBlock(OperatorDefinition expSrc, params AtSyntaxNode[] nodes)
+    internal static ExpressionSyntax PostBlock(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
     {
         if (nodes.Length != 2)
             throw new ArgumentException(nameof(nodes),"Should have 2 nodes.");
@@ -233,6 +324,34 @@ public class SyntaxFactory
     {
         return new SeparatedSyntaxList<TNode>(null,nodes);
     }
+
+    internal static SquareBlockSyntax SquareBlock(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
+    {
+        if (nodes.Length < 2)
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+
+        var contents = (nodes.Length > 2)
+                            ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()
+                            : null;
+
+        return new SquareBlockSyntax(nodes[0].AsToken(),contents,nodes.Last().AsToken(),expSrc,null);
+    }
+
+    public static SquareBlockSyntax SquareBlock(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken rightDelimiter,IExpressionSource expSrc,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        if (startDelimiter == null)
+            throw new ArgumentNullException(nameof(startDelimiter));
+        if (contents == null)
+            throw new ArgumentNullException(nameof(contents));
+        if (rightDelimiter == null)
+            throw new ArgumentNullException(nameof(rightDelimiter));
+
+        if (contents.Any(_=>_==null))
+            throw new ArgumentException(nameof(contents),"contents contains a null reference");
+
+        return new SquareBlockSyntax(startDelimiter,contents,rightDelimiter,expSrc,diagnostics);
+    }
+
     
     public static ExpressionSyntax TokenClusterExpression(AtToken tokenCluster,ExpressionRule expSrc, IEnumerable<AtDiagnostic> diagnostics = null)
     {
@@ -280,10 +399,10 @@ public class SyntaxFactory
     public static ListSyntax<NameSyntax> TypeList(BlockSyntax block)
     {        
         var nodes = new List<AtSyntaxNode>();
-        switch(block.Contents.Count)
+        switch(block.Content.Count)
         {
             case 1:
-                 var b = block.Contents[0] as BinaryExpressionSyntax;
+                 var b = block.Content[0] as BinaryExpressionSyntax;
                  if (b != null)
                  {
                      nodes.Add(NameSyntax(b.Left));
@@ -292,12 +411,12 @@ public class SyntaxFactory
                  }
                  else
                  {
-                    nodes.Add(NameSyntax(block.Contents[0]));
+                    nodes.Add(NameSyntax(block.Content[0]));
                  }  
                  break;
 
             default:
-                nodes.AddRange(block.Contents.Select(NameSyntax));
+                nodes.AddRange(block.Content.Select(NameSyntax));
                 break;
         }
 
@@ -308,10 +427,10 @@ public class SyntaxFactory
     public static ListSyntax<ParameterSyntax> TypeParameterList(BlockSyntax block)
     {
         var nodes = new List<AtSyntaxNode>();
-        switch(block.Contents.Count)
+        switch(block.Content.Count)
         {
             case 1:
-                 var b = block.Contents[0] as BinaryExpressionSyntax;
+                 var b = block.Content[0] as BinaryExpressionSyntax;
                  if (b != null)
                  {
                      nodes.Add(Parameter(b.Left));
@@ -320,12 +439,12 @@ public class SyntaxFactory
                  }
                  else
                  {
-                    nodes.Add(Parameter(block.Contents[0]));
+                    nodes.Add(Parameter(block.Content[0]));
                  }  
                  break;
 
             default:
-                nodes.AddRange(block.Contents.Select(Parameter));
+                nodes.AddRange(block.Content.Select(Parameter));
                 break;
         }
 

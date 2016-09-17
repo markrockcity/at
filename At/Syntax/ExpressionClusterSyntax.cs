@@ -11,16 +11,13 @@ public class ExpressionClusterSyntax : ExpressionSyntax
 
     public override IEnumerable<string> PatternStrings()
     {
-        yield return $"ExprCluster({(string.Join(",",nodes.Select(_=>_.PatternName())))})";
-        yield return PatternName();
+        yield return $"ExprCluster({(string.Join(",",nodes.Select(_=>_.PatternName)))})";
+        yield return PatternName;
 
         foreach(var x in base.PatternStrings())
             yield return x;
     }
 
-    public override string PatternName()
-    {
-        return "ExprCluster";
-    }
+    public override string PatternName => "ExprCluster";
 }
 }

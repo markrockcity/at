@@ -67,25 +67,20 @@ public struct TokenKind : IEquatable<TokenKind>
             names.Value.Add(value,name);
     }
 
-    public string Name => name();
+    public bool IsBuiltIn => builtin.Contains(this); 
 
-    public bool IsBuiltIn(TokenKind kind) => builtin.Contains(kind); 
+    public string Name => (names.Value.ContainsKey(value))
+                                ? names.Value[value]
+                                : $"#{value}";
+
     public bool Equals(TokenKind tk) => (tk.value == value);
     public override bool Equals(object obj) => obj is TokenKind && Equals((TokenKind)obj);
     public override int GetHashCode() => value.GetHashCode();
-    public override string ToString() => $"{{TokenKind: {name()}}}";
+    public override string ToString() => $"{{TokenKind: {Name}}}";
 
     public static bool operator==(TokenKind a, TokenKind b) => a.Equals(b);
     public static bool operator!=(TokenKind a, TokenKind b) => !a.Equals(b);
     public static implicit operator TokenKind(int value) => new TokenKind(value);
-
-    string name()
-    {
-        return (names.Value.ContainsKey(value))
-                    ? names.Value[value]
-                    : $"#{value}";
-            
-    }
 }
 
 /*

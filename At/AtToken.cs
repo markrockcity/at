@@ -29,7 +29,8 @@ public class AtToken : AtSyntaxNode
         _kind           = kind;
     }
 
-    public override bool   IsToken => true;
+    public override bool   IsToken     => true;
+    public override string PatternName => Kind.Name;
     public override int    Position {get;}
     public override string Text     {get;}
 
@@ -44,8 +45,15 @@ public class AtToken : AtSyntaxNode
                         Text,
                         string.Concat(TrailingTrivia.Select(_=>_.FullText)));
 
+    
     public AtSyntaxList<AtSyntaxTrivia> LeadingTrivia {get;internal set;}
     public AtSyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
+
+    public override bool MatchesPattern(SyntaxPattern pattern)
+    {
+        var s = pattern.ToString();
+        return PatternStrings().Any(_=>_==s);
+    }
 
     public override string ToString() =>
             Kind==TokenKind.EndOfFile 
@@ -58,11 +66,9 @@ public class AtToken : AtSyntaxNode
 
     public override IEnumerable<string> PatternStrings()
     {
-        yield return $"Token({PatternName()})";
+        yield return $"Token({PatternName})";
         yield return "Token";
         yield return "Node";
     }
-
-    public override string PatternName() => Kind.Name;
 }
 }

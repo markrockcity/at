@@ -17,24 +17,26 @@ public class AtLexer : IDisposable
     {
         var lexer = new AtLexer();
 
-        lexer.TriviaRules.Add(TokenRule.Space);  
-        lexer.TriviaRules.Add(TokenRule.EndOfLine);
+        lexer.TriviaRules.Add(Space);  
+        lexer.TriviaRules.Add(EndOfLine);
         lexer.TriviaRules.Add(StartOfFile);
         lexer.TriviaRules.Add(EndOfFile);
 
-        lexer.TokenRules.Add(TokenRule.SemiColon);
-        lexer.TokenRules.Add(TokenRule.LessThan);
-        lexer.TokenRules.Add(TokenRule.AtSymbol);
-        lexer.TokenRules.Add(TokenRule.GreaterThan);        
-        lexer.TokenRules.Add(TokenRule.Dots);
-        lexer.TokenRules.Add(TokenRule.Colon);
-        lexer.TokenRules.Add(TokenRule.OpenBrace);
-        lexer.TokenRules.Add(TokenRule.OpenParenthesis);
-        lexer.TokenRules.Add(TokenRule.CloseBrace);
-        lexer.TokenRules.Add(TokenRule.CloseParenthesis);
-        lexer.TokenRules.Add(TokenRule.Comma);
-        lexer.TokenRules.Add(TokenRule.StringLiteral); 
-        lexer.TokenRules.Add(TokenRule.NumericLiteral);
+        lexer.TokenRules.Add(SemiColon);
+        lexer.TokenRules.Add(LessThan);
+        lexer.TokenRules.Add(AtSymbol);
+        lexer.TokenRules.Add(GreaterThan);        
+        lexer.TokenRules.Add(Dots);
+        lexer.TokenRules.Add(Colon);
+        lexer.TokenRules.Add(OpenBrace);
+        lexer.TokenRules.Add(OpenParenthesis);
+        lexer.TokenRules.Add(OpenBracket);
+        lexer.TokenRules.Add(CloseBrace);
+        lexer.TokenRules.Add(CloseParenthesis);
+        lexer.TokenRules.Add(CloseBracket);
+        lexer.TokenRules.Add(Comma);
+        lexer.TokenRules.Add(StringLiteral); 
+        lexer.TokenRules.Add(NumericLiteral);
 
         return lexer;
     }

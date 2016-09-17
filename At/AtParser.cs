@@ -5,6 +5,7 @@ using System.Linq;
 using At.Syntax;
 using static At.OperatorAssociativity;
 using static At.OperatorPosition;
+using static At.SyntaxFactory;
 
 namespace At
 {
@@ -52,6 +53,7 @@ public class AtParser : IDisposable
 
             OperatorDefinition.StartDeclaration.AddRules
             (
+                _=>_.NamespaceDeclaration,
                 _=>_.VariableDeclaration,
                 _=>_.MethodDeclaration,
                 _=>_.TypeDeclaration
@@ -67,6 +69,48 @@ public class AtParser : IDisposable
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
        
+        return parser;
+    }
+
+    class Comma : IOperatorDefinition
+    {
+        public OperatorAssociativity Associativity    => OperatorAssociativity.List;
+        public OperatorPosition      OperatorPosition => Infix;
+        public TokenKind             TokenKind        => TokenKind.Comma;
+        public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes) => Binary(this,nodes);
+    }
+
+    class PostCircumfix : ICircumfixOperator
+    {
+        readonly Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
+        public PostCircumfix(TokenKind tk1, TokenKind tk2, Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> e)
+        {
+            TokenKind = tk1;
+            EndDelimiterKind = tk2;
+            createExpression = e;
+        }
+        public OperatorAssociativity Associativity    => OperatorAssociativity.List;
+        public OperatorPosition      OperatorPosition => OperatorPosition.PostCircumfix;
+        public TokenKind             TokenKind {get;}
+        public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes) => createExpression(this,nodes);
+        public TokenKind EndDelimiterKind {get;}
+    }
+
+    public static AtParser SyntaxPattern(AtLexer lexer = null)
+    {
+        var parser = new AtParser(lexer ?? AtLexer.Default());
+
+        parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
+
+        //x,y
+        parser.Operators.Add(1,new Comma());
+
+        //x()
+        parser.Operators.Add(2,new PostCircumfix(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray()))));
+
+        //x[]
+        parser.Operators.Add(2,new PostCircumfix(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray()))));
+
         return parser;
     }
 
@@ -97,10 +141,7 @@ public class AtParser : IDisposable
     {
         diagnostics.Add(new AtDiagnostic(diagnosticId,token,string.Format(f,args)));
 
-        return SyntaxFactory.ErrorNode(
-                                diagnostics,
-                                string.Format(f,args),
-                                token);
+        return ErrorNode(diagnostics, string.Format(f,args),token);
     }   
 
     //expression()

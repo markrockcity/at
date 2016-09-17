@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace At.Syntax
 {
@@ -38,10 +39,21 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         private set;
     }
 
+    public override bool MatchesPattern(SyntaxPattern p)
+    {
+        return     (p.Text == PatternName)
+               &&  (p.Token1 == null || p.Token1 == Operator.PatternName)
+               &&  (p.Token2 == null)
+               &&  (p.Content == null || MatchesPatterns(p.Content,new[]{Left,Right}))
+
+               ||  base.MatchesPattern(p);
+    }
+
+
     public override IEnumerable<string> PatternStrings()
     {
-        var name = PatternName();
-        var o = Operator.PatternName();
+        var name = PatternName;
+        var o = Operator.PatternName;
 
         foreach(var l in Left.PatternStrings())
         foreach(var r in Right.PatternStrings())
@@ -56,5 +68,6 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         foreach(var b in base.PatternStrings())
             yield return b;
     }
+
 }
 }

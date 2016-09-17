@@ -14,17 +14,22 @@ public interface IDeclarationRule : IExpressionSource
     bool Matches(AtSyntaxNode[] node);
 }
 
+
 public class DeclarationDefinition : IDeclarationRule, ICollection
 {
     //pattern -> (nodes => expr)
-    readonly Dictionary<string,Func<AtSyntaxNode[],DeclarationSyntax>> dict;
+    readonly Dictionary<SyntaxPattern,Func<AtSyntaxNode[],DeclarationSyntax>> dict;
 
     public DeclarationDefinition()
     {
-        dict = new Dictionary<string, Func<AtSyntaxNode[], DeclarationSyntax>>();
+        dict = new Dictionary<SyntaxPattern, Func<AtSyntaxNode[], DeclarationSyntax>>();
     }
 
-    public void Add(string pattern,Func<AtSyntaxNode[],DeclarationSyntax> createExpr)=>dict.Add(pattern,createExpr);
+    public void Add(string patternString,Func<AtSyntaxNode[],DeclarationSyntax> createExpr)
+    {
+        var pattern = ParseSyntaxPattern(patternString);
+        dict.Add(pattern,createExpr);
+    }
 
     int    ICollection.Count => dict.Count;
     object ICollection.SyncRoot => ((ICollection)this.dict).SyncRoot;
@@ -32,12 +37,15 @@ public class DeclarationDefinition : IDeclarationRule, ICollection
     
     public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes)
     {
-        var pattern = AtSyntaxNode.GetPatternStrings(nodes).First(dict.ContainsKey);
+        var pattern = dict.Keys.First(k=>AtSyntaxNode.MatchesPattern(k,nodes));
         var e = dict[pattern](nodes);
         return e;
     }
 
-    public bool Matches(AtSyntaxNode[] nodes) => AtSyntaxNode.GetPatternStrings(nodes).Intersect(dict.Keys).Any();
+    public bool Matches(AtSyntaxNode[] nodes)
+    {
+       return dict.Keys.Any(k=>AtSyntaxNode.MatchesPattern(k,nodes));
+    }
 
     void ICollection.CopyTo(Array array,int index) => ((ICollection)this.dict).CopyTo(array,index);
     IEnumerator IEnumerable.GetEnumerator() => ((ICollection)this.dict).GetEnumerator();
@@ -65,6 +73,7 @@ public class DeclaratorDefinition : OperatorDefinition
     public readonly DeclarationDefinition VariableDeclaration;
     public readonly DeclarationRule       MethodDeclaration;
     public readonly DeclarationDefinition TypeDeclaration;
+    public readonly DeclarationDefinition NamespaceDeclaration;
 
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
@@ -109,7 +118,7 @@ public class DeclaratorDefinition : OperatorDefinition
                 var postBlock = nodes[1] as PostBlockSyntax; 
 
                 //TODO: method parameters
-                if (postBlock.Block.Contents.Count > 0)
+                if (postBlock.Block.Content.Count > 0)
                     throw new NotImplementedException("method paramters");
 
                 //TODO: return type and body
@@ -161,6 +170,20 @@ public class DeclaratorDefinition : OperatorDefinition
                 }
             },
         
+        };
+
+        NamespaceDeclaration = new DeclarationDefinition
+        {
+            //@X : namespace { ... }
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster('namespace'))",nodes =>
+                { 
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
+                    return NamespaceDeclaration(declOp,identifier,null,nodes,this);
+                }
+            },
         };
     }
 
@@ -220,7 +243,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
         var e = def.DeclarationRules.Matches(nodes).FirstOrDefault()?.CreateExpression(nodes);
         if (e == null)
-            throw new NotImplementedException(AtSyntaxNode.GetPatternStrings(nodes).First());
+            throw new NotImplementedException(AtSyntaxNode.PatternStrings(nodes).First());
         else 
             return (DeclarationSyntax) e;
     }

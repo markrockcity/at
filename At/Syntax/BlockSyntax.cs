@@ -20,12 +20,12 @@ public abstract class BlockSyntax : ExpressionSyntax
         : base(_nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
 
         StartDelimiter = startDelimiter;
-        Contents       = contents?.ToList().AsReadOnly() ?? new List<ExpressionSyntax>().AsReadOnly();
+        Content       = contents?.ToList().AsReadOnly() ?? new List<ExpressionSyntax>().AsReadOnly();
         EndDelimiter   = endDelimiter;
     }
 
     public AtToken StartDelimiter {get;}
-    public IReadOnlyList<ExpressionSyntax> Contents {get;}
+    public IReadOnlyList<ExpressionSyntax> Content {get;}
     public AtToken EndDelimiter {get;}
 
     static IEnumerable<AtSyntaxNode> _nodes(AtSyntaxNode startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter)
@@ -36,16 +36,25 @@ public abstract class BlockSyntax : ExpressionSyntax
         return r.Concat(new[] {endDelimiter});
     }
 
+    public override bool MatchesPattern(SyntaxPattern p)
+    {
+        return     (p.Text == PatternName || p.Text=="Block")
+                && (p.Token1==null && p.Token2==null || p.Token1==StartDelimiter.Kind.Name && p.Token2==EndDelimiter.Kind.Name)
+                && (p.Content==null || MatchesPatterns(p.Content,Content))
+                
+                || base.MatchesPattern(p);
+    }
+
     public override IEnumerable<string> PatternStrings()
     {
-        var name = PatternName();
-        var cs = GetPatternStrings(Contents).ToList();
+        var name = PatternName;
+        var cs = PatternStrings(Content).ToList();
 
         if (cs.Any())
         {
             foreach(var c in cs)
             {
-                yield return $"{name}[{StartDelimiter.PatternName()},{EndDelimiter.PatternName()}]({c})";
+                yield return $"{name}[{StartDelimiter.PatternName},{EndDelimiter.PatternName}]({c})";
                 yield return $"{name}({c})";
             }
         }
@@ -60,7 +69,7 @@ public abstract class BlockSyntax : ExpressionSyntax
         {
             foreach(var c in cs)
             {
-                yield return $"Block[{StartDelimiter.PatternName()},{EndDelimiter.PatternName()}]({c})";
+                yield return $"Block[{StartDelimiter.PatternName},{EndDelimiter.PatternName}]({c})";
                 yield return $"Block({c})";
             }
         }
@@ -75,10 +84,13 @@ public abstract class BlockSyntax : ExpressionSyntax
             yield return x;
     }    
 
-    public override string PatternName()
+    public override string PatternName
     {
-        var name = base.PatternName();
-        return name.EndsWith("Block") ? name.Substring(0,name.Length-5) : name;
+        get 
+        {
+            var name = base.PatternName;
+            return name.EndsWith("Block") ? name.Substring(0,name.Length-5) : name;
+        }
     }
 }
 

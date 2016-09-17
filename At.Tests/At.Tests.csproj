@@ -66,6 +66,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Tests\CompilationTests.cs" />
+    <Compile Include="Tests\PatternStringTests.cs" />
     <Compile Include="Tests\_AtTest.cs" />
     <Compile Include="Tests\SyntaxTreeConverterTests.cs" />
     <Compile Include="Tests\ParserTests.cs" />

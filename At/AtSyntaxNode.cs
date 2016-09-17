@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using At.Syntax;
 
 namespace At
 {
@@ -43,6 +44,22 @@ public abstract class AtSyntaxNode
         }
     } internal string _text;
 
+    public virtual string PatternName
+    {
+        get
+        {
+            if (_PatternName==null)
+            {
+                var t = GetType();
+                _PatternName = (t.Assembly==typeof(AtSyntaxNode).Assembly)
+                                ? t.Name
+                                : t.FullName;
+            }
+
+            return _PatternName;
+        }
+    } internal string _PatternName;
+
     public AtToken AsToken() => this as AtToken;
     public virtual AtSyntaxNode Clone() => (AtSyntaxNode) MemberwiseClone();
     public override string ToString() => FullText;
@@ -50,21 +67,52 @@ public abstract class AtSyntaxNode
     public IReadOnlyList<AtSyntaxNode> ChildNodes(bool includeTokens = false) => nodes.Where(_=>includeTokens || !_.IsToken).ToImmutableList(); 
     public IEnumerable<AtSyntaxNode> DescendantNodes(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false) => nodesRecursive(this,includeTokens,filter);
 
-    public static IEnumerable<string> GetPatternStrings(IReadOnlyList<AtSyntaxNode> nodes)
+    public static IEnumerable<string> PatternStrings(IReadOnlyList<AtSyntaxNode> nodes)
         => getPatternStringsRecursive(0,nodes);
+
+    public virtual bool MatchesPattern(SyntaxPattern pattern)
+    {
+        return     pattern.Text=="Node"
+                && pattern.Token1==null
+                && pattern.Token2==null
+                && pattern.Content==null;
+    }
+
+    public static bool MatchesPattern(SyntaxPattern pattern, params AtSyntaxNode[] nodes)
+    {
+        if (nodes?.Length > 1)
+        {
+            if (pattern.Text != null || pattern.Content?.Length != nodes?.Length)
+                return false;
+
+            return MatchesPatterns(pattern.Content,nodes);
+        }
+        else if (nodes?.Length == 1)
+        {
+            return nodes[0].MatchesPattern(pattern);
+        }
+        else //nodes.Length < 1
+        {
+            throw new ArgumentException("nodes.Length must be more than 1",nameof(nodes));
+        }
+    }
+
+    public static bool MatchesPatterns(SyntaxPattern[] patterns, IReadOnlyList<AtSyntaxNode> nodes)
+    {
+        if (patterns.Length != nodes.Count)
+            return false;
+        
+        for(int i=0; i < nodes.Count; ++i)
+                if (!nodes[i].MatchesPattern(patterns[i]))
+                    return false;
+
+        return true;
+    }
 
     /// <summary>(...from most specific)</summary>
     public virtual IEnumerable<string> PatternStrings()
     {
         yield return "Node";
-    }
-
-    public virtual string PatternName()
-    {
-        var t = GetType();
-        return (t.Assembly==typeof(AtSyntaxNode).Assembly)
-                ? t.Name
-                : t.FullName;
     }
 
     static IEnumerable<string> getPatternStringsRecursive(int index, IReadOnlyList<AtSyntaxNode> nodes)
