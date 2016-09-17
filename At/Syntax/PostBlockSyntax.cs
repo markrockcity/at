@@ -20,9 +20,9 @@ internal class PostBlockSyntax : ExpressionSyntax
         var t =    p.Text == PatternName
                 && p.Token1==null
                 && p.Token2==null
-                && (p.Content==null || MatchesPatterns(p.Content,new[] {Operand,Block}))
+                && (p.Content==null || MatchesPatterns(p.Content,new[] {Operand,Block},d))
                 
-                || base.MatchesPattern(p);
+                || base.MatchesPattern(p,d);
 
         if (t && d != null && p.Key != null)
             d[p.Key] = this;

@@ -15,17 +15,19 @@ public interface IDeclarationRule : IExpressionSource
 }
 
 
+
+
 public class DeclarationDefinition : IDeclarationRule, ICollection
 {
     //pattern -> (nodes => expr)
-    readonly Dictionary<SyntaxPattern,Func<AtSyntaxNode[],DeclarationSyntax>> dict;
+    readonly Dictionary<SyntaxPattern,Func<SyntaxNodeMatchCollection,DeclarationSyntax>> dict;
 
     public DeclarationDefinition()
     {
-        dict = new Dictionary<SyntaxPattern, Func<AtSyntaxNode[], DeclarationSyntax>>();
+        dict = new Dictionary<SyntaxPattern, Func<SyntaxNodeMatchCollection, DeclarationSyntax>>();
     }
 
-    public void Add(string patternString,Func<AtSyntaxNode[],DeclarationSyntax> createExpr)
+    public void Add(string patternString,Func<SyntaxNodeMatchCollection,DeclarationSyntax> createExpr)
     {
         var pattern = ParseSyntaxPattern(patternString);
         dict.Add(pattern,createExpr);
@@ -37,8 +39,10 @@ public class DeclarationDefinition : IDeclarationRule, ICollection
     
     public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes)
     {
-        var pattern = dict.Keys.First(k=>AtSyntaxNode.MatchesPattern(k,nodes));
-        var e = dict[pattern](nodes);
+        var d = new Dictionary<string,AtSyntaxNode>();
+        var pattern = dict.Keys.First(k=>AtSyntaxNode.MatchesPattern(k,nodes,d));
+        var s = new SyntaxNodeMatchCollection(nodes,d);
+        var e = dict[pattern](s);
         return e;
     }
 
@@ -169,12 +173,35 @@ public class DeclaratorDefinition : OperatorDefinition
                     );
                 }
             },
+
+            //X<...>{}
+            {
+                $"a:Token({declaratorKind.Name}),PostBlock(pb:PostBlock(i:TokenCluster,p:Pointy),c:Curly)", _ =>
+                {
+                    var declOp = _.GetNode<AtToken>("a");
+                    var pb = _.GetNode<PostBlockSyntax>("pb");
+                    var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb.Block);
+                    var c = _.GetNode<CurlyBlockSyntax>("c");
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        null,
+                        null,_,this
+                    );
+
+                    //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
+                }
+            }
         
         };
 
         NamespaceDeclaration = new DeclarationDefinition
         {
-            //@X : namespace { ... }
+            //@X : namespace 
             {
                 $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster('namespace'))",nodes =>
                 { 
@@ -182,6 +209,20 @@ public class DeclaratorDefinition : OperatorDefinition
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
                     var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
                     return NamespaceDeclaration(declOp,identifier,null,nodes,this);
+                }
+            },
+
+            //@X : namespace { ... }
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,PostBlock(TokenCluster('namespace'),c:Curly))",nodes =>
+                { 
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
+                    var c          = nodes.GetNode<CurlyBlockSyntax>("c");
+                    var members    = c.Content.OfType<DeclarationSyntax>();
+
+                    return NamespaceDeclaration(declOp,identifier,members,nodes,this);
                 }
             },
         };

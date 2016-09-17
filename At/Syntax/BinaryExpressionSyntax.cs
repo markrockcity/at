@@ -44,7 +44,7 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         var t =    (p.Text == PatternName)
                &&  (p.Token1 == null || p.Token1 == Operator.PatternName)
                &&  (p.Token2 == null)
-               &&  (p.Content == null || MatchesPatterns(p.Content,new[]{Left,Right}))
+               &&  (p.Content == null || MatchesPatterns(p.Content,new[]{Left,Right},d))
 
                ||  base.MatchesPattern(p,d);
 

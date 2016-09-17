@@ -123,6 +123,7 @@
   <ItemGroup>
     <Compile Include="AtCompilation.cs" />
     <Compile Include="AtCompiler.cs" />
+    <Compile Include="SyntaxNodeMatchCollection.cs" />
     <Compile Include="SyntaxPattern.cs" />
     <Compile Include="Syntax\BinaryExpressionSyntax.cs" />
     <Compile Include="DeclaratorDefinition.cs" />
