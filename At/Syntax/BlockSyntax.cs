@@ -60,6 +60,7 @@ public abstract class BlockSyntax : ExpressionSyntax
         }
         else
         {
+            yield return $"{name}[{StartDelimiter.PatternName},{EndDelimiter.PatternName}]()";
             yield return $"{name}()";
         }
 
