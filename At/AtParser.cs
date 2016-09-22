@@ -61,12 +61,14 @@ public class AtParser : IDisposable
         );
 
         parser.Operators.Add(1,OperatorDefinition.Comma);
-        parser.Operators.Add(2,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(3,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(3,OperatorDefinition.PostPointyBlock);
-        parser.Operators.Add(3,OperatorDefinition.PostCurlyBlock);
-        parser.Operators.Add(3,OperatorDefinition.PrefixDeclaration);
+        parser.Operators.Add(2,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(2,OperatorDefinition.PostCurlyBlock);
+        parser.Operators.Add(2,OperatorDefinition.PrefixDeclaration);
+
+        parser.Operators.Add(3,OperatorDefinition.ColonPair);
+
+        parser.Operators.Add(4,OperatorDefinition.PostPointyBlock);
 
         parser.Operators.Add(10,OperatorDefinition.RoundBlock);
         parser.Operators.Add(10,OperatorDefinition.CurlyBlock);
@@ -254,8 +256,8 @@ public class AtParser : IDisposable
 
         //Postcircumfix?
         var postCircumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.PostCircumfix);
-        var postCircumfixOp =  postCircumfixOps.FirstOrDefault(predicate);
-        if (postCircumfixOp != null)
+        var postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
+        while (postCircumfixOp != null) //compund postcircumfix expressions
         {
             var startDelimiter = tokens.Consume();
             var op = postCircumfixOp as ICircumfixOperator;
@@ -269,6 +271,8 @@ public class AtParser : IDisposable
             } 
             list.Add(tokens.Consume()); //assuming end delimiter
             leftOperand = postCircumfixOp.CreateExpression(list.ToArray());
+
+            postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
         }
 
         //Postfix?
