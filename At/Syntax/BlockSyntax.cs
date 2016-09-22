@@ -54,7 +54,7 @@ public abstract class BlockSyntax : ExpressionSyntax
     public override IEnumerable<string> PatternStrings()
     {
         var name = PatternName;
-        var cs = PatternStrings(Content).ToList();
+        var cs = PatternStrings(Content);
 
         if (cs.Any())
         {
