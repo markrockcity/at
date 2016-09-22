@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -17,7 +18,12 @@ public class TokenClusterSyntax : ExpressionSyntax
 
     public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
-        var s =pattern.ToString();
+        var s = pattern.ToString();
+        var i = s.IndexOf(':');
+
+        if (i > -1)
+            s = s.Substring(Math.Min(i+1,s.Length-1));
+
         var t=PatternStrings().Any(_=>_==s);
 
         if (t && d != null && pattern.Key != null)
