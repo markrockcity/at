@@ -132,7 +132,12 @@ public class SyntaxFactory
                 }
                 else
                 {
-                    throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+                    throw new NotSupportedException
+                    (
+                        pb.Block.Content.Count+"\r\n"+
+                        string.Join(", ",pb.Block.Content.AsEnumerable())+"\r\n"+
+                        pb.Block.PatternStrings().First()
+                    ); 
                 }
             
                 string txt,key; syntaxPatternKey(text,out txt, out key);
@@ -248,7 +253,7 @@ public class SyntaxFactory
             return NameSyntax(identifier.TokenCluster,typeArgs);
         }
 
-        throw new NotImplementedException(e.PatternStrings().First());
+        throw new NotImplementedException(e.GetType()+"–"+e.PatternStrings().First());
     }
     
     public static ParameterSyntax Parameter(ExpressionSyntax e)
