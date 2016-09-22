@@ -29,7 +29,9 @@ public class SyntaxPattern
     public override string ToString()
     {
         return Text != null
-                ?     Text 
+                ?     
+                      (Key != null    ? Key+":" : "")
+                    + Text 
                     + (Token1 != null ? "[" +Token1 : "")
                     + (Token2 != null ? ","+Token2 : "")
                     + (Token1 != null ? "]" : "")
