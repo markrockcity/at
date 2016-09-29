@@ -9,7 +9,7 @@ namespace At.Tests
 [TestClass]
 public class SyntaxPatternTests : AtTest
 {
-    AtParser parser;
+    //AtParser parser;
 
     protected override void Setup()
     {
@@ -77,6 +77,13 @@ public class SyntaxPatternTests : AtTest
         var e4 = SyntaxFactory.ParseExpression("A:B");
         assert_equals(()=>str4,()=>p4.ToString());
         assert_false(()=>e4.MatchesPattern(p4,null));
+
+        var str5 = "PostBlock(pb:PostBlock(i:TokenCluster,p:Pointy),c:Curly)";
+        var p5 = SyntaxFactory.ParseSyntaxPattern(str5);
+        var e5 = SyntaxFactory.ParseExpression("X<>{}");
+        var d5 = new Dictionary<string,AtSyntaxNode>();
+        assert_equals(()=>str5,()=>p5.ToString());        
+        assert_true(()=>e5.MatchesPattern(p5,d5));
     }
 
     [TestMethod]
