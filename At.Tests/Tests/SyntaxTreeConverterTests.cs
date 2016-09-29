@@ -17,6 +17,7 @@ public class SyntaxTreeConverterTests : AtTest
 
         foreach(var input in TestData.classInputs(className,baseClass))
         {
+            Write(()=>input);
             var tree = AtSyntaxTree.ParseText(input);            
             var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
                 verifyOutput(cSharpTree,className,(Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax _)=> _.Identifier.Text);
