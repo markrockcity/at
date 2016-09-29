@@ -18,11 +18,8 @@ public class TokenClusterSyntax : ExpressionSyntax
 
     public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
-        var s = pattern.ToString();
-        var i = s.IndexOf(':');
-
-        if (i > -1)
-            s = s.Substring(Math.Min(i+1,s.Length-1));
+        var s = pattern.ToString(withKeyPrefix:false);
+        
 
         var t=PatternStrings().Any(_=>_==s);
 

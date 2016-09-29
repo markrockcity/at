@@ -51,7 +51,7 @@ public class AtToken : AtSyntaxNode
 
     public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
-        var s = pattern.ToString();
+        var s = pattern.ToString(withKeyPrefix:false);
         var t = PatternStrings().Any(_=>_==s);
         if (t && d != null && pattern.Key != null)
             d[pattern.Key] = this;

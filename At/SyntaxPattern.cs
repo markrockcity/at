@@ -21,16 +21,21 @@ public class SyntaxPattern
     }
 
     public string Text   {get;} //should be null if SyntaxPattern represents multiple expressions
-    public string Token1 {get;} 
+    public string Token1 {get;}
+
+    
+
     public string Token2 {get;} //Token2 = end delimiter
     public string Key    {get;} //x:Token
     public SyntaxPattern[] Content {get;} //null if no content specified, non-null but empty to match empty content
     
-    public override string ToString()
+    public override string ToString() => ToString(true);
+
+    public string ToString(bool withKeyPrefix)
     {
         return Text != null
                 ?     
-                      (Key != null    ? Key+":" : "")
+                      (withKeyPrefix && Key != null ? Key+":" : "")
                     + Text 
                     + (Token1 != null ? "[" +Token1 : "")
                     + (Token2 != null ? ","+Token2 : "")
