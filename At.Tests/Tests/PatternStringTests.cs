@@ -80,6 +80,19 @@ public class SyntaxPatternTests : AtTest
     }
 
     [TestMethod]
+    public void SyntaxPatternTest2()
+    {
+        using (var p = AtParser.CreateSyntaxPatternParser())
+        {  
+            var str1 = "PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,p2:Pointy)),c:Curly)";
+            var e1 = p.ParseExpression(str1);
+            Write(()=>e1);
+            var p1 = SyntaxFactory.SyntaxPattern(e1);
+            assert_equals(()=>str1,()=>p1.ToString());
+        }
+    }
+
+    [TestMethod]
     public void SyntaxPatternKeyTest()
     {
         var str1 = "x:TokenCluster";
