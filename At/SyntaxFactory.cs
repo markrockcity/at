@@ -158,7 +158,7 @@ public class SyntaxFactory
 
     public static SyntaxPattern ParseSyntaxPattern(string patternString)
     {
-        using (var p = AtParser.SyntaxPattern())
+        using (var p = AtParser.CreateSyntaxPatternParser())
         {    
             var e = p.ParseExpression(patternString);
             return SyntaxPattern(e);   
@@ -283,7 +283,7 @@ public class SyntaxFactory
 
     public static ExpressionSyntax ParseExpression(string text)
     {
-        using (var parser = AtParser.Default())
+        using (var parser = AtParser.CreateDefaultParser())
         {
             var expr = parser.ParseExpression(text);
             return expr;
@@ -292,7 +292,7 @@ public class SyntaxFactory
 
     public static AtToken ParseToken(string text, bool markAsMissing = false)
     {
-        using (var lexer = AtLexer.Default())
+        using (var lexer = AtLexer.CreateDefaultLexer())
         {
             var token = lexer.Lex(text).FirstOrDefault();
             token.IsMissing = markAsMissing;

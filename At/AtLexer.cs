@@ -13,7 +13,7 @@ public class AtLexer : IDisposable
     public TokenRuleList TokenRules  {get;} = new TokenRuleList();
     public TokenRuleList TriviaRules {get;} = new TokenRuleList();
 
-    public static AtLexer Default()
+    public static AtLexer CreateDefaultLexer()
     {
         var lexer = new AtLexer();
 

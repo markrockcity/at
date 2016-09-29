@@ -13,7 +13,7 @@ public class AtParser : IDisposable
 {
     const int initialPrescedence = 0;
 
-    public AtParser() : this(AtLexer.Default()) {}
+    public AtParser() : this(AtLexer.CreateDefaultLexer()) {}
     public AtParser(AtLexer lexer)
     {
         this.Lexer = lexer;
@@ -37,9 +37,9 @@ public class AtParser : IDisposable
         return compilationUnitSyntax;
     }
 
-    public static AtParser Default(AtLexer lexer = null)
+    public static AtParser CreateDefaultParser(AtLexer lexer = null)
     {
-        var parser = new AtParser(lexer ?? AtLexer.Default());
+        var parser = new AtParser(lexer ?? AtLexer.CreateDefaultLexer());
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
@@ -76,7 +76,8 @@ public class AtParser : IDisposable
         return parser;
     }
 
-    class Comma : IOperatorDefinition
+    //for SyntaxPattern parser
+    class CommaOperatorDefinition : IOperatorDefinition
     {
         public OperatorAssociativity Associativity    => OperatorAssociativity.List;
         public OperatorPosition      OperatorPosition => Infix;
@@ -84,10 +85,11 @@ public class AtParser : IDisposable
         public ExpressionSyntax CreateExpression(params AtSyntaxNode[] nodes) => Binary(this,nodes);
     }
 
-    class PostCircumfix : ICircumfixOperator
+    //for SyntaxPattern parser
+    class PostCircumfixOperatorDefinition : ICircumfixOperatorDefinition
     {
         readonly Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
-        public PostCircumfix(TokenKind tk1, TokenKind tk2, Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> e)
+        public PostCircumfixOperatorDefinition(TokenKind tk1, TokenKind tk2, Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> e)
         {
             TokenKind = tk1;
             EndDelimiterKind = tk2;
@@ -100,21 +102,21 @@ public class AtParser : IDisposable
         public TokenKind EndDelimiterKind {get;}
     }
 
-    public static AtParser SyntaxPattern(AtLexer lexer = null)
+    public static AtParser CreateSyntaxPatternParser(AtLexer lexer = null)
     {
-        var parser = new AtParser(lexer ?? AtLexer.Default());
+        var parser = new AtParser(lexer ?? AtLexer.CreateDefaultLexer());
         parser.Lexer.TokenRules.Remove(TokenRule.Colon);
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
 
         //x,y
-        parser.Operators.Add(1,new Comma());
+        parser.Operators.Add(1,new CommaOperatorDefinition());
 
         //x()
-        parser.Operators.Add(2,new PostCircumfix(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray()))));
+        parser.Operators.Add(2,new PostCircumfixOperatorDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray()))));
 
         //x[]
-        parser.Operators.Add(2,new PostCircumfix(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray()))));
+        parser.Operators.Add(2,new PostCircumfixOperatorDefinition(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray()))));
 
         return parser;
     }
@@ -204,7 +206,7 @@ public class AtParser : IDisposable
            {
 
                 var startDelimiter = tokens.Consume();
-                var op = circumfixOp as ICircumfixOperator;
+                var op = circumfixOp as ICircumfixOperatorDefinition;
                 var _endDelimiterKind = op != null ? op.EndDelimiterKind : circumfixOp.TokenKind;
                 var list = new List<AtSyntaxNode> {startDelimiter, };
                 while(tokens.Current.Kind != _endDelimiterKind)
@@ -260,7 +262,7 @@ public class AtParser : IDisposable
         while (postCircumfixOp != null) //compund postcircumfix expressions
         {
             var startDelimiter = tokens.Consume();
-            var op = postCircumfixOp as ICircumfixOperator;
+            var op = postCircumfixOp as ICircumfixOperatorDefinition;
             var _endDelimiterKind = op != null ? op.EndDelimiterKind : postCircumfixOp.TokenKind;
             var list = new List<AtSyntaxNode> {leftOperand, startDelimiter, };
             while(tokens.Current.Kind != _endDelimiterKind)

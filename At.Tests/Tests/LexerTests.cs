@@ -80,7 +80,7 @@ public class LexerTests : Test
     [TestMethod]
     public void DefaultLexerTest()
     {
-        lexer = AtLexer.Default();
+        lexer = AtLexer.CreateDefaultLexer();
         lexerTest("@X<>",4);
         
     }

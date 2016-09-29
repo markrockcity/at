@@ -43,8 +43,8 @@ public class AtSyntaxTree
     //parseText(AtSourceText)
     static AtSyntaxTree parseText(string text)
     {
-        using (var lexer  = AtLexer.Default())
-        using (var parser = AtParser.Default(lexer))
+        using (var lexer  = AtLexer.CreateDefaultLexer())
+        using (var parser = AtParser.CreateDefaultParser(lexer))
         {
             var compilationUnit = parser.ParseCompilationUnit(text);
             var tree = new AtSyntaxTree(text, compilationUnit);
