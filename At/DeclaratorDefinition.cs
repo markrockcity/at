@@ -174,7 +174,7 @@ public class DeclaratorDefinition : OperatorDefinition
                 }
             },
 
-            //X<...>{}
+            //X<...>{...}
             {
                 $"a:Token({declaratorKind.Name}),PostBlock(pb:PostBlock(i:TokenCluster,p:Pointy),c:Curly)", _ =>
                 {
@@ -190,7 +190,31 @@ public class DeclaratorDefinition : OperatorDefinition
                         identifier,
                         typeArgs,
                         null,
-                        null,_,this
+                        c.Content.OfType<DeclarationSyntax>(),_,this
+                    );
+
+                    //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
+                }
+            },
+
+            //X<...> : Y {...}
+            {
+                $"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,p2:Pointy)),c:Curly)", _ =>
+                {
+                    var declOp = _.GetNode<AtToken>("a");
+                    var pb1 = _.GetNode<PostBlockSyntax>("pb1");
+                    var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb1.Block);
+                    var c = _.GetNode<CurlyBlockSyntax>("c");
+                    var baseTypes = TypeList(_.GetNode<PostBlockSyntax>("pb2"));
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        c.Content.OfType<DeclarationSyntax>(),_,this
                     );
 
                     //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
@@ -214,10 +238,10 @@ public class DeclaratorDefinition : OperatorDefinition
 
             //@X : namespace { ... }
             {
-                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,PostBlock(TokenCluster('namespace'),c:Curly))",nodes =>
+                $"Token({declaratorKind.Name}),PostBlock(b:Binary[Colon](TokenCluster,TokenCluster('namespace')),c:Curly)",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
-                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var colonPair  = nodes.GetNode<BinaryExpressionSyntax>("b");
                     var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
                     var c          = nodes.GetNode<CurlyBlockSyntax>("c");
                     var members    = c.Content.OfType<DeclarationSyntax>();
@@ -284,7 +308,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
         var e = def.DeclarationRules.Matches(nodes).FirstOrDefault()?.CreateExpression(nodes);
         if (e == null)
-            throw new NotImplementedException(AtSyntaxNode.PatternStrings(nodes).First());
+            throw new NotImplementedException(string.Join(",",(object[])nodes)+"\r\n\r\n"+AtSyntaxNode.PatternStrings(nodes).First());
         else 
             return (DeclarationSyntax) e;
     }
