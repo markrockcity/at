@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using At.Syntax;
 
 namespace At
 {
@@ -32,6 +33,16 @@ public class SyntaxNodeMatchCollection : IReadOnlyList<AtSyntaxNode>
         {
             return nodes[index];
         }
+    }
+
+    public ExpressionSyntax GetExpression(string key)
+    {
+        return (ExpressionSyntax) d[key];
+    }
+
+    public AtSyntaxNode GetNode(string key)
+    {
+         return d[key];
     }
 
     public TNode GetNode<TNode>(string key) where TNode : AtSyntaxNode
