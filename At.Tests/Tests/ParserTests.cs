@@ -107,5 +107,20 @@ public class ParserTests : AtTest
         assert_type<PostBlockSyntax>(()=>e2);
     }
 
+    //Type declaration test
+    [TestMethod]
+    public void TypeDeclarationTest()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var s1 = "@X<A,B>";
+        var t1 = parseTree(s1);
+        verifyOutput<TypeDeclarationSyntax>(s1,t1,"X");
+
+        var e1 = (TypeDeclarationSyntax) parser.ParseExpression(s1);
+        assert_equals(()=>2,()=>e1.TypeParameters.List.Count);
+        assert_equals(()=>"A",()=>e1.TypeParameters.List[0].Text);
+        assert_equals(()=>"B",()=>e1.TypeParameters.List[1].Text);
+    }
 }
 }
