@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -32,7 +33,16 @@ public  class CompilationTests : AtTest
                     $"@{ns} : namespace {{@{functionName1}(); @{@className1}<> }}"+
                     "@ns1 : namespace  {@f(); @variable : y; @y<>; @class<>  : y {@P<>;@G()}}"
                     ;
-        var output = AtProgram.compileStringToAssembly(input);
+        Assembly output = null;
+        
+        try
+        {
+            output = AtProgram.compileStringToAssembly(input);
+        }
+        catch(CompilationException ex)
+        {
+            Assert.Fail($"\r\n{input}\r\n\r\n{ex}");
+        }
 
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
 
