@@ -135,20 +135,20 @@ public class DeclaratorDefinition : OperatorDefinition
         {
             //@X<...>
             {
-                $"Token({declaratorKind.Name}),PostBlock(TokenCluster,Pointy)",nodes =>
+                $"Token({declaratorKind.Name}),PostBlock(TokenCluster,p:Pointy)",nodes =>
                 {
                     var declOp  = nodes[0].AsToken();
                     var pb = (PostBlockSyntax) nodes[1];
                     var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
-                    var typeArgs = new List<ParameterSyntax>();
-
-                    return TypeDeclaration
+                    var typeArgs = TypeParameterList(nodes.GetNode<BlockSyntax>("p"));
+                    var decl = TypeDeclaration
                     (
                         declOp,
                         identifier,
-                        List(pb.Block.StartDelimiter,SeparatedList<ParameterSyntax>(typeArgs),pb.Block.EndDelimiter),
+                        typeArgs,
                         null,null,nodes,this
                     );
+                    return decl;
                 }            
             },
 
@@ -199,6 +199,30 @@ public class DeclaratorDefinition : OperatorDefinition
 
             //X<...> : Y {...}
             {
+                $"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),i2:TokenCluster),c:Curly)", _ =>
+                {
+                    var declOp = _.GetNode<AtToken>("a");
+                    var pb1 = _.GetNode<PostBlockSyntax>("pb1");
+                    var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb1.Block);
+                    var c = _.GetNode<CurlyBlockSyntax>("c");
+                    var baseTypes = TypeList(_.GetNode<TokenClusterSyntax>("i2"));
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        c.Content.OfType<DeclarationSyntax>(),_,this
+                    );
+
+                    //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
+                }
+            },
+ 
+            //X<...> : Y<...> {...}
+            {
                 $"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,p2:Pointy)),c:Curly)", _ =>
                 {
                     var declOp = _.GetNode<AtToken>("a");
@@ -219,7 +243,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
                     //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
                 }
-            }
+            },
         
         };
 
@@ -306,7 +330,9 @@ public class DeclaratorDefinition : OperatorDefinition
                 throw new NotImplementedException(def.OperatorPosition.ToString());            
         }
 
-        var e = def.DeclarationRules.Matches(nodes).FirstOrDefault()?.CreateExpression(nodes);
+        var rule = def.DeclarationRules.Matches(nodes).FirstOrDefault();
+        var e   = rule?.CreateExpression(nodes);
+
         if (e == null)
             throw new NotImplementedException(string.Join(",",(object[])nodes)+"\r\n\r\n"+AtSyntaxNode.PatternStrings(nodes).First());
         else 
