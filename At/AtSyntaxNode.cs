@@ -66,6 +66,15 @@ public abstract class AtSyntaxNode
     public IEnumerable<AtDiagnostic> GetDiagnostics() => diagnostics;
     public IReadOnlyList<AtSyntaxNode> ChildNodes(bool includeTokens = false) => nodes.Where(_=>includeTokens || !_.IsToken).ToImmutableList(); 
     public IEnumerable<AtSyntaxNode> DescendantNodes(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false) => nodesRecursive(this,includeTokens,filter);
+    
+    public IEnumerable<AtSyntaxNode> DescendantNodesAndSelf(Func<AtSyntaxNode,bool> filter = null,bool includeTokens = false)
+    {
+        if (filter == null || filter(this))
+            yield return this;
+
+        foreach(var n in nodesRecursive(this,includeTokens,filter))
+            yield return n;
+    }
 
     public static IEnumerable<string> PatternStrings(IReadOnlyList<AtSyntaxNode> nodes)
         => getPatternStringsRecursive(0,nodes);
@@ -152,16 +161,16 @@ public abstract class AtSyntaxNode
 
     static IEnumerable<AtSyntaxNode> nodesRecursive(AtSyntaxNode parent, bool includeTokens,Func<AtSyntaxNode,bool> predicate)
     {
-        foreach(var node in parent?.nodes.Where
-        (ifNode=>  
-               (ifNode!=null)
-            && (includeTokens   || !ifNode.IsToken) 
-            && (predicate==null || predicate(ifNode)))) {
+        foreach(var node in parent?.nodes.Where(_=>
+                                               (_!=null)
+                                            && (includeTokens   || !_.IsToken) 
+                                            && (predicate==null || predicate(_)))) 
+        {
 
-                yield return node;
+            yield return node;
 
-                foreach(var descendant in nodesRecursive(node,includeTokens, predicate))
-                    yield return descendant;
+            foreach(var descendant in nodesRecursive(node,includeTokens, predicate))
+                yield return descendant;
         }
     }
 }
