@@ -19,6 +19,12 @@ public abstract class BlockSyntax : ExpressionSyntax
         
         : base(_nodes(startDelimiter,contents,endDelimiter), expDef,diagnostics) {
 
+        if (startDelimiter==null)
+            throw new ArgumentNullException(nameof(startDelimiter));
+
+        if (endDelimiter==null)
+            throw new ArgumentNullException(nameof(endDelimiter));
+
         StartDelimiter = startDelimiter;
         Content       = contents?.ToList().AsReadOnly() ?? new List<ExpressionSyntax>().AsReadOnly();
         EndDelimiter   = endDelimiter;

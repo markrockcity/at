@@ -128,12 +128,12 @@ class SyntaxTreeConverter
        }
     }
 
-    cs.Syntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
+    csSyntax.ExpressionStatementSyntax ExpressionStatementSyntax(atSyntax.ExpressionSyntax expr)
     {
         return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
     }
 
-    cs.Syntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
+    csSyntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
     {
         var id = expr as atSyntax.NameSyntax;
         if (id != null) 
@@ -142,7 +142,7 @@ class SyntaxTreeConverter
         throw new NotImplementedException($"{expr.GetType()}: {expr}");
     }
 
-    cs.Syntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
+    csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)
     {
         var nsDecl = d as atSyntax.NamespaceDeclarationSyntax;
         if (nsDecl != null)
@@ -175,12 +175,12 @@ class SyntaxTreeConverter
         throw new NotSupportedException(d.GetType().ToString());
     }
 
-    cs.Syntax.NameSyntax NameSyntax(atSyntax.NameSyntax atName)
+    csSyntax.NameSyntax NameSyntax(atSyntax.NameSyntax atName)
     {
         return IdentifierName(atName.Text);
     }
 
-    cs.Syntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl)
+    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl)
     {
         
         var classId = classDecl.Identifier;
@@ -206,7 +206,7 @@ class SyntaxTreeConverter
     }
 
 
-    cs.Syntax.FieldDeclarationSyntax FieldDeclarationSyntax(atSyntax.VariableDeclarationSyntax varDecl)
+    csSyntax.FieldDeclarationSyntax FieldDeclarationSyntax(atSyntax.VariableDeclarationSyntax varDecl)
     {
         
         var fieldId = varDecl.Identifier;
@@ -220,7 +220,7 @@ class SyntaxTreeConverter
         return csField;
     }
 
-    cs.Syntax.MethodDeclarationSyntax MethodDeclarationSyntax(atSyntax.MethodDeclarationSyntax methodDecl)
+    csSyntax.MethodDeclarationSyntax MethodDeclarationSyntax(atSyntax.MethodDeclarationSyntax methodDecl)
     {
         
         var methodId = methodDecl.Identifier;
@@ -235,7 +235,7 @@ class SyntaxTreeConverter
         return csMethod;
     }
 
-    cs.Syntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
+    csSyntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl)
     {
         
         var nsId = nsDecl.Identifier;
@@ -254,7 +254,7 @@ class SyntaxTreeConverter
                                                 .AddModifiers(Token(InternalKeyword),Token(StaticKeyword))
                                                 .AddBodyStatements(statements.ToArray()));
                                                          
-        var csNs = cs.SyntaxFactory.NamespaceDeclaration(IdentifierName(csId))
+        var csNs = NamespaceDeclaration(IdentifierName(csId))
                     .AddUsings(usings.ToArray())
                     .AddMembers(defaultClass)
                     .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
@@ -262,8 +262,8 @@ class SyntaxTreeConverter
         return csNs;
     }
 
-    SyntaxToken csIdentifer(AtToken classId) => cs.SyntaxFactory.Identifier(lTrivia(classId),classId.Text,tTrivia(classId));       
-    SyntaxTriviaList lTrivia(AtToken token)  => cs.SyntaxFactory.ParseLeadingTrivia(string.Join("",token.LeadingTrivia.Select(_=>_.FullText)));
-    SyntaxTriviaList tTrivia(AtToken token)  => cs.SyntaxFactory.ParseTrailingTrivia(string.Join("",token.TrailingTrivia.Select(_=>_.FullText)));
+    SyntaxToken csIdentifer(AtToken classId) => Identifier(lTrivia(classId),classId.Text,tTrivia(classId));       
+    SyntaxTriviaList lTrivia(AtToken token)  => ParseLeadingTrivia(string.Join("",token.LeadingTrivia.Select(_=>_.FullText)));
+    SyntaxTriviaList tTrivia(AtToken token)  => ParseTrailingTrivia(string.Join("",token.TrailingTrivia.Select(_=>_.FullText)));
 }
 }

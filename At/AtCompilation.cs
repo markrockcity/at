@@ -59,7 +59,7 @@ public class AtCompilation
     {
         checkForExpressionClusters();
     
-        var cSharpTrees = csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
+        var cSharpTrees = convertToCSharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
  
         var cSharpCompilation = CSharpCompilation.Create(  assemblyName
                                                           ,cSharpTrees
@@ -67,7 +67,7 @@ public class AtCompilation
                                                           ,options: null);
 
         var result = cSharpCompilation.Emit(assemblyName+".dll", cancellationToken: cancellationToken);
-        return atEmitREsult(result, cSharpTrees,cancellationToken);
+        return createAtEmitResult(result, cSharpTrees,cancellationToken);
     }
 
     public AtEmitResult Emit(Stream peStream, CancellationToken cancellationToken = default(CancellationToken)) 
@@ -84,15 +84,14 @@ public class AtCompilation
             throw new ArgumentException("peStream must support write", nameof(peStream));
         }
 
-        var cSharpTrees = csharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
- 
-        var cSharpCompilation = CSharpCompilation.Create(  assemblyName
-                                                          ,cSharpTrees
-                                                          ,references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)}
-                                                          ,options: null);
-
-        var result = cSharpCompilation.Emit(peStream, cancellationToken: cancellationToken);
-        return atEmitREsult(result, cSharpTrees,cancellationToken);
+        var csTrees       = convertToCSharpSyntaxTrees(_syntaxAndDeclarations.syntaxTrees);
+        var csCompilation = CSharpCompilation.Create(  
+                                assemblyName,
+                                csTrees,
+                                references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)},
+                                options: null);
+        var csResult = csCompilation.Emit(peStream, cancellationToken: cancellationToken);
+        return createAtEmitResult(csResult, csTrees,cancellationToken);
     }
 
     void checkForExpressionClusters()
@@ -102,7 +101,7 @@ public class AtCompilation
             throw new CompilationException(new AtEmitResult(false,ImmutableArray<AtDiagnostic>.Empty.Add(AtDiagnostic.Create(DiagnosticIds.ExpressionCluster,cluster,"Cannot compile syntax trees with expression clusters")),new string[0]));
     }
 
-    IEnumerable<CSharpSyntaxTree> csharpSyntaxTrees(ImmutableArray<AtSyntaxTree> atSyntaxTrees)
+    IEnumerable<CSharpSyntaxTree> convertToCSharpSyntaxTrees(ImmutableArray<AtSyntaxTree> atSyntaxTrees)
     {
        
         foreach(var tree in atSyntaxTrees)
@@ -112,7 +111,7 @@ public class AtCompilation
         }
     }
 
-    AtEmitResult atEmitREsult(EmitResult result, IEnumerable<SyntaxTree> syntaxTrees,CancellationToken cancellationToken)
+    AtEmitResult createAtEmitResult(EmitResult result, IEnumerable<SyntaxTree> syntaxTrees,CancellationToken cancellationToken)
     {
         return new AtEmitResult(  result.Success
                                  ,ImmutableArray<AtDiagnostic>.Empty.AddRange(result.Diagnostics.Select(_=>new MsDiagnostic(_)))

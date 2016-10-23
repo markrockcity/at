@@ -55,7 +55,7 @@ public  class CompilationTests : AtTest
         var variable = _.GetField(variableName1);
 
         assert_not_null(()=>variable,ifFail:()=>_.GetFields());
-        assert_not_null(()=>_.GetMethod(functionName1),()=>_.GetMethods());
+        assert_not_null(()=>_.GetMethod(functionName1),ifFail:()=>_.GetMethods());
         assert_equals(()=>$"{className1}`2",()=>variable.FieldType.Name);
     }
 }
