@@ -1,11 +1,51 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using atSyntax = At.Syntax;
+using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace At.Tests
 {
-[TestClass] public class MiscTests : AtTest
+[TestClass] 
+public class MiscTests : AtTest
 {
+
+    //Hello World Test
+    [TestMethod] 
+    public void HelloWorldTest()
+    {
+        var p  = AtParser.CreateDefaultParser();
+    
+        var s1 = "output \"Hello, World!\"";
+        var e  = p.ParseExpression(s1);
+
+        Write(()=>e);
+
+        verifyOutput<atSyntax.LiteralExpressionSyntax>(s1,e);
+    }
+
+    protected void verifyOutput<TNode>(string input, AtSyntaxNode node) where TNode : AtSyntaxNode
+    {
+        var tnodes = node.DescendantNodesAndSelf().OfType<TNode>();
+
+        if (!tnodes.Any())
+            Write($"No {typeof(TNode)} was found in node '{node}'");
+
+        assert_equals(1, ()=>tnodes.Count());
+        assert_equals(()=>input, ()=>node.FullText);
+    }
+
+    //Method Test
+    [TestMethod] 
+    public void MethodTest()
+    {
+        var id = identifier();
+        var input = $"@{id}();";
+        var atTree = parseTree(input);
+        verifyOutput<atSyntax.MethodDeclarationSyntax>(input,atTree,id);
+
+        var csharpTree = new SyntaxTreeConverter(atTree).ConvertToCSharpTree();
+        verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
+    }
 
     //Parse Text Test #1
     [TestMethod] 
@@ -34,18 +74,6 @@ namespace At.Tests
         verifyOutput<atSyntax.NamespaceDeclarationSyntax>(input,tree,"ns");
     }
 
-    //Method Test
-    [TestMethod] 
-    public void MethodTest()
-    {
-        var id = identifier();
-        var input = $"@{id}();";
-        var atTree = parseTree(input);
-        verifyOutput<atSyntax.MethodDeclarationSyntax>(input,atTree,id);
-
-        var csharpTree = new SyntaxTreeConverter(atTree).ConvertToCSharpTree();
-        verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
-    }
 
     //Variable Test
     [TestMethod] public void VariableTest()
@@ -64,9 +92,5 @@ namespace At.Tests
                 decl.Type?.Text ?? "object",_=>_.Declaration.Type.ToString());
         }
     }
-
-
-
-
 }
 }

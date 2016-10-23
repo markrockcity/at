@@ -8,6 +8,11 @@ namespace At
 {
 public class SyntaxFactory
 {
+    public static ExpressionSyntax Apply(ExpressionSyntax subj,ExpressionSyntax obj)
+    {
+        return new ApplicationSyntax(subj,SeparatedList<ExpressionSyntax>(obj));
+    }
+
     internal static BinaryExpressionSyntax Binary(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
     {
         return new BinaryExpressionSyntax((ExpressionSyntax)nodes[0],nodes[1].AsToken(),(ExpressionSyntax)nodes[2],expSrc);
@@ -253,6 +258,8 @@ public class SyntaxFactory
             return NameSyntax(identifier.TokenCluster,typeArgs);
         }
 
+        
+
         throw new NotImplementedException(e.GetType()+"–"+e.PatternStrings().First());
     }
     
@@ -343,8 +350,8 @@ public class SyntaxFactory
 
     internal static RoundBlockSyntax RoundBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
     {
-        if (nodes.Length < 2)
-            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+        if (nodes.Length < 2) 
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes (delimiters).");
 
         var contents = (nodes.Length > 2)
                             ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()
@@ -380,7 +387,7 @@ public class SyntaxFactory
     internal static SquareBlockSyntax SquareBlock(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
     {
         if (nodes.Length < 2)
-            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes.");
+            throw new ArgumentException(nameof(nodes),"Should have at least 2 nodes  (delimiters).");
 
         var contents = (nodes.Length > 2)
                             ? nodes.Skip(1).Take(nodes.Length - 2).Cast<ExpressionSyntax>()

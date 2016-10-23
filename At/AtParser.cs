@@ -11,7 +11,7 @@ namespace At
 {
 public class AtParser : IDisposable
 {
-    const int initialPrescedence = 0;
+    const int initialPrescedence  = 0;
 
     public AtParser() : this(AtLexer.CreateDefaultLexer()) {}
     public AtParser(AtLexer lexer)
@@ -43,6 +43,7 @@ public class AtParser : IDisposable
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
+        parser.ExpressionRules.Add(ExpressionRule.StringLiteral);
         parser.ExpressionRules.Add(ExpressionRule.Directive);
         
         parser.Operators.Add(0,OperatorDefinition.SemiColon);
@@ -62,11 +63,13 @@ public class AtParser : IDisposable
 
         parser.Operators.Add(1,OperatorDefinition.Comma);
 
-        parser.Operators.Add(2,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(2,OperatorDefinition.PostCurlyBlock);
-        parser.Operators.Add(2,OperatorDefinition.PrefixDeclaration);
+        parser.Operators.Add(2,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(3,OperatorDefinition.ColonPair);
+
+        parser.Operators.Add(3,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(3,OperatorDefinition.PostCurlyBlock);
+        parser.Operators.Add(3,OperatorDefinition.PrefixDeclaration);
+
 
         parser.Operators.Add(4,OperatorDefinition.PostPointyBlock);
 
@@ -77,7 +80,7 @@ public class AtParser : IDisposable
     }
 
     //for SyntaxPattern parser
-    class CommaOperatorDefinition : IOperatorDefinition
+    class SyntaxPatternCommaOpDef : IOperatorDefinition
     {
         public OperatorAssociativity Associativity    => OperatorAssociativity.List;
         public OperatorPosition      OperatorPosition => Infix;
@@ -86,10 +89,10 @@ public class AtParser : IDisposable
     }
 
     //for SyntaxPattern parser
-    class PostCircumfixOperatorDefinition : ICircumfixOperatorDefinition
+    class SyntaxPatternPostCircumfixOpDef : ICircumfixOperatorDefinition
     {
         readonly Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
-        public PostCircumfixOperatorDefinition(TokenKind tk1, TokenKind tk2, Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> e)
+        public SyntaxPatternPostCircumfixOpDef(TokenKind tk1, TokenKind tk2, Func<IOperatorDefinition,AtSyntaxNode[],ExpressionSyntax> e)
         {
             TokenKind = tk1;
             EndDelimiterKind = tk2;
@@ -102,21 +105,26 @@ public class AtParser : IDisposable
         public TokenKind EndDelimiterKind {get;}
     }
 
+    class SyntaxPatternParser : AtParser
+    {
+        public SyntaxPatternParser(AtLexer lexer = null) : base(lexer) { }
+    }
+
     public static AtParser CreateSyntaxPatternParser(AtLexer lexer = null)
     {
-        var parser = new AtParser(lexer ?? AtLexer.CreateDefaultLexer());
+        var parser = new SyntaxPatternParser(lexer ?? AtLexer.CreateDefaultLexer());
         parser.Lexer.TokenRules.Remove(TokenRule.Colon);
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
 
         //x,y
-        parser.Operators.Add(1,new CommaOperatorDefinition());
+        parser.Operators.Add(1,new SyntaxPatternCommaOpDef());
 
         //x()
-        parser.Operators.Add(2,new PostCircumfixOperatorDefinition(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray()))));
+        parser.Operators.Add(2,new SyntaxPatternPostCircumfixOpDef(TokenKind.OpenParenthesis,TokenKind.CloseParenthesis,(src,nodes)=>PostBlock(src,nodes[0],RoundBlock(src,nodes.Skip(1).ToArray()))));
 
         //x[]
-        parser.Operators.Add(2,new PostCircumfixOperatorDefinition(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray()))));
+        parser.Operators.Add(2,new SyntaxPatternPostCircumfixOpDef(TokenKind.OpenBracket,TokenKind.CloseBracket,(src,nodes)=>PostBlock(src,nodes[0],SquareBlock(src,nodes.Skip(1).ToArray()))));
 
         return parser;
     }
@@ -129,7 +137,7 @@ public class AtParser : IDisposable
 
         tokens.MoveNext(); //move to first token
         Debug.Assert(tokens.Position==0);
-        var expr = expression(tokens,diagnostics,initialPrescedence);
+        var expr = expression(tokens,diagnostics,initialPrescedence,-1,null);
         return expr;
     }
 
@@ -140,7 +148,7 @@ public class AtParser : IDisposable
             tokens.MoveNext();
 
         while (!tokens.End)
-            yield return expression(tokens,diagnostics,prescendence);      
+            yield return expression(tokens,diagnostics,prescendence,-1,null);      
     }
 
     //error()
@@ -151,20 +159,28 @@ public class AtParser : IDisposable
         return ErrorNode(diagnostics, string.Format(f,args),token);
     }   
 
+
+
     //expression()
-    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition = -1, TokenKind? endDelimiterKind = null)
+    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition, TokenKind? endDelimiterKind)
     {           
+        Func<string> _trace = ()=>
+        {
+            return ($"expression(currentToken={tokens.Current},presc={prescedence},lastPos={lastPosition}{(endDelimiterKind!=null?",endDelim="+endDelimiterKind:"")})");
+        };
+
+        _trace();
         AtToken start = null;
         IOperatorDefinition startOp = null;
-        ExpressionSyntax leftOperand = null;
+        ExpressionSyntax operand = null;
 
         //predicate() - closes over {prescendence}
-        Func<IOperatorDefinition,bool> predicate = (IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
+        Func<IOperatorDefinition,bool> predicate = (IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && (_.OperatorPosition==End || Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence));
         //bool predicate(IOperatorDefinition _) => _.TokenKind==tokens.Current?.Kind && Operators.Prescedence(_) >= (startOp != null ? Operators.Prescedence(startOp) : prescedence);
 
         //BEGIN PARSING:
 
-        //No Operators??
+        //No Operators registered : expression cluster
         if (Operators.Count==0)
             return expressionCluster(new AtToken[0],tokens,null,diagnostics);
         
@@ -194,38 +210,27 @@ public class AtParser : IDisposable
         if (prefixOp != null)
         {
             var prefixOpToken = tokens.Consume();
-            var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp));
-            leftOperand = prefixOp.CreateExpression(prefixOpToken, e);
+            var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp),tokens.Position,endDelimiterKind);
+            operand = prefixOp.CreateExpression(prefixOpToken, e);
         }        
         else 
         {
-           //Circumfix op?
-           var circumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.Circumfix);
-           var circumfixOp =  circumfixOps.FirstOrDefault(predicate);
-           if (circumfixOp != null)
-           {
-
-                var startDelimiter = tokens.Consume();
-                var op = circumfixOp as ICircumfixOperatorDefinition;
-                var _endDelimiterKind = op != null ? op.EndDelimiterKind : circumfixOp.TokenKind;
-                var list = new List<AtSyntaxNode> {startDelimiter, };
-                while(tokens.Current.Kind != _endDelimiterKind)
-                {
-                    var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
-                    if (e != null)
-                        list.Add(e);
-                } 
-                list.Add(tokens.Consume()); //assuming end delimiter
-                leftOperand = circumfixOp.CreateExpression(list.ToArray());
-            }
-
+            //Circumfix op?
+            var circumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.Circumfix);
+            var circumfixOp =  circumfixOps.FirstOrDefault(predicate);
+            if (circumfixOp != null)
+                operand = parseCircumfixOp(circumfixOp, tokens, diagnostics);
+            
             //...
             else
             {
                 //checks passed-in position from recursive call to prevent stack overflow
                 if  (lastPosition != tokens.Position) 
                 {
-                    leftOperand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position);
+                    operand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind);
+                    //Debug.WriteLine($"229: operand = ({operand.GetType().Name}) {operand.Text}");
+
+                    var _opdef = operand.ExpressionSource as IOperatorDefinition;
                 }
             
                 //same position as before? check expression rules
@@ -236,16 +241,31 @@ public class AtParser : IDisposable
                     {
                         var pos = tokens.Position;
 
-                        leftOperand = exprRule.ParseExpression(tokens);
+                        operand = exprRule.ParseExpression(tokens);
 
-                        if (leftOperand != null && pos == tokens.Position && leftOperand.Text.Length > 0)
+                        if (operand != null && pos == tokens.Position && operand.Text.Length > 0)
                             tokens.MoveNext();
                     }
 
-                    if (leftOperand == null)
+                    if (operand == null)
                     {
-                        leftOperand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics); 
+                        operand = expressionCluster(new[]{tokens.Consume()},null,null,diagnostics); 
                     }
+                }
+
+                
+                //application expression?
+                //HACK: uses check for semi-colon instead of handling (elsewhere) for expressions returned from end-position operator
+                if (!tokens.End && (endDelimiterKind==null || tokens.Current.Kind!=endDelimiterKind) && operand?.nodes.Last().AsToken()?.Kind!=TokenKind.SemiColon)
+                {
+                    var op = Operators.Where(_=>_.OperatorPosition==End
+                                              ||_.OperatorPosition==PostCircumfix
+                                              ||_.OperatorPosition==Infix)
+                                      .FirstOrDefault(predicate);
+
+                    //TODO: ?? CHECK FOR SYNTAX ERRORS...
+                    if(op == null)
+                        operand = applicationExpression(operand,expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind));
                 }
             }
         }
@@ -254,25 +274,15 @@ public class AtParser : IDisposable
         //End?
         endOp = endOps.FirstOrDefault(predicate);
         if (endOp != null)
-            return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
+            return endOp.CreateExpression(operand != null ? new AtSyntaxNode[]{operand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
 
         //Postcircumfix?
-        var postCircumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.PostCircumfix);
+        var postCircumfixOps = Operators.Where(_=>_.OperatorPosition==PostCircumfix);
         var postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
         while (postCircumfixOp != null) //compund postcircumfix expressions
         {
-            var startDelimiter = tokens.Consume();
-            var op = postCircumfixOp as ICircumfixOperatorDefinition;
-            var _endDelimiterKind = op != null ? op.EndDelimiterKind : postCircumfixOp.TokenKind;
-            var list = new List<AtSyntaxNode> {leftOperand, startDelimiter, };
-            while(tokens.Current.Kind != _endDelimiterKind)
-            {
-                var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
-                if (e != null)
-                    list.Add(e);
-            } 
-            list.Add(tokens.Consume()); //assuming end delimiter
-            leftOperand = postCircumfixOp.CreateExpression(list.ToArray());
+            operand = parseCircumfixOp(postCircumfixOp,tokens,diagnostics,operand);
+            //Debug.WriteLine($"275: operand = ({operand.GetType().Name}) {operand.Text}");
 
             postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
         }
@@ -283,7 +293,7 @@ public class AtParser : IDisposable
         if (postfixOp != null)
         {
             var postfixOpToken = tokens.Consume();
-            leftOperand = postfixOp.CreateExpression(leftOperand,postfixOpToken);
+            operand = postfixOp.CreateExpression(operand,postfixOpToken);
         }
 
         //Binary op?
@@ -298,26 +308,58 @@ public class AtParser : IDisposable
                  break;
                
                var opToken = tokens.Consume();
-               var rightOperand = expression(tokens,diagnostics,Operators.Prescedence(binaryOp));
-               leftOperand = binaryOp.CreateExpression(leftOperand, opToken, rightOperand);
+               var rightOperand = expression(tokens,diagnostics,Operators.Prescedence(binaryOp),tokens.Position,endDelimiterKind);
+               operand = binaryOp.CreateExpression(operand, opToken, rightOperand);
             }
         }
 
         //End?
         endOp = endOps.FirstOrDefault(predicate);
         if (endOp != null)
-            return endOp.CreateExpression(leftOperand != null ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
+            return endOp.CreateExpression(operand != null ? new AtSyntaxNode[]{operand, tokens.Consume()} : new AtSyntaxNode[] {tokens.Consume()} );
 
-        Debug.Assert(leftOperand != null);
+        //________________________________
+        Debug.Assert(operand != null);
 
-        return    endOp != null 
-                    ? endOp.CreateExpression(leftOperand != null 
-                                                ? new AtSyntaxNode[]{leftOperand, tokens.Consume()} 
-                                                : new AtSyntaxNode[]{tokens.Consume()})
-                : start != null 
-                    ? startOp.CreateExpression(start,leftOperand) 
+        var retval = operand;
 
-                : leftOperand;
+        if (endOp != null)
+            retval = endOp.CreateExpression(new AtSyntaxNode[]{operand, tokens.Consume()});
+        
+        else if (start != null)
+            retval = startOp.CreateExpression(start,operand);
+
+        return retval;
+    }
+
+    ExpressionSyntax applicationExpression(ExpressionSyntax subj, ExpressionSyntax obj)
+    {
+        return Apply(subj,obj);
+    }
+
+    ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Scanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand = null)
+    {
+        var startDelimiter = tokens.Consume();
+        var op = circumfixOp as ICircumfixOperatorDefinition;
+        var _endDelimiterKind = op != null ? op.EndDelimiterKind : circumfixOp.TokenKind;
+        var list = new List<AtSyntaxNode>();
+        if (postCircumfixOperand != null)
+            list.Add(postCircumfixOperand);
+        list.Add(startDelimiter);
+        while(!tokens.End && tokens.Current.Kind != _endDelimiterKind)
+        {
+            var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
+            if (e != null)
+                list.Add(e);
+        } 
+
+        if (tokens.Current?.Kind == _endDelimiterKind)
+            list.Add(tokens.Consume()); 
+        else
+            diagnostics.Add(AtDiagnostic.Create(DiagnosticIds.UnexpectedToken,tokens.Current,"Expected "+_endDelimiterKind));
+
+        var retval = circumfixOp.CreateExpression(list.ToArray());
+        return retval;
     }
 
     IExpressionRule getRule(Scanner<AtToken> tokens)

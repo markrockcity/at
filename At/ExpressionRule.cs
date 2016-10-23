@@ -28,6 +28,7 @@ public class ExpressionRule : IExpressionRule
 
     public readonly static ExpressionRule TokenClusterSyntax = SingleTokenExpression(TokenKind.TokenCluster,(ExpressionRule r,AtToken t)=>TokenClusterExpression(tokenCluster:t,expSrc:r));
     public readonly static ExpressionRule NumericLiteral = SingleTokenExpression(TokenKind.NumericLiteral,(rule,token)=>LiteralExpression(token,rule));
+    public readonly static ExpressionRule StringLiteral = SingleTokenExpression(TokenKind.StringLiteral,(rule,token)=>LiteralExpression(token,rule));
     public readonly static ExpressionRule Directive = new ExpressionRule((s,k)=>matchDirective(s,k), (rule,s)=>directiveExpression(rule,s));
 
     /// <summary>Initializes an ExpressionRule object</summary>
