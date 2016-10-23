@@ -91,7 +91,20 @@ public class DeclaratorDefinition : OperatorDefinition
 
             //@X : T
             {
-                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,Expr)",nodes =>
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster)",nodes =>
+                { 
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var identifier = ((TokenClusterSyntax)colonPair.Left).TokenCluster;
+                    var type       = NameSyntax(colonPair.Right);
+
+                    return VariableDeclaration(declOp,identifier,type,null,nodes,this);
+                }
+            },
+
+            //@X : T< ... >
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,PostBlock(TokenCluster,Pointy))",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
@@ -152,28 +165,6 @@ public class DeclaratorDefinition : OperatorDefinition
                 }            
             },
 
-            //X<...> : ...
-            {
-                $"Token({declaratorKind.Name}),Binary[Colon](PostBlock(TokenCluster,Pointy),Expr)",nodes =>
-                {
-                    var declOp     = nodes[0].AsToken();
-                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
-                    var pb = (PostBlockSyntax) colonPair.Left;
-                    var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb.Block);
-                    var baseTypes = TypeList(colonPair.Right);
-
-                    return TypeDeclaration
-                    (
-                        declOp,
-                        identifier,
-                        typeArgs,
-                        baseTypes,
-                        null,nodes,this
-                    );
-                }
-            },
-
             //X<...>{...}
             {
                 $"a:Token({declaratorKind.Name}),PostBlock(pb:PostBlock(i:TokenCluster,p:Pointy),c:Curly)", _ =>
@@ -223,7 +214,7 @@ public class DeclaratorDefinition : OperatorDefinition
  
             //X<...> : Y<...> {...}
             {
-                $"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,p2:Pointy)),c:Curly)", _ =>
+                $"a:Token({declaratorKind.Name}),Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),PostBlock(pb2:PostBlock(i2:TokenCluster,p2:Pointy),c:Curly))", _ =>
                 {
                     var declOp = _.GetNode<AtToken>("a");
                     var pb1 = _.GetNode<PostBlockSyntax>("pb1");
@@ -244,6 +235,28 @@ public class DeclaratorDefinition : OperatorDefinition
                     //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
                 }
             },
+
+            //X<...> : ...
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](PostBlock(TokenCluster,Pointy),Expr)",nodes =>
+                {
+                    var declOp     = nodes[0].AsToken();
+                    var colonPair  = (BinaryExpressionSyntax) nodes[1];
+                    var pb = (PostBlockSyntax) colonPair.Left;
+                    var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb.Block);
+                    var baseTypes = TypeList(colonPair.Right);
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        null,nodes,this
+                    );
+                }
+            },
         
         };
 
@@ -262,7 +275,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
             //@X : namespace { ... }
             {
-                $"Token({declaratorKind.Name}),PostBlock(b:Binary[Colon](TokenCluster,TokenCluster('namespace')),c:Curly)",nodes =>
+                $"Token({declaratorKind.Name}),b:Binary[Colon](TokenCluster,PostBlock(TokenCluster('namespace'),c:Curly))",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = nodes.GetNode<BinaryExpressionSyntax>("b");
