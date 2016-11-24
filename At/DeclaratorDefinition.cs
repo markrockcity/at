@@ -79,6 +79,7 @@ public class DeclaratorDefinition : OperatorDefinition
     public readonly DeclarationDefinition TypeDeclaration;
     public readonly DeclarationDefinition NamespaceDeclaration;
 
+
     public DeclaratorDefinition(TokenKind declaratorKind, OperatorPosition opPosition) : base(declaratorKind,opPosition,(a,b)=>declaration((DeclaratorDefinition)a,b))
     {
         DeclarationRules = new DeclarationRuleList(this);
@@ -165,7 +166,7 @@ public class DeclaratorDefinition : OperatorDefinition
                 }            
             },
 
-            //X<...>{...}
+            //@X<...>{...}
             {
                 $"a:Token({declaratorKind.Name}),PostBlock(pb:PostBlock(i:TokenCluster,p:Pointy),c:Curly)", _ =>
                 {
@@ -188,9 +189,10 @@ public class DeclaratorDefinition : OperatorDefinition
                 }
             },
 
-            //X<...> : Y {...}
+            //@X<...> : Y<> {...} (ParseText2)
             {
-                $"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),i2:TokenCluster),c:Curly)", _ =>
+                //$"a:Token({declaratorKind.Name}),PostBlock(Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),i2:TokenCluster),c:Curly)", _ =>
+                $"a:Token({declaratorKind.Name}),Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),PostBlock(pb2:PostBlock(i2:TokenCluster,p2:Pointy),c:Curly))", _ =>
                 {
                     var declOp = _.GetNode<AtToken>("a");
                     var pb1 = _.GetNode<PostBlockSyntax>("pb1");
@@ -211,8 +213,9 @@ public class DeclaratorDefinition : OperatorDefinition
                     //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
                 }
             },
- 
-            //X<...> : Y<...> {...}
+ /*
+            
+            //@X<...> : Y<...> {...} 
             {
                 $"a:Token({declaratorKind.Name}),Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),PostBlock(pb2:PostBlock(i2:TokenCluster,p2:Pointy),c:Curly))", _ =>
                 {
@@ -235,10 +238,62 @@ public class DeclaratorDefinition : OperatorDefinition
                     //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
                 }
             },
+            */
 
-            //X<...> : ...
+            //@X<...> : Y {...} 
             {
-                $"Token({declaratorKind.Name}),Binary[Colon](PostBlock(TokenCluster,Pointy),Expr)",nodes =>
+                $"a:Token({declaratorKind.Name}),Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,c:Curly))", _ =>
+                {
+                    var declOp = _.GetNode<AtToken>("a");
+                    var pb1 = _.GetNode<PostBlockSyntax>("pb1");
+                    var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb1.Block);
+                    var c = _.GetNode<CurlyBlockSyntax>("c");
+                    var baseTypes = TypeList(_.GetNode<TokenClusterSyntax>("i2"));
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        c.Content.OfType<DeclarationSyntax>(),_,this
+                    );
+
+                    //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
+                }
+            },
+
+            //@X<...> : Y<...>
+            {
+                $"a:Token({declaratorKind.Name}),Binary[Colon](pb1:PostBlock(i1:TokenCluster,p1:Pointy),pb2:PostBlock(i2:TokenCluster,p2:Pointy))", _ =>
+                {
+                    var declOp = _.GetNode<AtToken>("a");
+                    var pb1 = _.GetNode<PostBlockSyntax>("pb1");
+                    var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
+                    var typeArgs = TypeParameterList(pb1.Block);
+                    var baseTypes = TypeList(_.GetNode<PostBlockSyntax>("pb2"));
+
+                    return TypeDeclaration
+                    (
+                        declOp,
+                        identifier,
+                        typeArgs,
+                        baseTypes,
+                        null,
+                        _,
+                        this
+                    );
+
+                    //throw new NotImplementedException("!"+AtSyntaxNode.PatternStrings(nodes).First());
+                }
+            },
+
+   
+
+            //@X<...> : Y
+            {
+                $"Token({declaratorKind.Name}),Binary[Colon](PostBlock(TokenCluster,Pointy),TokenCluster)",nodes =>
                 {
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
@@ -257,7 +312,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     );
                 }
             },
-        
+       
         };
 
         NamespaceDeclaration = new DeclarationDefinition

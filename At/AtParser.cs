@@ -50,7 +50,7 @@ public class AtParser : IDisposable
 
         parser.Operators.Add
         (
-            0,
+            1,
 
             OperatorDefinition.StartDeclaration.AddRules
             (
@@ -61,20 +61,27 @@ public class AtParser : IDisposable
             )
         );
 
-        parser.Operators.Add(1,OperatorDefinition.Comma);
+        parser.Operators.Add(2,OperatorDefinition.Comma);
 
-        parser.Operators.Add(2,OperatorDefinition.ColonPair);
+        parser.Operators.Add(3,OperatorDefinition.CurlyBlock);
 
+        parser.Operators.Add(4,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(3,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(3,OperatorDefinition.PostCurlyBlock);
-        parser.Operators.Add(3,OperatorDefinition.PrefixDeclaration);
+        parser.Operators.Add(5,OperatorDefinition.PostCurlyBlock);
+        parser.Operators.Add(5,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(5,OperatorDefinition.PrefixDeclaration.AddRules
+            (
+                _=>_.NamespaceDeclaration,
+                _=>_.VariableDeclaration,
+                _=>_.MethodDeclaration,
+                _=>_.TypeDeclaration
+            )
+        );
 
+        parser.Operators.Add(7,OperatorDefinition.PostPointyBlock);
 
-        parser.Operators.Add(4,OperatorDefinition.PostPointyBlock);
-
-        parser.Operators.Add(10,OperatorDefinition.RoundBlock);
-        parser.Operators.Add(10,OperatorDefinition.CurlyBlock);
+        
+        parser.Operators.Add(8,OperatorDefinition.RoundBlock);
        
         return parser;
     }
@@ -169,7 +176,6 @@ public class AtParser : IDisposable
             return ($"expression(currentToken={tokens.Current},presc={prescedence},lastPos={lastPosition}{(endDelimiterKind!=null?",endDelim="+endDelimiterKind:"")})");
         };
 
-        _trace();
         AtToken start = null;
         IOperatorDefinition startOp = null;
         ExpressionSyntax operand = null;
@@ -254,9 +260,15 @@ public class AtParser : IDisposable
                 }
 
                 
-                //application expression?
-                //HACK: uses check for semi-colon instead of handling (elsewhere) for expressions returned from end-position operator
-                if (!tokens.End && (endDelimiterKind==null || tokens.Current.Kind!=endDelimiterKind) && operand?.nodes.Last().AsToken()?.Kind!=TokenKind.SemiColon)
+                //!!!!!!!!!!!!!!!!!!!!!!?
+                //application expression?                
+                if (   startOp == null 
+                    && !tokens.End 
+                    && (endDelimiterKind==null || tokens.Current.Kind!=endDelimiterKind) 
+                    
+                    //HACK: uses check for semi-colon instead of handling (elsewhere) for
+                    //      expressions returned from end-position operator
+                    && operand?.nodes.Last().AsToken()?.Kind!=TokenKind.SemiColon)
                 {
                     var op = Operators.Where(_=>_.OperatorPosition==End
                                               ||_.OperatorPosition==PostCircumfix
@@ -265,7 +277,10 @@ public class AtParser : IDisposable
 
                     //TODO: ?? CHECK FOR SYNTAX ERRORS...
                     if(op == null)
-                        operand = applicationExpression(operand,expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind));
+                    {
+                        var e = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind);
+                        operand = applicationExpression(operand,e);
+                    }
                 }
             }
         }
