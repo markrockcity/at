@@ -15,7 +15,7 @@ public class NameSyntax : ExpressionSyntax
         Debug.Assert(identifier!= null);
     
         Identifier = identifier;
-        TypeArguments = typeArgs;
+        TypeArguments = typeArgs ?? new ListSyntax<NameSyntax>(null,new SeparatedSyntaxList<NameSyntax>(this,null),null,null);
     }
 
     public AtToken Identifier {get;}
