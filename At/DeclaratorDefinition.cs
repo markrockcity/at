@@ -199,7 +199,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
                     var typeArgs = TypeParameterList(pb1.Block);
                     var c = _.GetNode<CurlyBlockSyntax>("c");
-                    var baseTypes = TypeList(_.GetNode<TokenClusterSyntax>("i2"));
+                    var baseTypes = TypeList(_.GetNode<PostBlockSyntax>("pb2"));
 
                     return TypeDeclaration
                     (

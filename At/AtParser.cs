@@ -63,9 +63,9 @@ public class AtParser : IDisposable
 
         parser.Operators.Add(2,OperatorDefinition.Comma);
 
-        parser.Operators.Add(3,OperatorDefinition.CurlyBlock);
+        parser.Operators.Add(3,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(4,OperatorDefinition.ColonPair);
+        parser.Operators.Add(4,OperatorDefinition.CurlyBlock);
 
         parser.Operators.Add(5,OperatorDefinition.PostCurlyBlock);
         parser.Operators.Add(5,OperatorDefinition.PostRoundBlock);
