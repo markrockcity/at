@@ -58,5 +58,24 @@ public  class CompilationTests : AtTest
         assert_not_null(()=>_.GetMethod(functionName1),ifFail:()=>_.GetMethods());
         assert_equals(()=>$"{className1}`2",()=>variable.FieldType.Name);
     }
+
+    [TestMethod] 
+    public void CompileStringTest1()
+    {
+        var input = "@A<B,C> : D<int,B> {}; @D<E,F>";
+
+        Assembly output = null;
+        
+        try
+        {
+            output = AtProgram.compileStringToAssembly(input);
+        }
+        catch(CompilationException ex)
+        {
+            Assert.Fail($"\r\n{input}\r\n\r\n{ex}");
+        }
+
+        assert_not_null(()=>output);
+    }
 }
 }

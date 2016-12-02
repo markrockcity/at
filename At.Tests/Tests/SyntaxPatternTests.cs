@@ -20,7 +20,7 @@ public class SyntaxPatternTests : AtTest
 
     //Pattern Strings test 1
     [TestMethod]
-    public void PatternStringsTest()
+    public void PatternStringsTest1()
     {
         var expr0 = SyntaxFactory.ParseExpression("x;");
         Write(()=>expr0);
@@ -51,6 +51,15 @@ public class SyntaxPatternTests : AtTest
             Write(e);
     }
 
+    //Pattern Strings test 2
+    [TestMethod]
+    public void PatternStringsTest2()
+    {
+        var expr0 = SyntaxFactory.ParseExpression("@A<B,C> : D<E,F> {}");
+        Write(()=>expr0);
+        foreach(var e in expr0.PatternStrings())
+            Write(e);
+    }
 
     [TestMethod]
     public void SyntaxPatternTest1()

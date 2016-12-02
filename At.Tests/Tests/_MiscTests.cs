@@ -92,5 +92,16 @@ public class MiscTests : AtTest
                 decl.Type?.Text ?? "object",_=>_.Declaration.Type.ToString());
         }
     }
+
+    //TypeDeclarationTest
+    [TestMethod] public void TypeDeclarationTest()
+    {
+        var input = "@A<B,C> : D<E,F> {}";
+        var tree = parseTree(input);
+
+        var n = tree.GetRoot().DescendantNodes().OfType<atSyntax.TypeDeclarationSyntax>().First();
+        Write(n);
+        assert_equals(2,n.BaseTypes.List[0].TypeArguments.List.Count);
+    }
 }
 }

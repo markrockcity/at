@@ -41,6 +41,20 @@ public class ParserTests : AtTest
         var expr3 = parser.ParseExpression("@X<>");
         assert_type<TypeDeclarationSyntax>(()=>expr3);    
     }
+
+
+    //Parser Test 2
+    [TestMethod] 
+    public void ParserTest2()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var s = "A<B,C> : D<E,F> {}";
+        var e = parser.ParseExpression(s);
+
+        Write(()=>e);
+        Write(()=>e.PatternStrings().First());
+    }
     
     //CommaTest
     [TestMethod]
@@ -107,9 +121,9 @@ public class ParserTests : AtTest
         assert_type<PostBlockSyntax>(()=>e2);
     }
 
-    //Type declaration test
+    //Type declaration test 1
     [TestMethod]
-    public void TypeDeclarationTest()
+    public void TypeDeclarationTest1()
     {
         parser = AtParser.CreateDefaultParser();
 
@@ -121,6 +135,30 @@ public class ParserTests : AtTest
         assert_equals(()=>2,()=>e1.TypeParameters.List.Count);
         assert_equals(()=>"A",()=>e1.TypeParameters.List[0].Text);
         assert_equals(()=>"B",()=>e1.TypeParameters.List[1].Text);
+    }
+
+    //Type declaration test 2
+    [TestMethod]
+    public void TypeDeclarationTest2()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var s1 = "@A<B,C> : D<E,F> {}";
+
+        //A<B,C>
+        var e1 = (TypeDeclarationSyntax) parser.ParseExpression(s1);
+        Write(()=>e1);
+        assert_equals(()=>2,()=>e1.TypeParameters.List.Count);
+        assert_equals(()=>"B",()=>e1.TypeParameters.List[0].Text);
+        assert_equals(()=>"C",()=>e1.TypeParameters.List[1].Text);
+
+        Write(e1.PatternStrings());
+
+        // : D<E,F>
+        var e2 = e1.BaseTypes.List[0];
+        assert_equals(2,e2.TypeArguments?.List.Count);
+        assert_equals(()=>"E",()=>e2.TypeArguments.List[0].Text);
+        assert_equals(()=>"F",()=>e2.TypeArguments.List[1].Text);
     }
 }
 }
