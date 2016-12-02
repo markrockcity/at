@@ -71,10 +71,11 @@ namespace At.Tests
         assert_equals(()=>expected,actual,f,a);
     }
     public void assert_equals<T>( Expression<Func<T>> expected
-                                    ,Expression<Func<T>> actual
-                                    ,string              format = null
-                                    ,params object[]     args) 
-    { var f = expected.Compile();
+                                 ,Expression<Func<T>> actual
+                                 ,string              format = null
+                                 ,params object[]     args) 
+    { 
+        var f = expected.Compile();
         var g = actual.Compile();
         var x = f();
         var y = g();
@@ -84,55 +85,55 @@ namespace At.Tests
         Write($"assert EQUAL: ({_x}) == ({_y})");
 
         if (format == null)
-        Assert.AreEqual(x,y);
+            Assert.AreEqual(x,y);
         else
-        Assert.AreEqual(x,y,string.Format(format,args));
+            Assert.AreEqual(x,y,string.Format(format,args));
     } 
 
     //assert_true()
     public void assert_true(bool b) => Assert.IsTrue(b);
     public void assert_true(Expression<Func<bool>> e, Expression<Func<object>> ifFail = null) 
-    { var b = e.Body;
+    { 
+        var b = e.Body;
         Write("assert TRUE: {0}",exprStr(e.Body));
 
         switch(b.NodeType)
         { 
-        case ExpressionType.Equal:
+            case ExpressionType.Equal:
             {
-            var be = (BinaryExpression) b;
-            var l1 = Expression.Lambda(be.Left);
-            var l2 = Expression.Lambda(be.Right);
-            var f1 = l1.Compile();
-            var f2 = l2.Compile();
-            var v1 = f1.DynamicInvoke();
-            var v2 = f2.DynamicInvoke();
+                var be = (BinaryExpression) b;
+                var l1 = Expression.Lambda(be.Left);
+                var l2 = Expression.Lambda(be.Right);
+                var f1 = l1.Compile();
+                var f2 = l2.Compile();
+                var v1 = f1.DynamicInvoke();
+                var v2 = f2.DynamicInvoke();
 
-            if (ifFail!=null && !v1.Equals(v2))
-            {
-                Write("FAIL!");
-                Write(exprStr(ifFail));
-                Write(ifFail.Compile()());
-            }
-            
-            Assert.AreEqual(v2,v1);
-            break;
-            }
-
-        default: var f = e.Compile();
-                    var x = f();
-
-                    if (ifFail!=null && !x)
-                    {
+                if (ifFail!=null && !v1.Equals(v2))
+                {
                     Write("FAIL!");
                     Write(exprStr(ifFail));
                     Write(ifFail.Compile()());
-                    }
+                }
+            
+                Assert.AreEqual(v2,v1);
+                break;
+            }
 
-                    Assert.IsTrue(x);
-                    break;
+            default: 
+                var f = e.Compile();
+                var x = f();
+
+                if (ifFail!=null && !x)
+                {
+                    Write("FAIL!");
+                    Write(exprStr(ifFail));
+                    Write(ifFail.Compile()());
+                }
+
+                Assert.IsTrue(x);
+                break;
         }
-
-
     } 
    
     //assert_type()
@@ -234,7 +235,7 @@ namespace At.Tests
     //Write()
     protected internal void Write<T>(Expression<Func<T>> exp)
     {
-        TestContext.WriteLine($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss.fff}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")}");
+        TestContext.WriteLine($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss.fff}] {exprStr(exp.Body).Replace("{","{{").Replace("}","}}")} == {objStr(exp.Compile()()).Replace("{","{{").Replace("}","}}")}");
     }
    
     //Write()
