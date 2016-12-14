@@ -33,17 +33,8 @@ public  class CompilationTests : AtTest
                     $"@{ns} : namespace {{@{functionName1}(); @{@className1}<> }}"+
                     "@ns1 : namespace  {@f(); @variable : y; @y<>; @class<>  : y {@P<>;@G()}}"
                     ;
-        Assembly output = null;
-        
-        try
-        {
-            output = AtProgram.compileStringToAssembly(input);
-        }
-        catch(CompilationException ex)
-        {
-            Assert.Fail($"\r\n{input}\r\n\r\n{ex}");
-        }
 
+        var output = compileToAssembly(input);
         verifyOutput(output, className1+"`2", className2, baseClass1+"`2", "P");
 
         var class1 = output.GetType(className1+"`2");
@@ -62,8 +53,21 @@ public  class CompilationTests : AtTest
     [TestMethod] 
     public void CompileStringTest1()
     {
-        var input = "@A<B,C> : D<int,B> {}; @D<E,F>";
+        var input = "@A<B,C> : D<int,B> { @E<B,C> : D<int,B> {} }; @D<E,F>";
+        var output = compileToAssembly(input);
+        assert_not_null(()=>output);
+    }
 
+    [TestMethod] 
+    public void CompileHelloWorldTest()
+    {
+        var input = "output 'Hello World!'";
+        var output = compileToAssembly(input);
+        assert_not_null(()=>output);
+    }
+
+    Assembly compileToAssembly(string input)
+    {
         Assembly output = null;
         
         try
@@ -73,9 +77,9 @@ public  class CompilationTests : AtTest
         catch(CompilationException ex)
         {
             Assert.Fail($"\r\n{input}\r\n\r\n{ex}");
-        }
-
-        assert_not_null(()=>output);
+        }   
+        
+        return output; 
     }
 }
 }

@@ -84,7 +84,7 @@ public class TokenRule : ITokenRule
         }
     );
 
-    public readonly static ITokenRule StringLiteral = new StringLiteralDefinition('\"');
+    public readonly static ITokenRule StringLiteral = new StringLiteralDefinition('\"','\'');
     public readonly static ITokenRule NumericLiteral = new NumericLiteralDefinition();
 
     //TODO: convert to 3 different token-defs
@@ -153,13 +153,17 @@ public class TokenRule : ITokenRule
 
     private class StringLiteralDefinition : ITokenRule
     {
-        readonly char delimiter;    
+        readonly char[] delimiters;    
 
+        char delimiter = (char) 0;
         bool escaping = false;
         bool closed = false;
         bool matchesSoFar = false;
 
-        public StringLiteralDefinition(char delimiter) { this.delimiter = delimiter; }
+        public StringLiteralDefinition(params char[] delimiters) 
+        { 
+            this.delimiters = delimiters; 
+        }
         
         public bool IsAllowedInTokenCluster => false;
 
@@ -189,7 +193,17 @@ public class TokenRule : ITokenRule
             {
                 closed   = false;
                 escaping = false;
-                matchesSoFar = (chars.Current==delimiter);
+                
+                if (delimiters.Contains(chars.Current))
+                {
+                    delimiter = chars.Current;
+                    matchesSoFar = true;
+                }
+                else
+                {
+                    delimiter = (char) 0;
+                    matchesSoFar = false;
+                }
 
                 return matchesSoFar;                 
             }

@@ -12,6 +12,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using atSyntax = At.Syntax;
 using cs       = Microsoft.CodeAnalysis.CSharp;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using ms       = Microsoft.CodeAnalysis;
 
 namespace At
 {
@@ -139,7 +140,23 @@ class SyntaxTreeConverter
         if (id != null) 
             return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
 
+        var app = expr as atSyntax.ApplicationSyntax;
+        if (app != null)
+            return InvocationExpression(ExpressionSyntax(app.Subject),ArgumentListSyntax(app.Arguments));
+
         throw new NotImplementedException($"{expr.GetType()}: {expr}");
+    }
+
+    csSyntax.ArgumentListSyntax ArgumentListSyntax(atSyntax.SeparatedSyntaxList<atSyntax.ExpressionSyntax> args)
+    {
+        return cs.SyntaxFactory.ArgumentList(
+                                    new ms.SeparatedSyntaxList<ArgumentSyntax>()
+                                            .AddRange(args.Select(ArgumentSyntax)));
+    }
+
+    csSyntax.ArgumentSyntax ArgumentSyntax(atSyntax.ExpressionSyntax e)
+    {
+        return cs.SyntaxFactory.Argument(ExpressionSyntax(e));
     }
 
     csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d)

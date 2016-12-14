@@ -35,6 +35,14 @@ public class AtProgram
             {
                 throw new CompilationException(result);
             }
+
+            #if DEBUG
+            Console.WriteLine(Environment.CurrentDirectory);
+            ms.Seek(0, SeekOrigin.Begin);
+            var f = new FileStream("x.dll",FileMode.Create);
+            ms.CopyTo(f);
+            f.Close();
+            #endif
         }
 
         return assembly;

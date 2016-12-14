@@ -118,17 +118,18 @@ public class SyntaxFactory
                 //X(Y,Z)
                 if (pb.Block.Content.Count==1)
                 {
-                    var b2 = pb.Block.Content[0] as BinaryExpressionSyntax;
+                    var c0 = pb.Block.Content[0]; 
+                    var b2 = c0 as BinaryExpressionSyntax;
                     if (b2 != null)
                     {
                         contentSpecified = true;
                         content.Add(SyntaxPattern(b2.Left));
                         content.Add(SyntaxPattern(b2.Right));
                     }
-                    else if ( pb.Block.Content[0] is TokenClusterSyntax)
+                    else if (c0 is TokenClusterSyntax || c0 is LiteralExpressionSyntax)
                     {
                         contentSpecified = true;
-                        content.Add(SyntaxPattern(pb.Block.Content[0]));
+                        content.Add(SyntaxPattern(c0));
                     }
                     else
                     {

@@ -123,6 +123,7 @@ public class AtParser : IDisposable
         parser.Lexer.TokenRules.Remove(TokenRule.Colon);
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
+        parser.ExpressionRules.Add(ExpressionRule.StringLiteral);
 
         //x,y
         parser.Operators.Add(1,new SyntaxPatternCommaOpDef());

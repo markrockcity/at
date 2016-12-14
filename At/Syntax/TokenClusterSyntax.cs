@@ -16,10 +16,12 @@ public class TokenClusterSyntax : ExpressionSyntax
 
     public AtToken TokenCluster {get;}
 
+    public override string PatternName => "TokenCluster";
+
+
     public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
         var s = pattern.ToString(withKeyPrefix:false);
-        
 
         var t=PatternStrings().Any(_=>_==s);
 
@@ -31,12 +33,11 @@ public class TokenClusterSyntax : ExpressionSyntax
 
     public override IEnumerable<string> PatternStrings()
     {
-        yield return $"TokenCluster('{TokenCluster.Text}')";
+        yield return $"TokenCluster({TokenCluster.Text})";
         yield return PatternName;
         foreach(var x in base.PatternStrings())
             yield return x;
     }
 
-    public override string PatternName => "TokenCluster";
 }
 }

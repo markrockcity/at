@@ -319,7 +319,7 @@ public class DeclaratorDefinition : OperatorDefinition
         {
             //@X : namespace 
             {
-                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster('namespace'))",nodes =>
+                $"Token({declaratorKind.Name}),Binary[Colon](TokenCluster,TokenCluster(namespace))",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
@@ -330,7 +330,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
             //@X : namespace { ... }
             {
-                $"Token({declaratorKind.Name}),b:Binary[Colon](TokenCluster,PostBlock(TokenCluster('namespace'),c:Curly))",nodes =>
+                $"Token({declaratorKind.Name}),b:Binary[Colon](TokenCluster,PostBlock(TokenCluster(namespace),c:Curly))",nodes =>
                 { 
                     var declOp     = nodes[0].AsToken();
                     var colonPair  = nodes.GetNode<BinaryExpressionSyntax>("b");

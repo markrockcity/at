@@ -68,8 +68,7 @@ public class SyntaxPatternTests : AtTest
         var p1 = SyntaxFactory.ParseSyntaxPattern(str1);
         assert_equals(()=>str1,()=>p1.ToString());
 
-
-        var str2 = "TokenCluster('X')";
+        var str2 = "TokenCluster(X)";
         var p2 = SyntaxFactory.ParseSyntaxPattern(str2);
         assert_equals(()=>str2,()=>p2.ToString());
 
@@ -81,7 +80,7 @@ public class SyntaxPatternTests : AtTest
         //var ps = expr1.PatternStrings().First();
         //Write(()=>ps);
 
-        var str4 = "Binary[Colon](TokenCluster,TokenCluster('namespace'))";
+        var str4 = "Binary[Colon](TokenCluster,TokenCluster(namespace))";
         var p4 = SyntaxFactory.ParseSyntaxPattern(str4);
         var e4 = SyntaxFactory.ParseExpression("A:B");
         assert_equals(()=>str4,()=>p4.ToString());
@@ -105,6 +104,7 @@ public class SyntaxPatternTests : AtTest
             Write(()=>e1);
             var p1 = SyntaxFactory.SyntaxPattern(e1);
             assert_equals(()=>str1,()=>p1.ToString());
+
         }
     }
 

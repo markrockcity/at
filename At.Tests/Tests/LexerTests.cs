@@ -82,7 +82,7 @@ public class LexerTests : Test
     {
         lexer = AtLexer.CreateDefaultLexer();
         lexerTest("@X<>",4);
-        
+        lexerTest("'Hello world!'",1);        
     }
 
     //# Numeric Literal Test

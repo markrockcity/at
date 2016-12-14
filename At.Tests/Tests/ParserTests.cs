@@ -83,6 +83,15 @@ public class ParserTests : AtTest
 
     //ImportTest
     [TestMethod]
+    public void ParseHelloWorldTest()
+    {
+        parser = AtParser.CreateDefaultParser();
+        var e1 = parser.ParseExpression("output 'Hello World!'");
+        assert_type<ApplicationSyntax>(()=>e1);
+    }
+
+    //ImportTest
+    [TestMethod]
     public void ImportDirectiveTest()
     {
         var nsid  = identifier();
