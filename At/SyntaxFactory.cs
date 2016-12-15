@@ -140,9 +140,9 @@ public class SyntaxFactory
                 {
                     throw new NotSupportedException
                     (
-                        pb.Block.Content.Count+"\r\n"+
-                        string.Join(", ",pb.Block.Content.AsEnumerable())+"\r\n"+
-                        pb.Block.PatternStrings().First()
+                        pb.Block.Content.Count+"\r\n"
+                       +string.Join(", ",pb.Block.Content.AsEnumerable())+"\r\n"
+                       +pb.Block.PatternStrings().First()
                     ); 
                 }
             
