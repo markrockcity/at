@@ -46,5 +46,10 @@ public class LiteralExpressionSyntax : ExpressionSyntax
             yield return x;
     }
 
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitLiteral(this);
+    }
+
 }
 }

@@ -113,7 +113,7 @@ public class TokenRule : ITokenRule
         {
             Debug.Assert(char.IsDigit(chars.Current));
             alreadyHasDecimalPoint = false;
-            var p = chars.Position+1;
+            var position = chars.Position+1;
             var sb = new StringBuilder();
                 
             while (!chars.End && (char.IsDigit(chars.Current) || !alreadyHasDecimalPoint && chars.Current=='.' && char.IsDigit(chars.Next)))
@@ -124,7 +124,9 @@ public class TokenRule : ITokenRule
                 sb.Append(chars.Consume());
             }
 
-            return new AtToken(TokenKind.NumericLiteral,p,sb.ToString());            
+            var text  = sb.ToString();
+            var value = alreadyHasDecimalPoint ? double.Parse(text) : int.Parse(text);
+            return new AtToken(TokenKind.NumericLiteral,position,text,value:value);            
         }
 
         public bool MatchesUpTo(IScanner<char> chars,int k)
@@ -170,9 +172,10 @@ public class TokenRule : ITokenRule
         public AtToken Lex(Scanner<char> chars)
         {
             Debug.Assert(chars.Current==delimiter);
+            chars.Consume();
 
             var p  = chars.Position+1;
-            var sb = new StringBuilder().Append(chars.Consume());
+            var sb = new StringBuilder();
 
             while (!chars.End && chars.Current != delimiter)
             {
@@ -183,8 +186,10 @@ public class TokenRule : ITokenRule
             }
 
             Debug.Assert(chars.Current==delimiter);
-            var text = sb.Append(chars.Consume()).ToString();
-            return new AtToken(TokenKind.StringLiteral,p,text); 
+            chars.Consume();
+
+            var text = sb.ToString();
+            return new AtToken(TokenKind.StringLiteral,p,delimiter+text+delimiter,value:text); 
         }
 
         public bool MatchesUpTo(IScanner<char> chars, int i)

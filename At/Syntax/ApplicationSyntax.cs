@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace At.Syntax
@@ -6,6 +7,7 @@ namespace At.Syntax
 /// <summary>Represents syntax for an application (e.g., function application)</summary>
 public class ApplicationSyntax : ExpressionSyntax
 {
+
     internal ApplicationSyntax
     (
         ExpressionSyntax             subject,
@@ -35,15 +37,15 @@ public class ApplicationSyntax : ExpressionSyntax
 
     public override bool MatchesPattern(SyntaxPattern p, IDictionary<string,AtSyntaxNode> d = null)
     {
-        var t =    (p.Text == PatternName)
-               &&  (p.Content == null || MatchesPatterns(p.Content,nodes,d))
+        var isMatch =    (p.Text == PatternName)
+                      && (p.Content == null || MatchesPatterns(p.Content,nodes,d))
 
                ||  base.MatchesPattern(p,d);
 
-         if (t && d != null && p.Key != null)
+         if (isMatch && d != null && p.Key != null)
             d[p.Key] = this;
 
-        return t;
+        return isMatch;
     }
 
 
@@ -65,5 +67,9 @@ public class ApplicationSyntax : ExpressionSyntax
             yield return b;
     }
 
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitApply(this);
+    }
 }
 }

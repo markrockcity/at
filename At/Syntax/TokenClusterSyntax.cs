@@ -39,5 +39,14 @@ public class TokenClusterSyntax : ExpressionSyntax
             yield return x;
     }
 
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitTokenCluster(this);
+    }
+
+    public override string ToString()
+    {
+        return TokenCluster.Text;
+    }
 }
 }

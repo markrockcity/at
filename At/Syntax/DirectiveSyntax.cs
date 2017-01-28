@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace At.Syntax
 {
 public class DirectiveSyntax : ExpressionSyntax
 {
-    internal readonly static string importDirective = "#import";
+    internal const string importDirective = "#import";
 
 
     public DirectiveSyntax
@@ -33,6 +34,12 @@ public class DirectiveSyntax : ExpressionSyntax
     {
         get;
         private set;
+    }
+
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+       return visitor.VisitDirective(this);
     }
 }
 }

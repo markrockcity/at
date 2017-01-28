@@ -26,5 +26,10 @@ public class VariableDeclarationSyntax : DeclarationSyntax, IHasIdentifier
     }
 
     public NameSyntax Type {get; }
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitVariableDeclaration(this);
+    }
 }
 }

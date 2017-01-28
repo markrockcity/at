@@ -27,15 +27,15 @@ public class CompilationException : AtException
 {
     readonly AtEmitResult result;
 
-    internal CompilationException(AtEmitResult result) : base
-    (
-       result.ConvertedSources().FirstOrDefault()+result.Diagnostics[0].Message){
-       this.result = result;
+    internal CompilationException(AtEmitResult result) 
+    :   base(result.ConvertedSources?.FirstOrDefault()+" "+result.Diagnostics[0].Message)
+    {
+        this.result = result;
     }
 
     public override string ToString()
     {
-        return result.ConvertedSources().First()+"\r\n\r\n"+base.ToString();
+        return result.ConvertedSources?.First()+"\r\n\r\n"+base.ToString();
     }
 }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace At.Syntax
@@ -38,6 +39,8 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         get;
         private set;
     }
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)=>visitor.VisitBinary(this);
 
     public override bool MatchesPattern(SyntaxPattern p, IDictionary<string,AtSyntaxNode> d = null)
     {

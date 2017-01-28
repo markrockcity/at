@@ -5,7 +5,7 @@ using System.Linq;
 namespace At.Syntax
 {
 //non-expression list (e.g., parameters, arguments, etc.)
-public class ListSyntax<T> : AtSyntaxNode where T : AtSyntaxNode
+public class ListSyntax<T> : ContextSyntax where T : AtSyntaxNode
 {
     private AtToken startDelimiter;
     private AtToken endDelimiter;
@@ -21,7 +21,11 @@ public class ListSyntax<T> : AtSyntaxNode where T : AtSyntaxNode
         List = list;
     }
 
-    public SeparatedSyntaxList<T> List {get;}
+        protected ListSyntax(IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics,bool isMissing = false) : base(nodes,diagnostics,isMissing)
+        {
+        }
+
+        public SeparatedSyntaxList<T> List {get;}
 
     public override string FullText
     {
@@ -31,5 +35,9 @@ public class ListSyntax<T> : AtSyntaxNode where T : AtSyntaxNode
         }
     }
 
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        throw new NotImplementedException();
+    }
 }
 }

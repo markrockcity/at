@@ -5,6 +5,7 @@ using atSyntax = At.Syntax;
 using Microsoft.CodeAnalysis;
 using System.Threading;
 using System.Linq;
+using At.Targets.CSharp;
 
 namespace At.Tests
 {
@@ -22,7 +23,7 @@ public class SyntaxTreeConverterTests : AtTest
         {
             Write(()=>input);
             var tree = AtSyntaxTree.ParseText(input);            
-            var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
+            var cSharpTree = new CSharpSyntaxTreeConverter(tree.GetRoot()).ConvertToCSharpTree();
                 verifyOutput(cSharpTree,className,(Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax _)=> _.Identifier.Text);
         }
     }
@@ -32,7 +33,7 @@ public class SyntaxTreeConverterTests : AtTest
     {
         var input = "@A<B,C> : D<int,B> {} \r\n @D<E,F>";
         var tree = AtSyntaxTree.ParseText(input);            
-        var cSharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
+        var cSharpTree = new CSharpSyntaxTreeConverter(tree.GetRoot()).ConvertToCSharpTree();
         Write(cSharpTree.GetRoot(new CancellationToken()).NormalizeWhitespace("    ",false).ToString());
     
         //public class A ...

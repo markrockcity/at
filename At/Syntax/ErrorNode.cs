@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using At.Syntax;
 
 namespace At.Syntax
@@ -15,5 +16,10 @@ public class ErrorNode : ExpressionSyntax
 
     public IList<AtDiagnostic> Diagnostics {get;}
     public string Message {get;}
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        throw new NotImplementedException();
+    }
 }
 }

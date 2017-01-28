@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace At.Syntax
 {
-public class MethodDeclarationSyntax:DeclarationSyntax, IHasIdentifier
+public class MethodDeclarationSyntax : DeclarationSyntax, IHasIdentifier
 {
     ListSyntax<ParameterSyntax> methodParams;
 
@@ -21,5 +21,17 @@ public class MethodDeclarationSyntax:DeclarationSyntax, IHasIdentifier
     }
 
     public NameSyntax ReturnType {get;}
+
+    /*
+    public override void Accept(AtSyntaxVisitor visitor)
+    {
+        throw new NotImplementedException();
+    }
+    */
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitMethodDeclaration(this);
+    }
 }
 }

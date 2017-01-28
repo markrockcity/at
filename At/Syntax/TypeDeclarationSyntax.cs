@@ -30,5 +30,10 @@ public class TypeDeclarationSyntax: DeclarationSyntax, IHasIdentifier
     public ListSyntax<NameSyntax> BaseTypes {get;}
     public ListSyntax<ParameterSyntax> TypeParameters {get;}
     public AtSyntaxList<DeclarationSyntax> Members {get;}
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitTypeDeclaration(this);
+    }
 }
 }

@@ -4,13 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace At
+namespace At.Binding
 {
-//see CSharpCompiler (and Csc?) in Roslyn sources
-public class AtCompiler
+public interface IBindingNode
 {
-
-    
-
+    AtSyntaxNode Syntax {get;}
+    void Accept(BindingTreeVisitor visitor);
 }
 }

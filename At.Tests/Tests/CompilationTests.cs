@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using At.Targets.CSharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace At.Tests
@@ -42,7 +44,7 @@ public  class CompilationTests : AtTest
         assert_not_null(()=>class1.GetNestedType("P"),ifFail:()=>class1.GetNestedTypes());
         assert_not_null(()=>class1.GetMethod("G"),ifFail:()=>class1.GetMethods());    
 
-        var _ =  output.GetType(SyntaxTreeConverter.defaultClassName);
+        var _ =  output.GetType(CSharpSyntaxTreeConverter.defaultClassName);
         var variable = _.GetField(variableName1);
 
         assert_not_null(()=>variable,ifFail:()=>_.GetFields());
@@ -64,9 +66,18 @@ public  class CompilationTests : AtTest
         var input = "output 'Hello World!'";
         var output = compileToAssembly(input);
         assert_not_null(()=>output);
+
+        var _ = Console.Out;
+        var sb = new StringBuilder();
+        var tw = new StringWriter(sb);
+        Console.SetOut(tw);
+        output.EntryPoint.Invoke(null,null);
+        Console.SetOut(_);
+        
+        assert_equals("Hello World!\r\n",()=>sb.ToString());
     }
 
-    Assembly compileToAssembly(string input)
+    private Assembly compileToAssembly(string input)
     {
         Assembly output = null;
         

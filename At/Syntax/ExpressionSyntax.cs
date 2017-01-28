@@ -56,5 +56,11 @@ public abstract class ExpressionSyntax : AtSyntaxNode
             return _PatternName;
         }
     }
+
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+            throw new NotImplementedException(GetType() + ".Accept<TResult>(AtSyntaxVisitor<TResult> visitor))");
+    }
 }
 }

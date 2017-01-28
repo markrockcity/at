@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace At.Syntax
 {
-public class CompilationUnitSyntax : AtSyntaxNode
+public class CompilationUnitSyntax : ContextSyntax
 {
     internal CompilationUnitSyntax(IEnumerable<ExpressionSyntax> exprs, IEnumerable<AtDiagnostic> diagnostics) : base(exprs, diagnostics)
     {
@@ -13,5 +13,10 @@ public class CompilationUnitSyntax : AtSyntaxNode
     }   
 
     public AtSyntaxList<ExpressionSyntax> Expressions {get;}
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitCompilationUnit(this);
+    }
 }
 }

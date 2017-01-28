@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace At.Syntax
 {
@@ -20,6 +21,11 @@ public class ParameterSyntax : AtSyntaxNode
         {
             return this.identifier;
         }
+    }
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        throw new NotImplementedException();
     }
 }
 }

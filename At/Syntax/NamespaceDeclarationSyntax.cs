@@ -26,5 +26,10 @@ public class NamespaceDeclarationSyntax : DeclarationSyntax, IHasIdentifier
     }
 
     public AtSyntaxList<DeclarationSyntax> Members {get;}
+
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitNamespaceDeclaration(this);
+    }
 }
 }

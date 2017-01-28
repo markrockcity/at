@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using At.Targets.CSharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using atSyntax = At.Syntax;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -43,7 +44,7 @@ public class MiscTests : AtTest
         var atTree = parseTree(input);
         verifyOutput<atSyntax.MethodDeclarationSyntax>(input,atTree,id);
 
-        var csharpTree = new SyntaxTreeConverter(atTree).ConvertToCSharpTree();
+        var csharpTree = new CSharpSyntaxTreeConverter(atTree.GetRoot()).ConvertToCSharpTree();
         verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
     }
 
@@ -86,7 +87,7 @@ public class MiscTests : AtTest
             var tree = parseTree(input); //@x
             var decl = verifyOutput<atSyntax.VariableDeclarationSyntax>(input,tree,id);
  
-            var csharpTree = new SyntaxTreeConverter(tree).ConvertToCSharpTree();
+            var csharpTree = new CSharpSyntaxTreeConverter(tree.GetRoot()).ConvertToCSharpTree();
             verifyOutput<csSyntax.FieldDeclarationSyntax>(csharpTree,
                 id,_=>_.Declaration.Variables[0].Identifier.Text,
                 decl.Type?.Text ?? "object",_=>_.Declaration.Type.ToString());
