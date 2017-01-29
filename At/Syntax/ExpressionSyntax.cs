@@ -37,6 +37,7 @@ public abstract class ExpressionSyntax : AtSyntaxNode
 
     public override IEnumerable<string> PatternStrings()
     {
+        yield return PatternName;
         yield return "Expr";
         yield return "Node";
     }
