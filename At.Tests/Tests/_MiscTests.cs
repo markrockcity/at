@@ -24,15 +24,23 @@ public class MiscTests : AtTest
         verifyOutput<atSyntax.LiteralExpressionSyntax>(s1,e);
     }
 
-    protected void verifyOutput<TNode>(string input, AtSyntaxNode node) where TNode : AtSyntaxNode
+    //Binary Operation Test
+    [TestMethod]
+    public void BinaryOperationTest()
     {
-        var tnodes = node.DescendantNodesAndSelf().OfType<TNode>();
+        var p  = AtParser.CreateDefaultParser();
+    
+        var s1 = "1 + 2 * 2";
+        var e  = p.ParseExpression(s1);
 
-        if (!tnodes.Any())
-            Write($"No {typeof(TNode)} was found in node '{node}'");
+        Write(()=>e.PatternStrings().First());
 
-        assert_equals(1, ()=>tnodes.Count());
-        assert_equals(()=>input, ()=>node.FullText);
+        verifyOutput<atSyntax.BinaryExpressionSyntax>(s1,e);
+
+        var be = e as atSyntax.BinaryExpressionSyntax;
+        assert_not_null(()=>be);
+
+        verifyOutput<atSyntax.BinaryExpressionSyntax>("1 + 2",be.Left);
     }
 
     //Method Test
@@ -104,5 +112,19 @@ public class MiscTests : AtTest
         Write(n);
         assert_equals(2,n.BaseTypes.List[0].TypeArguments.List.Count);
     }
+
+
+    protected void verifyOutput<TNode>(string input, AtSyntaxNode node) where TNode : AtSyntaxNode
+    {
+        var tnodes = node.DescendantNodesAndSelf().OfType<TNode>();
+
+        if (!tnodes.Any())
+            Write($"No {typeof(TNode)} was found in node '{node}'");
+
+        assert_equals(1, ()=>tnodes.Count());
+        assert_equals(()=>input, ()=>node.FullText);
+    }
+
+
 }
 }
