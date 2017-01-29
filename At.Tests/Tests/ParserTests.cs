@@ -55,7 +55,24 @@ public class ParserTests : AtTest
         Write(()=>e);
         Write(()=>e.PatternStrings().First());
     }
-    
+
+    //ApplicationExpressionTest
+    [TestMethod]
+    public void ApplicationExpressionTest()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var s = "A B C";
+        var e = parser.ParseExpression(s);
+
+        Write(()=>e);
+        Write(()=>e.PatternStrings().First());
+
+        var ae = e as ApplicationSyntax;
+        assert_not_null(ae);
+        assert_equals(2,()=>ae.Arguments.Count); //"A(B,C)"
+    }
+
     //CommaTest
     [TestMethod]
     public void CommaTest()
