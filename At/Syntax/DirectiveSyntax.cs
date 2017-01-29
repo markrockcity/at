@@ -36,6 +36,8 @@ public class DirectiveSyntax : ExpressionSyntax
         private set;
     }
 
+    public override string PatternName => $"Directive({Directive})";
+
 
     public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
     {
