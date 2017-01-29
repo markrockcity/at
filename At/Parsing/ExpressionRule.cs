@@ -71,9 +71,17 @@ public class ExpressionRule : IExpressionRule
 
 public class ExpressionRuleList : ExpressionSourceList<IExpressionRule>
 {
-    public IList<IExpressionRule> Matches(IScanner<AtToken> tokens, int k)
+    internal ExpressionRuleList() { }
+    
+    private ExpressionRuleList(IEnumerable<IExpressionRule> matches)
     {
-        return InnerList.Where(_=>_.MatchesUpTo(tokens,k)).ToList();
+        foreach(var m in matches)
+            Add(m);
+    }
+
+    public ExpressionRuleList Matches(IScanner<AtToken> tokens, int k)
+    {
+        return new ExpressionRuleList(InnerList.Where(_=>_.MatchesUpTo(tokens,k)));
     }
 }
 

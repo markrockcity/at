@@ -48,6 +48,7 @@ public struct TokenKind : IEquatable<TokenKind>
     public static readonly TokenKind DotDot= 6;
     public static readonly TokenKind Ellipsis= 7;
     public static readonly TokenKind Comma= 8216;
+    public static readonly TokenKind Plus = 8203;
 
     static TokenKind()
     {

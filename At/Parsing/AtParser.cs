@@ -61,15 +61,17 @@ public class AtParser : IDisposable
             )
         );
 
-        parser.Operators.Add(2,OperatorDefinition.Comma);
+        parser.Operators.Add(2,OperatorDefinition.BinaryPlus);
 
-        parser.Operators.Add(3,OperatorDefinition.ColonPair);
+        parser.Operators.Add(3,OperatorDefinition.Comma);
 
-        parser.Operators.Add(4,OperatorDefinition.CurlyBlock);
+        parser.Operators.Add(4,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(5,OperatorDefinition.PostCurlyBlock);
-        parser.Operators.Add(5,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(5,OperatorDefinition.PrefixDeclaration.AddRules
+        parser.Operators.Add(5,OperatorDefinition.CurlyBlock);
+
+        parser.Operators.Add(6,OperatorDefinition.PostCurlyBlock);
+        parser.Operators.Add(6,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(6,OperatorDefinition.PrefixDeclaration.AddRules
             (
                 _=>_.NamespaceDeclaration,
                 _=>_.VariableDeclaration,
@@ -380,13 +382,13 @@ public class AtParser : IDisposable
     IExpressionRule getRule(Scanner<AtToken> tokens)
     {
         int k = -1;
-        IList<IExpressionRule> lastMatches = null, matches;
+        ExpressionRuleList lastMatches = ExpressionRules, matches;
 
         if (ExpressionRules.Count > 0)
         {
             k = -1;
-            //TODO: instead of re-querying {ExpressionRules} all the time, just do {lastMatches}
-            while((matches = ExpressionRules.Matches(tokens,++k)).Count>0)
+
+            while((matches = lastMatches.Matches(tokens,++k)).Count>0)
             {
                 lastMatches = matches;
 

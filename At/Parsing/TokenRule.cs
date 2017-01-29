@@ -54,7 +54,9 @@ public class TokenRule : ITokenRule
     public readonly static TokenRule Comma  = SingleCharacterToken(TokenKind.Comma,',');     
     public readonly static TokenRule StartOfFile = new TokenRule(TokenKind.StartOfFile,(s,i)=>s.Position<0&&i<1,(td,s)=>new AtSyntaxTrivia(TokenKind.StartOfFile,-1,tokenSrc:td));
     public readonly static TokenRule EndOfFile   = new TokenRule(TokenKind.EndOfFile,(s,i)=>s.End,(td,s)=>new AtSyntaxTrivia(TokenKind.EndOfFile,s.Position+1,tokenSrc:td));
-    
+    public readonly static TokenRule Plus = SingleCharacterToken(TokenKind.Plus,'+');     
+
+
     public readonly static TokenRule Space = new TokenRule
     (
         TokenKind.Space,

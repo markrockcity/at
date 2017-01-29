@@ -37,6 +37,7 @@ public class AtLexer : IDisposable
         lexer.TokenRules.Add(Comma);
         lexer.TokenRules.Add(StringLiteral); 
         lexer.TokenRules.Add(NumericLiteral);
+        lexer.TokenRules.Add(Plus);
 
         return lexer;
     }
