@@ -10,15 +10,15 @@ public class ApplicationSyntax : ExpressionSyntax
 
     internal ApplicationSyntax
     (
-        ExpressionSyntax             subject,
-        SeparatedSyntaxList<ExpressionSyntax> args,
+        ExpressionSyntax subject,
+        IList<ExpressionSyntax> args,
         IExpressionSource exprSrc = null,
         IEnumerable<AtDiagnostic>    diagnostics = null)
         
         : base(new AtSyntaxNode[]{subject}.Concat(args),exprSrc,diagnostics){
 
         this.Subject  = subject;
-        this.Arguments = args;
+        this.Arguments = args.ToList().AsReadOnly();
     }
 
     public ExpressionSyntax Subject
@@ -27,7 +27,7 @@ public class ApplicationSyntax : ExpressionSyntax
         private set;
     }
 
-    public SeparatedSyntaxList<ExpressionSyntax> Arguments
+    public IReadOnlyList<ExpressionSyntax> Arguments
     {
         get;
         private set;

@@ -263,8 +263,7 @@ public class AtParser : IDisposable
                 }
 
                 
-                //!!!!!!!!!!!!!!!!!!!!!!?
-                //application expression?                
+                //application expression
                 if (   startOp == null 
                     && !tokens.End 
                     && (endDelimiterKind==null || tokens.Current.Kind!=endDelimiterKind) 
@@ -281,7 +280,7 @@ public class AtParser : IDisposable
                     //TODO: ?? CHECK FOR SYNTAX ERRORS...
                     if(op == null)
                     {
-                        var e = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind);
+                        var e = expression(tokens,diagnostics, prescedence,  tokens.Position, endDelimiterKind);
                         operand = applicationExpression(operand,e);
                     }
                 }
@@ -352,7 +351,10 @@ public class AtParser : IDisposable
 
     ExpressionSyntax applicationExpression(ExpressionSyntax subj, ExpressionSyntax obj)
     {
-        return Apply(subj,obj);
+       var ae = obj as ApplicationSyntax;
+       return ae != null 
+                ? Apply(subj,new[]{ae.Subject}.Concat(ae.Arguments).ToArray())
+                : Apply(subj,obj);
     }
 
     ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Scanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand = null)

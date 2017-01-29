@@ -8,9 +8,9 @@ namespace At
 {
 public class SyntaxFactory
 {
-    public static ExpressionSyntax Apply(ExpressionSyntax subj,ExpressionSyntax obj)
+    public static ExpressionSyntax Apply(ExpressionSyntax subj, params ExpressionSyntax[] args)
     {
-        return new ApplicationSyntax(subj,SeparatedList<ExpressionSyntax>(obj));
+        return new ApplicationSyntax(subj,args);
     }
 
     internal static BinaryExpressionSyntax Binary(IExpressionSource expSrc, params AtSyntaxNode[] nodes)
