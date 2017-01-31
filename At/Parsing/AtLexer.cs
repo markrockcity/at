@@ -38,6 +38,7 @@ public class AtLexer : IDisposable
         lexer.TokenRules.Add(StringLiteral); 
         lexer.TokenRules.Add(NumericLiteral);
         lexer.TokenRules.Add(Plus);
+        lexer.TokenRules.Add(Asterisk);
 
         return lexer;
     }
@@ -153,21 +154,22 @@ public class AtLexer : IDisposable
     ITokenRule getRule(TokenRuleList rules, Scanner<char> chars)
     {
         int k = -1;
-        IList<ITokenRule> lastMatches = null, matches;
+        var anyMatch = false;
+        TokenRuleList lastMatches = rules, matches;
 
         if (rules.Count > 0)
         {
             k = -1;
-            //TODO: instead of re-querying {rules} all the time, just do {lastMatches}
-            while((matches = rules.Matches(chars,++k)).Count>0)
+            while((matches = lastMatches.Matches(chars,++k)).Count>0)
             {
                 lastMatches = matches;
+                anyMatch = true;
 
                 if (chars.End)
                     break;
             }
 
-            if (lastMatches?.Count > 0)
+            if (anyMatch && lastMatches?.Count > 0)
                 return lastMatches[0];
         }    
 

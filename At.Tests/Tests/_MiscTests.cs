@@ -30,17 +30,18 @@ public class MiscTests : AtTest
     {
         var p  = AtParser.CreateDefaultParser();
     
-        var s1 = "1 + 2 * 2";
+        var s1 = "1 + 2 * (2 + 1)";
         var e  = p.ParseExpression(s1);
 
         Write(()=>e.PatternStrings().First());
 
-        verifyOutput<atSyntax.BinaryExpressionSyntax>(s1,e);
-
         var be = e as atSyntax.BinaryExpressionSyntax;
         assert_not_null(()=>be);
 
-        verifyOutput<atSyntax.BinaryExpressionSyntax>("1 + 2",be.Left);
+        var be2 = be.Right as atSyntax.BinaryExpressionSyntax;
+        assert_not_null(()=>be2);
+
+        verifyOutput<atSyntax.BinaryExpressionSyntax>("(2 + 1)",be2.Right);
     }
 
     //Method Test
@@ -83,7 +84,7 @@ public class MiscTests : AtTest
         verifyOutput<atSyntax.NamespaceDeclarationSyntax>(input,tree,"ns");
     }
 
-
+   
     //Variable Test
     [TestMethod] public void VariableTest()
     {

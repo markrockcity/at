@@ -87,7 +87,7 @@ public class OperatorDefinition : IOperatorDefinition
     public readonly static OperatorDefinition    SemiColon = new OperatorDefinition(TokenKind.SemiColon,OperatorPosition.End,(src,nodes)=>nodes.Length>1?((ExpressionSyntax)nodes[0]).WithEndToken((AtToken)nodes[1]):Empty(src,nodes[0]));
     public readonly static OperatorDefinition    Comma = new OperatorDefinition(TokenKind.Comma,OperatorPosition.Infix,OperatorAssociativity.List,Binary);
     public readonly static OperatorDefinition    BinaryPlus = new OperatorDefinition(TokenKind.Plus, OperatorPosition.Infix, (src,nodes)=>Binary(src,nodes));
-
+    public readonly static OperatorDefinition    BinaryMultiply = new OperatorDefinition(TokenKind.Asterisk, OperatorPosition.Infix, (src,nodes)=>Binary(src,nodes));
 
     readonly Func<OperatorDefinition,AtSyntaxNode[],ExpressionSyntax> createExpression;
         

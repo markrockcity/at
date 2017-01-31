@@ -22,6 +22,14 @@ public class SyntaxPatternTests : AtTest
     [TestMethod]
     public void PatternStringsTest1()
     {
+        var expr4 = SyntaxFactory.ParseExpression("1 + 2 * (2 + 1)");
+        Write(()=>expr4);
+        var i = 0;
+        foreach(var e in expr4.PatternStrings())
+            Write($"{++i}. {e}");
+
+        Write("----------------------------------");
+
         var expr0 = SyntaxFactory.ParseExpression("x;");
         Write(()=>expr0);
         foreach(var e in expr0.PatternStrings())

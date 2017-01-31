@@ -81,6 +81,7 @@ public class LexerTests : Test
     public void DefaultLexerTest()
     {
         lexer = AtLexer.CreateDefaultLexer();
+        lexerTest("(5)",3);
         lexerTest("@X<>",4);
         lexerTest("'Hello world!'",1);        
     }
@@ -102,18 +103,19 @@ public class LexerTests : Test
 
     IList<AtToken> lexerTest(string input, int? expectedTokenCount = null, Action<IList<AtToken>> a = null)
     {
-        var tokens = lexer.Lex(input).ToList();
+        var tokens = lexer.Lex(input);
+        var tokenList = tokens.ToList();
 
         Write(()=>input);
-        Write(()=>tokens);
+        Write(()=>tokenList);
 
         if (expectedTokenCount != null)
-            assert_equals(expectedTokenCount,()=>tokens.Count);        
+            assert_equals(expectedTokenCount,()=>tokenList.Count);        
 
         if (a != null)
-            a(tokens);            
+            a(tokenList);            
 
-        return tokens;
+        return tokenList;
     }
 
     string[] numericLiterals() => new []

@@ -71,7 +71,7 @@ public class BinaryExpressionSyntax : ExpressionSyntax
         }
         
         yield return $"{name}[{o}]";
-        yield return name;
+        //yield return name;
 
         foreach(var b in base.PatternStrings())
             yield return b;

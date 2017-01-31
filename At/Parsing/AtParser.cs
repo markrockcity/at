@@ -61,17 +61,19 @@ public class AtParser : IDisposable
             )
         );
 
+
+        parser.Operators.Add(3,OperatorDefinition.BinaryMultiply);
         parser.Operators.Add(2,OperatorDefinition.BinaryPlus);
 
-        parser.Operators.Add(3,OperatorDefinition.Comma);
+        parser.Operators.Add(4,OperatorDefinition.Comma);
 
-        parser.Operators.Add(4,OperatorDefinition.ColonPair);
+        parser.Operators.Add(5,OperatorDefinition.ColonPair);
 
-        parser.Operators.Add(5,OperatorDefinition.CurlyBlock);
+        parser.Operators.Add(6,OperatorDefinition.CurlyBlock);
 
-        parser.Operators.Add(6,OperatorDefinition.PostCurlyBlock);
-        parser.Operators.Add(6,OperatorDefinition.PostRoundBlock);
-        parser.Operators.Add(6,OperatorDefinition.PrefixDeclaration.AddRules
+        parser.Operators.Add(7,OperatorDefinition.PostCurlyBlock);
+        parser.Operators.Add(7,OperatorDefinition.PostRoundBlock);
+        parser.Operators.Add(7,OperatorDefinition.PrefixDeclaration.AddRules
             (
                 _=>_.NamespaceDeclaration,
                 _=>_.VariableDeclaration,
@@ -80,10 +82,10 @@ public class AtParser : IDisposable
             )
         );
 
-        parser.Operators.Add(7,OperatorDefinition.PostPointyBlock);
+        parser.Operators.Add(8,OperatorDefinition.PostPointyBlock);
 
         
-        parser.Operators.Add(8,OperatorDefinition.RoundBlock);
+        parser.Operators.Add(9,OperatorDefinition.RoundBlock);
        
         return parser;
     }
@@ -384,6 +386,7 @@ public class AtParser : IDisposable
     IExpressionRule getRule(Scanner<AtToken> tokens)
     {
         int k = -1;
+        var anyMatch = false;
         ExpressionRuleList lastMatches = ExpressionRules, matches;
 
         if (ExpressionRules.Count > 0)
@@ -393,12 +396,13 @@ public class AtParser : IDisposable
             while((matches = lastMatches.Matches(tokens,++k)).Count>0)
             {
                 lastMatches = matches;
+                anyMatch = true;
 
                 if (tokens.End)
                     break;
             }
 
-            if (lastMatches?.Count > 0)
+            if (anyMatch && lastMatches?.Count > 0)
                 return lastMatches[0];
         }    
 

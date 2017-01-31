@@ -56,6 +56,19 @@ public class ParserTests : AtTest
         Write(()=>e.PatternStrings().First());
     }
 
+    //Parser Test 3 
+    [TestMethod] 
+    public void ParserTest3()
+    {
+
+        parser = AtParser.CreateDefaultParser();
+        var s = "(5)";
+        var e = parser.ParseExpression(s);
+        assert_not_null(()=>e);
+        
+        Write(()=>e);
+    }
+
     //ApplicationExpressionTest
     [TestMethod]
     public void ApplicationExpressionTest()
