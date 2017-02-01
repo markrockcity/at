@@ -46,6 +46,14 @@ class Binder : AtSyntaxVisitor<IBindingNode>
         throw new NotImplementedException($"Visit{node.GetType().Name.Replace("Syntax","")}()");
     }
 
+    protected internal override IBindingNode VisitBinary(BinaryExpressionSyntax binaryExpressionSyntax)
+    {
+        var left  = (Expression) Visit(binaryExpressionSyntax.Left);
+        var right = (Expression) Visit(binaryExpressionSyntax.Right);
+        var op    = ctx.LookupSymbol(binaryExpressionSyntax.Operator.Text) ?? new UndefinedSymbol(ctx, binaryExpressionSyntax.Operator);
+        return new BinaryExpression(ctx, binaryExpressionSyntax,op,left,right);
+    }
+
     protected internal override IBindingNode VisitTokenCluster(TokenClusterSyntax tokenClusterSyntax)
         => ctx.LookupSymbol(tokenClusterSyntax.TokenCluster.Text) ?? new UndefinedSymbol(ctx, tokenClusterSyntax.TokenCluster);
 
@@ -77,6 +85,13 @@ class Binder : AtSyntaxVisitor<IBindingNode>
     protected internal override IBindingNode VisitNamespaceDeclaration(NamespaceDeclarationSyntax namespaceDeclarationSyntax)
     {
         return new NamespaceDeclaration(ctx,namespaceDeclarationSyntax);
+    }
+
+    protected internal override IBindingNode VisitRoundBlock(RoundBlockSyntax roundBlockSyntax)
+    {
+        return   roundBlockSyntax.Content.Count == 0 ? ctx.LookupSymbol("()")
+               : roundBlockSyntax.Content.Count == 1 ? Visit(roundBlockSyntax.Content[0])
+               : throw new NotImplementedException(roundBlockSyntax.FullText);
     }
 }
 }
