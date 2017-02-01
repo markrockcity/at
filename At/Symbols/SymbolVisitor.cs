@@ -32,6 +32,11 @@ public class SymbolVisitor<TResult>
 		return symbol.Accept(this);
 	}
 
+        internal TResult VisitOperator(OperatorSymbol operatorSymbol)
+        {
+            throw new NotImplementedException();
+        }
+
         internal TResult VisitKeyword(KeywordSymbol keywordSymbol)
         {
             throw new NotImplementedException();
