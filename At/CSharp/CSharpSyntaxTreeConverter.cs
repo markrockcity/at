@@ -218,7 +218,21 @@ internal class CSharpSyntaxTreeConverter
 
     csSyntax.ExpressionStatementSyntax ExpressionStatementSyntax(Expression expr)
     {
-        return cs.SyntaxFactory.ExpressionStatement(ExpressionSyntax(expr));
+        var e = ExpressionSyntax(expr);
+
+        if (e is ParenthesizedExpressionSyntax)
+            e = InvocationExpression
+                    (MemberAccessExpression
+                        (SyntaxKind.SimpleMemberAccessExpression,
+                         MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName("System"),
+                            IdentifierName("Console")),
+                         IdentifierName("WriteLine")),
+
+                     ArgumentList(SeparatedList(new[]{Argument(e)})));
+
+        return ExpressionStatement(e);
     }
 
     csSyntax.ExpressionSyntax ExpressionSyntax(IBindingNode expr)
@@ -230,14 +244,21 @@ internal class CSharpSyntaxTreeConverter
             case LiteralExpression     le : return LiteralExpression(_kind(le.Value),_literal(le.Value));
             case ApplicationExpression app: return InvocationExpression(ExpressionSyntax(app.Subject),ArgumentListSyntax(app.Arguments));
             case SourceExpression      se : return ExpressionSyntax((atSyntax.ExpressionSyntax) se.Syntax);
+            case BinaryExpression      be : return ParenthesizedExpression(BinaryExpression(_kind(be.Operation),ExpressionSyntax(be.Left),ExpressionSyntax(be.Right)));
 
             default: throw new NotImplementedException($"{expr.GetType()}: {expr}");
         }        
 
-        SyntaxKind _kind(object o) => o is String ? SyntaxKind.StringLiteralExpression 
-                                    : throw new NotImplementedException(o.GetType()+" literal expression SyntaxKind");
+        SyntaxKind _kind(object o) => o is OperatorSymbol os 
+                                            ?   (  os.Name=="*" ? SyntaxKind.MultiplyExpression 
+                                                 : os.Name=="+" ? SyntaxKind.AddExpression 
+                                                 : throw new NotImplementedException($"Operator({os})"))
+                                    : o is String ? SyntaxKind.StringLiteralExpression 
+                                    : o.GetType() == typeof(double) ? SyntaxKind.NumericLiteralExpression
+                                    : throw new NotImplementedException(o.GetType()+": "+o+" SyntaxKind");
 
         SyntaxToken _literal(object o) => o is String s ? Literal(s,s) 
+                                        : o is double d ? Literal(d)
                                         : throw new NotImplementedException(o.GetType()+" literal");   
 
     }
