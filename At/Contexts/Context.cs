@@ -52,7 +52,7 @@ public abstract class Context : IBindingNode
         nameToSymbolMap.TryGetValue(name,out ISymbol s);
         if (s == null || s is UndefinedSymbol)   
         { 
-            Debug.WriteLine($"{GetType().Name}.Lookup(\"{name})\")=={(object)s ?? "<null>"}");
+            Debug.WriteLine($"{GetType().Name}.Lookup(\"{name}\")=={(object)s ?? "<null>"}");
             return ParentContext?.LookupSymbol(name);
         }
 
