@@ -30,6 +30,8 @@ public class CompilationContext :  Context
     {
         yield return new KeyValuePair<string,Symbol>("output",new KeywordSymbol(ctx,"output"));
         yield return new KeyValuePair<string,Symbol>("input",new KeywordSymbol(ctx,"input"));
+        yield return new KeyValuePair<string,Symbol>("+",new OperatorSymbol(ctx,"+"));
+        yield return new KeyValuePair<string,Symbol>("*",new OperatorSymbol(ctx,"*"));
     }
  
     //public ImmutableArray<AtSyntaxTree> SyntaxTrees => _compilation.SyntaxTrees;
