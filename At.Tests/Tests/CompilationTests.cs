@@ -61,20 +61,22 @@ public  class CompilationTests : AtTest
     }
 
     [TestMethod] 
+    public void CompileExpressionTest()
+    {
+        var input = "1 + 2 * (2 + 1)";
+        var output = compileToAssembly(input);
+        assert_not_null(()=>output);
+        assert_equals("7\r\n",()=>getConsoleOutput(output));
+    }
+
+
+    [TestMethod] 
     public void CompileHelloWorldTest()
     {
         var input = "output 'Hello World!'";
         var output = compileToAssembly(input);
         assert_not_null(()=>output);
-
-        var _ = Console.Out;
-        var sb = new StringBuilder();
-        var tw = new StringWriter(sb);
-        Console.SetOut(tw);
-        output.EntryPoint.Invoke(null,null);
-        Console.SetOut(_);
-        
-        assert_equals("Hello World!\r\n",()=>sb.ToString());
+        assert_equals("Hello World!\r\n",()=>getConsoleOutput(output));
     }
 
     private Assembly compileToAssembly(string input)
@@ -91,6 +93,17 @@ public  class CompilationTests : AtTest
         }   
         
         return output; 
+    }
+
+    private string getConsoleOutput(Assembly a)
+    {
+        var _ = Console.Out;
+        var sb = new StringBuilder();
+        var tw = new StringWriter(sb);
+        Console.SetOut(tw);
+        a.EntryPoint.Invoke(null,null);
+        Console.SetOut(_);
+        return sb.ToString();
     }
 }
 }
