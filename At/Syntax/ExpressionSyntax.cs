@@ -61,6 +61,8 @@ public abstract class ExpressionSyntax : AtSyntaxNode
 
     public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
     {
+            //override this method in a subclass!
+
             throw new NotImplementedException(GetType() + ".Accept<TResult>(AtSyntaxVisitor<TResult> visitor))");
     }
 }
