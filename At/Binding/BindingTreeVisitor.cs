@@ -18,6 +18,12 @@ public abstract class BindingTreeVisitor
          throw new NotImplementedException(node.ToString());
     }
 
+    protected internal virtual void VisitBinary(BinaryExpression binaryExpression)
+    {
+        Debug.WriteLine(GetType()+$".VisitBinary({binaryExpression})");
+        DefaultVisit(binaryExpression);
+    }
+
     protected internal virtual void VisitDirective(Directive directive)
     {
         Debug.WriteLine(GetType()+$".VisitDirective({directive})");
