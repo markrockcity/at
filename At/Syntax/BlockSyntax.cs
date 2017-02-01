@@ -113,7 +113,10 @@ public class RoundBlockSyntax : BlockSyntax
     public RoundBlockSyntax(AtToken startDelimiter, IEnumerable<ExpressionSyntax> contents, AtToken endDelimiter, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics) 
      : base(startDelimiter,contents,endDelimiter,expDef,diagnostics) {}
 
-    
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitRoundBlock(this);
+    }
 }
 
 //"< ... >"
