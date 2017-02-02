@@ -100,6 +100,14 @@ public class SyntaxPatternTests : AtTest
         var d5 = new Dictionary<string,AtSyntaxNode>();
         assert_equals(()=>str5,()=>p5.ToString());        
         assert_true(()=>e5.MatchesPattern(p5,d5));
+
+        var s6 = "params:Binary[Comma]";
+        var p6 = SyntaxFactory.ParseSyntaxPattern(s6);
+        var e6 = SyntaxFactory.ParseExpression("A,B");
+        var d6 = new Dictionary<string,AtSyntaxNode>();
+        assert_equals(()=>s6,()=>p6.ToString());        
+        assert_true(()=>e6.MatchesPattern(p6,d6));
+
     }
 
     [TestMethod]

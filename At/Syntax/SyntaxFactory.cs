@@ -70,41 +70,49 @@ public class SyntaxFactory
         return new DirectiveSyntax(directive,n,nodes,expSrc,diagnostics);
     }
 
-    //TODO: SyntaxPattern.Key (x:Token)
     public static SyntaxPattern SyntaxPattern(ExpressionSyntax e)
     {
         //X,Y
-        var b = e as  BinaryExpressionSyntax;
-        if (b != null)
-            return new SyntaxPattern(null,content:new[]{SyntaxPattern(b.Left),SyntaxPattern(b.Right)});
-   
-        var pb = e as PostBlockSyntax;
-        if (pb!=null)
+        if (e is BinaryExpressionSyntax b)
+            return new SyntaxPattern(null,content: new[] { SyntaxPattern(b.Left),SyntaxPattern(b.Right) });
+
+        if (e is PostBlockSyntax pb)
         {
-            string token1 = null, token2 = null;        
+            string token1 = null, token2 = null;
+            var contentSpecified = false;
 
             //X[Y]
-            if(pb.Block is SquareBlockSyntax)
+            if (pb.Block is SquareBlockSyntax sb)
             {
-                throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+                if (sb.Content.Count == 1)
+                {
+                    var c0 = sb.Content[0];
+
+                    if (c0 is TokenClusterSyntax || c0 is LiteralExpressionSyntax)
+                    {
+                        syntaxPatternKey(pb.Operand.Text, out string txt,out string key);
+                        return new SyntaxPattern(txt, token1: c0.Text, key: key);
+                    }
+
+                    throw new NotSupportedException(c0 + "\r\n\r\n" + sb.Text + "\r\n\r\n" + sb.PatternStrings().First());
+                }
+
+                throw new NotSupportedException(pb.Block.Text + "\r\n\r\n" + pb.Block.PatternStrings().First());
             }
 
             //X(...)
             else if (pb.Block is RoundBlockSyntax)
             {
-                var text = pb.Operand.Text;  
-                var contentSpecified = false;
+                var text = pb.Operand.Text;
                 var content = new List<SyntaxPattern>();
-               
+
                 //X[Y](...)         
-                var  pb2   = pb.Operand as PostBlockSyntax;
-                if (pb2 != null)
+                if (pb.Operand is PostBlockSyntax pb2)
                 {
                     text = pb2.Operand.Text;
 
                     //X[Y,Z](...)
-                    var b2 = pb2.Block.Content[0] as BinaryExpressionSyntax;
-                    if (b2 != null) //X[Y,Z]
+                    if (pb2.Block.Content[0] is BinaryExpressionSyntax b2) //X[Y,Z]
                     {
                         token1 = b2.Left.Text;
                         token2 = b2.Right.Text;
@@ -115,48 +123,59 @@ public class SyntaxFactory
                     }
                 }
 
-                //X(Y,Z)
-                if (pb.Block.Content.Count==1)
+
+                //X(...)
+                if (pb.Block.Content.Count == 1)
                 {
-                    var c0 = pb.Block.Content[0]; 
-                    var b2 = c0 as BinaryExpressionSyntax;
-                    if (b2 != null)
+                    //X(Y,Z)
+                    var c0 = pb.Block.Content[0];
+                    if (c0 is BinaryExpressionSyntax b2)
                     {
                         contentSpecified = true;
                         content.Add(SyntaxPattern(b2.Left));
                         content.Add(SyntaxPattern(b2.Right));
                     }
+
+                    //X(Y)
                     else if (c0 is TokenClusterSyntax || c0 is LiteralExpressionSyntax)
+                    {
+                        contentSpecified = true;
+                        content.Add(SyntaxPattern(c0));
+                    }
+
+                    //X(Y[Z])
+                    else if (c0 is PostBlockSyntax pb3)
                     {
                         contentSpecified = true;
                         content.Add(SyntaxPattern(c0));
                     }
                     else
                     {
-                        throw new NotSupportedException(pb.Block.PatternStrings().First()); 
+                        throw new NotSupportedException(c0 + "\r\n\r\n" + pb.Block.Text + "\r\n\r\n" + pb.Block.PatternStrings().First());
                     }
                 }
                 else
                 {
                     throw new NotSupportedException
                     (
-                        pb.Block.Content.Count+"\r\n"
-                       +string.Join(", ",pb.Block.Content.AsEnumerable())+"\r\n"
-                       +pb.Block.PatternStrings().First()
-                    ); 
+                        pb.Block.Content.Count + "\r\n"
+                        + string.Join(", ",pb.Block.Content.AsEnumerable()) + "\r\n"
+                        + pb.Block.PatternStrings().First()
+                    );
                 }
-            
-                string txt,key; syntaxPatternKey(text,out txt, out key);
-                return new SyntaxPattern(txt,token1,token2,key:key,content:contentSpecified ? content.ToArray() : null);
-            }            
+
+                string txt, key;
+                syntaxPatternKey(text,out txt,out key);
+                return new SyntaxPattern(txt,token1,token2,key: key,content: contentSpecified ? content.ToArray() : null);
+            }
         }
 
         //
-        var tc = e as TokenClusterSyntax;
-        if (tc != null)
+        if (e is TokenClusterSyntax tc)
         {
-            string text,key; syntaxPatternKey(tc.TokenCluster.Text,out text, out key);
-            return new SyntaxPattern(text,key:key);
+            string text, key;
+            syntaxPatternKey(tc.TokenCluster.Text,out text,out key);
+            return new SyntaxPattern(text,key: key);
         }
 
         throw new NotSupportedException(e.PatternStrings().First()); 
@@ -225,7 +244,7 @@ public class SyntaxFactory
         return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
     }
 
-    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,AtSyntaxNode[] nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
        return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,expDef,diagnostics);
     }
