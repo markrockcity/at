@@ -32,7 +32,8 @@ public class BinaryExpression : Expression
 
         var left  = Left.ReplaceSymbol(undefinedSymbol,newSymbol);
         var right = Right.ReplaceSymbol(undefinedSymbol, newSymbol);
-        return new BinaryExpression(Context, Syntax, Operation, left, right);
+        var op    = Operation == undefinedSymbol ? newSymbol : Operation;
+        return new BinaryExpression(Context, Syntax, op, left, right);
     }
 
     public override string ToString()
