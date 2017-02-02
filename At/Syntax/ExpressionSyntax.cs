@@ -63,7 +63,7 @@ public abstract class ExpressionSyntax : AtSyntaxNode
     {
             //override this method in a subclass!
 
-            throw new NotImplementedException(GetType() + ".Accept<TResult>(AtSyntaxVisitor<TResult> visitor))");
+            throw new NotImplementedException(Text+"\r\n\r\n"+ GetType() + ".Accept<TResult>(AtSyntaxVisitor<TResult> visitor))");
     }
 }
 }
