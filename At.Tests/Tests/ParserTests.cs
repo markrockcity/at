@@ -62,11 +62,11 @@ public class ParserTests : AtTest
     {
 
         parser = AtParser.CreateDefaultParser();
-        var s = "(5)";
+        var s = "f(5)";
         var e = parser.ParseExpression(s);
         assert_not_null(()=>e);
         
-        Write(()=>e);
+        Write(()=>e.PatternStrings().First());
     }
 
     //ApplicationExpressionTest
