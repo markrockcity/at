@@ -49,9 +49,9 @@ public sealed class AtCompiler : BindingTreeVisitor
         e.Context.AddNode(e);
     }
 
-    protected internal override void VisitBinary(BinaryExpression binaryExpression)
+    protected internal override void VisitBinary(BinaryOperation binaryOperation)
     {
-        binaryExpression.Context.AddNode(binaryExpression);
+        binaryOperation.Context.AddNode(binaryOperation);
     }
 
     protected internal override void VisitDirective(Directive directive)

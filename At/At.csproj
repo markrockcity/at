@@ -62,7 +62,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Binding\BinaryExpression.cs" />
+    <Compile Include="Binding\BinaryOperation.cs" />
     <Compile Include="Binding\Declaration.cs" />
     <Compile Include="Binding\Directive.cs" />
     <Compile Include="Binding\MethodDeclaration.cs" />

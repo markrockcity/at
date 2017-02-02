@@ -8,18 +8,18 @@ using At.Syntax;
 
 namespace At.Binding
 {
-public class BinaryExpression : Expression
+public class BinaryOperation : Expression
 {
-    public BinaryExpression(Context ctx, BinaryExpressionSyntax syntaxNode, ISymbol op, Expression left, Expression right) : base(ctx,syntaxNode)
+    public BinaryOperation(Context ctx, BinaryExpressionSyntax syntaxNode, ISymbol op, Expression left, Expression right) : base(ctx,syntaxNode)
     {
-        Operation = op    ?? throw new ArgumentNullException(nameof(op));
+        Operator = op    ?? throw new ArgumentNullException(nameof(op));
         Left      = left  ?? throw new ArgumentNullException(nameof(left)); 
         Right     = right ?? throw new ArgumentNullException(nameof(right));        
     }
 
     public Expression Left {get;}
     public Expression Right {get;}
-    public ISymbol Operation {get;}
+    public ISymbol Operator {get;}
     public BinaryExpressionSyntax Syntax => (BinaryExpressionSyntax) ExpressionSyntax;
     
     public override void Accept(BindingTreeVisitor visitor)
@@ -32,13 +32,13 @@ public class BinaryExpression : Expression
 
         var left  = Left.ReplaceSymbol(undefinedSymbol,newSymbol);
         var right = Right.ReplaceSymbol(undefinedSymbol, newSymbol);
-        var op    = Operation == undefinedSymbol ? newSymbol : Operation;
-        return new BinaryExpression(Context, Syntax, op, left, right);
+        var op    = Operator == undefinedSymbol ? newSymbol : Operator;
+        return new BinaryOperation(Context, Syntax, op, left, right);
     }
 
     public override string ToString()
     {
-        return $"Binary[{Operation.Name}]({Left},{Right})";
+        return $"Binary[{Operator.Name}]({Left},{Right})";
     }
 }
 }

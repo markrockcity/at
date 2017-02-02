@@ -244,7 +244,7 @@ internal class CSharpSyntaxTreeConverter
             case LiteralExpression     le : return LiteralExpression(_kind(le.Value),_literal(le.Value));
             case ApplicationExpression app: return InvocationExpression(ExpressionSyntax(app.Subject),ArgumentListSyntax(app.Arguments));
             case SourceExpression      se : return ExpressionSyntax((atSyntax.ExpressionSyntax) se.Syntax);
-            case BinaryExpression      be : return ParenthesizedExpression(BinaryExpression(_kind(be.Operation),ExpressionSyntax(be.Left),ExpressionSyntax(be.Right)));
+            case BinaryOperation       bo : return ParenthesizedExpression(BinaryExpression(_kind(bo.Operator),ExpressionSyntax(bo.Left),ExpressionSyntax(bo.Right)));
 
             default: throw new NotImplementedException($"{expr.GetType()}: {expr}");
         }        

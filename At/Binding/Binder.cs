@@ -51,7 +51,7 @@ class Binder : AtSyntaxVisitor<IBindingNode>
         var left  = (Expression) Visit(binaryExpressionSyntax.Left);
         var right = (Expression) Visit(binaryExpressionSyntax.Right);
         var op    = ctx.LookupSymbol(binaryExpressionSyntax.Operator.Text) ?? new UndefinedSymbol(ctx, binaryExpressionSyntax.Operator);
-        return new BinaryExpression(ctx, binaryExpressionSyntax,op,left,right);
+        return new BinaryOperation(ctx, binaryExpressionSyntax,op,left,right);
     }
 
     protected internal override IBindingNode VisitTokenCluster(TokenClusterSyntax tokenClusterSyntax)
