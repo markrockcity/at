@@ -8,8 +8,8 @@
 **.user
 **.suo
 *.vsp
+*.playlist
 
 x.dll
 UpgradeLog*
 AtVs2015.sln
-
