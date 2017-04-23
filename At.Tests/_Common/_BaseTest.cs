@@ -137,22 +137,45 @@ namespace At.Tests
     } 
    
     //assert_type()
-    public void assert_type<T>(Expression<Func<object>> e)
+    public void assert_type<T>(Expression<Func<object>> e, Expression<Func<object>> msgIfFail = null)
     {
         var t = typeof(T);
         Write("assert TYPE({0}): {1}",t,exprStr(e.Body));
         var f = e.Compile();
         var x = f();
-        Assert.IsInstanceOfType(x, t);
+
+        if (msgIfFail != null && !t.IsInstanceOfType(x))
+        {
+            var msg = objStr(msgIfFail.Compile().Invoke());
+            Assert.IsInstanceOfType(x, t, msg);
+        }
+        else
+        {
+            Assert.IsInstanceOfType(x, t);
+        }
+    }
+
+    //assert_not_type()
+    public void assert_not_type<T>(Expression<Func<object>> e)
+    {
+        var t = typeof(T);
+        Write("assert NOT OF TYPE({0}): {1}",t,exprStr(e.Body));
+        var f = e.Compile();
+        var x = f();
+        Assert.IsNotInstanceOfType(x, t);
     }
 
     //assert_false()
-    public void assert_false(Expression<Func<bool>> e) 
+    public void assert_false(Expression<Func<bool>> e, string msgIfTrue = null) 
     { 
         Write("assert FALSE: {0}",exprStr(e.Body));
         var f = e.Compile();
         var x = f();
-        Assert.IsFalse(x);
+
+        if (msgIfTrue != null)
+            Assert.IsFalse(x, msgIfTrue);
+        else
+            Assert.IsFalse(x);
     } 
 
    
@@ -166,7 +189,8 @@ namespace At.Tests
     }
    
     //AssertNotNull
-    public void assert_not_null<T>(T o) => Assert.IsNotNull(o);
+    public void assert_not_null<T>(T o) 
+        => Assert.IsNotNull(o);
     public void assert_not_null<T>(Expression<Func<T>> e, Expression<Func<object>> ifFail = null) where T : class
     { 
         var _str = exprStr(e.Body);
