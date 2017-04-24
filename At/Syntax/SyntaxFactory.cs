@@ -29,6 +29,27 @@ public class SyntaxFactory
         return new BinaryExpressionSyntax(leftOperand,@operator,rightOperand,exprSrc,diagnostics);
     }
 
+    /// <summary>Invocation expression syntax with no arguments, e.g., <c>foo()</c></summary>
+    /// <param name="expr">Expression syntax for target of invocation</param>
+    /// <param name="startDelimiter"></param>
+    /// <param name="endDelimiter"></param>
+    /// <param name="exprSrc"></param>
+    /// <returns></returns>
+    public static ExpressionSyntax Invocation(ExpressionSyntax expr,AtToken startDelimiter,AtToken endDelimiter,IExpressionSource exprSrc=null,IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new InvocationExpressionSyntax(expr, List<ArgumentSyntax>(startDelimiter,endDelimiter), exprSrc, diagnostics);
+    }
+
+    public static InvocationExpressionSyntax Invocation(ExpressionSyntax expr, AtToken startDelimiter, SeparatedSyntaxList<ArgumentSyntax> args, AtToken endDelimiter, IExpressionSource expSrc= null, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new InvocationExpressionSyntax(expr, List(startDelimiter,args,endDelimiter), expSrc, diagnostics);
+    }
+
+    public static ArgumentSyntax Argument(ExpressionSyntax e, IEnumerable<AtDiagnostic> diagnostics = null)
+    {
+        return new ArgumentSyntax(e,diagnostics);
+    }
+
     internal static CurlyBlockSyntax CurlyBlock(IExpressionSource expSrc,params AtSyntaxNode[] nodes)
     {
         if (nodes.Length < 2)
@@ -123,9 +144,13 @@ public class SyntaxFactory
                     }
                 }
 
-
+                //X()
+                if (pb.Block.Content.Count==0)
+                {
+                    contentSpecified = true;
+                }
                 //X(...)
-                if (pb.Block.Content.Count == 1)
+                else if (pb.Block.Content.Count == 1)
                 {
                     //X(Y,Z)
                     var c0 = pb.Block.Content[0];
@@ -177,6 +202,9 @@ public class SyntaxFactory
             syntaxPatternKey(tc.TokenCluster.Text,out text,out key);
             return new SyntaxPattern(text,key: key);
         }
+
+        if (e is EmptyExpressionSyntax)
+            return new SyntaxPattern("");
 
         throw new NotSupportedException(e.PatternStrings().First()); 
      }
@@ -244,9 +272,9 @@ public class SyntaxFactory
         return new LiteralExpressionSyntax(atToken,new[] {atToken},expDef,diagnostics);
     }
 
-    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
+    public static MethodDeclarationSyntax MethodDeclaration(AtToken atSymbol,AtToken tc,ListSyntax<ParameterSyntax> methodParams,NameSyntax returnType,ExpressionSyntax body,IEnumerable<AtSyntaxNode> nodes,IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
     {
-       return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,nodes,expDef,diagnostics);
+       return new MethodDeclarationSyntax(atSymbol,tc,methodParams,returnType,body,nodes,expDef,diagnostics);
     }
 
     public static NamespaceDeclarationSyntax NamespaceDeclaration(AtToken atSymbol,AtToken identifier, IEnumerable<DeclarationSyntax> members, IEnumerable<AtSyntaxNode> nodes, IExpressionSource expDef, IEnumerable<AtDiagnostic> diagnostics = null)
@@ -283,11 +311,10 @@ public class SyntaxFactory
         throw new NotImplementedException(e.GetType()+"–"+e.PatternStrings().First());
     }
     
-    public static ParameterSyntax Parameter(ExpressionSyntax e)
+    public static ParameterSyntax Parameter(ExpressionSyntax e, IExpressionSource exprSrc)
     {
-        var tc = e as TokenClusterSyntax;
-        if (tc != null)
-            return Parameter(tc.TokenCluster);
+        if (e is TokenClusterSyntax tc)
+            return new ParameterSyntax(tc.TokenCluster,null,exprSrc,null);
 
         /*
         var pb = e as PostBlockSyntax;
@@ -302,10 +329,10 @@ public class SyntaxFactory
     }
 
 
-    public static ParameterSyntax Parameter(AtToken identifier,IEnumerable<AtDiagnostic> diagnostics = null)
+    public static ParameterSyntax Parameter(AtToken identifier, NameSyntax paramType, IExpressionSource exprSrc, IEnumerable<AtDiagnostic> diagnostics = null)
     {
         checkNull(identifier,nameof(identifier));
-        return new ParameterSyntax(identifier, diagnostics);
+        return new ParameterSyntax(identifier,paramType,exprSrc, diagnostics);
     }
 
     public static ExpressionSyntax ParseExpression(string text)
@@ -507,7 +534,7 @@ public class SyntaxFactory
     }
 
     //...<T,U,V,...>
-    public static ListSyntax<ParameterSyntax> TypeParameterList(BlockSyntax block)
+    public static ListSyntax<ParameterSyntax> TypeParameterList(BlockSyntax block, IExpressionSource exprSrc)
     {
         var nodes = new List<AtSyntaxNode>();
         switch(block.Content.Count)
@@ -516,18 +543,18 @@ public class SyntaxFactory
                  var b = block.Content[0] as BinaryExpressionSyntax;
                  if (b != null)
                  {
-                     nodes.Add(Parameter(b.Left));
+                     nodes.Add(Parameter(b.Left,exprSrc));
                      nodes.Add(b.Operator);
-                     nodes.Add(Parameter(b.Right));
+                     nodes.Add(Parameter(b.Right,exprSrc));
                  }
                  else
                  {
-                    nodes.Add(Parameter(block.Content[0]));
+                     nodes.Add(Parameter(block.Content[0],exprSrc));
                  }  
                  break;
 
             default:
-                nodes.AddRange(block.Content.Select(Parameter));
+                nodes.AddRange(block.Content.Select(_=>Parameter(_,exprSrc)));
                 break;
         }
 

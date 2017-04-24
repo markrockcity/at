@@ -44,6 +44,7 @@ public class MiscTests : AtTest
         verifyOutput<atSyntax.BinaryExpressionSyntax>("(2 + 1)",be2.Right);
     }
 
+    /*
     //Method Test
     [TestMethod] 
     public void MethodTest()
@@ -55,7 +56,7 @@ public class MiscTests : AtTest
 
         var csharpTree = new CSharpSyntaxTreeConverter(atTree.GetRoot()).ConvertToCSharpTree();
         verifyOutput<csSyntax.MethodDeclarationSyntax>(csharpTree,id,_=>_.Identifier.Text);
-    }
+    }*/
 
     //Parse Text Test #1
     [TestMethod] 
@@ -84,7 +85,7 @@ public class MiscTests : AtTest
         verifyOutput<atSyntax.NamespaceDeclarationSyntax>(input,tree,"ns");
     }
 
-   
+    /*   
     //Variable Test
     [TestMethod] public void VariableTest()
     {
@@ -101,7 +102,7 @@ public class MiscTests : AtTest
                 id,_=>_.Declaration.Variables[0].Identifier.Text,
                 decl.Type?.Text ?? "object",_=>_.Declaration.Type.ToString());
         }
-    }
+    }*/
 
     //TypeDeclarationTest
     [TestMethod] public void TypeDeclarationTest()
@@ -111,7 +112,7 @@ public class MiscTests : AtTest
 
         var n = tree.GetRoot().DescendantNodes().OfType<atSyntax.TypeDeclarationSyntax>().First();
         Write(n);
-        assert_equals(2,n.BaseTypes.List[0].TypeArguments.List.Count);
+        assert_equals(2,n.BaseTypes.List[0].Arguments.List.Count);
     }
 
 

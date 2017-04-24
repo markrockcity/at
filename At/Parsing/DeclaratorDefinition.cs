@@ -75,7 +75,7 @@ public class DeclarationRule : IDeclarationRule
 public class DeclaratorDefinition : OperatorDefinition
 {
     public readonly DeclarationDefinition VariableDeclaration;
-    public readonly DeclarationRule       MethodDeclaration;
+    public readonly DeclarationDefinition MethodDeclaration;
     public readonly DeclarationDefinition TypeDeclaration;
     public readonly DeclarationDefinition NamespaceDeclaration;
 
@@ -117,7 +117,53 @@ public class DeclaratorDefinition : OperatorDefinition
             },
         };
 
+        MethodDeclaration = new DeclarationDefinition
+        {
+            //@f()
+            {
+                $"a:Token({declaratorKind.Name}), PostBlock(tc:TokenCluster,rb:Round)", nodes =>
+                {
+                    var declOp = nodes.GetNode<AtToken>("a");
+                    var id = nodes.GetNode<TokenClusterSyntax>("tc").TokenCluster;
+                    var rb = nodes.GetNode<RoundBlockSyntax>("rb");
+                    var decl = MethodDeclaration(declOp,id,List<ParameterSyntax>(rb.StartDelimiter,rb.EndDelimiter),null,null,nodes,this);
+                    return decl;
+                }
+            },
 
+            
+            //@f(a,b) { ... }
+            {
+                $"a:Token({declaratorKind.Name}), PostBlock(PostBlock(tc:TokenCluster,rb:Round(params:Binary[Comma])), body:Curly)", nodes =>
+                {
+                    var declOp = nodes.GetNode<AtToken>("a");
+                    var id = nodes.GetNode<TokenClusterSyntax>("tc").TokenCluster;
+                    var rb = nodes.GetNode<RoundBlockSyntax>("rb");
+                    var parameters = nodes.GetNode<BinaryExpressionSyntax>("params");
+                    var body = nodes.GetNode<CurlyBlockSyntax>("body");
+                    var decl = MethodDeclaration(declOp,id,List(rb.StartDelimiter,SeparatedList<ParameterSyntax>(Parameter(parameters.Left,this),parameters.Operator,Parameter(parameters.Right,this)),rb.EndDelimiter),null,body,nodes,this);
+                    return decl;
+                }
+            
+            },
+
+            //@f(a) { ... }
+            {
+                $"a:Token({declaratorKind.Name}), PostBlock(PostBlock(tc:TokenCluster,rb:Round(param:Expr)), body:Curly)", nodes =>
+                {
+                    var declOp = nodes.GetNode<AtToken>("a");
+                    var id = nodes.GetNode<TokenClusterSyntax>("tc").TokenCluster;
+                    var rb = nodes.GetNode<RoundBlockSyntax>("rb");
+                    var parameter = nodes.GetExpression("param");
+                    var body = nodes.GetNode<CurlyBlockSyntax>("body");
+                    var decl = MethodDeclaration(declOp,id,List(rb.StartDelimiter,SeparatedList<ParameterSyntax>(Parameter(parameter,this)),rb.EndDelimiter),null,body,nodes,this);
+                    return decl;
+                }
+            }
+        };
+
+
+        /*
         MethodDeclaration = new DeclarationRule
         (
             declaratorKind,
@@ -143,7 +189,7 @@ public class DeclaratorDefinition : OperatorDefinition
 
                 return MethodDeclaration(nodes[0].AsToken(),((TokenClusterSyntax)postBlock.Operand).TokenCluster,null,null,nodes,this);
             }
-        );
+        );*/
 
         TypeDeclaration = new DeclarationDefinition
         {
@@ -154,7 +200,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var declOp  = nodes[0].AsToken();
                     var pb = (PostBlockSyntax) nodes[1];
                     var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(nodes.GetNode<BlockSyntax>("p"));
+                    var typeArgs = TypeParameterList(nodes.GetNode<BlockSyntax>("p"),this);
                     var decl = TypeDeclaration
                     (
                         declOp,
@@ -173,7 +219,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var declOp = _.GetNode<AtToken>("a");
                     var pb = _.GetNode<PostBlockSyntax>("pb");
                     var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb.Block);
+                    var typeArgs = TypeParameterList(pb.Block,this);
                     var c = _.GetNode<CurlyBlockSyntax>("c");
 
                     return TypeDeclaration
@@ -197,7 +243,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var declOp = _.GetNode<AtToken>("a");
                     var pb1 = _.GetNode<PostBlockSyntax>("pb1");
                     var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb1.Block);
+                    var typeArgs = TypeParameterList(pb1.Block,this);
                     var c = _.GetNode<CurlyBlockSyntax>("c");
                     var baseTypes = TypeList(_.GetNode<PostBlockSyntax>("pb2"));
 
@@ -247,7 +293,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var declOp = _.GetNode<AtToken>("a");
                     var pb1 = _.GetNode<PostBlockSyntax>("pb1");
                     var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb1.Block);
+                    var typeArgs = TypeParameterList(pb1.Block,this);
                     var c = _.GetNode<CurlyBlockSyntax>("c");
                     var baseTypes = TypeList(_.GetNode<TokenClusterSyntax>("i2"));
 
@@ -271,7 +317,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var declOp = _.GetNode<AtToken>("a");
                     var pb1 = _.GetNode<PostBlockSyntax>("pb1");
                     var identifier = ((TokenClusterSyntax)pb1.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb1.Block);
+                    var typeArgs = TypeParameterList(pb1.Block,this);
                     var baseTypes = TypeList(_.GetNode<PostBlockSyntax>("pb2"));
 
                     return TypeDeclaration
@@ -299,7 +345,7 @@ public class DeclaratorDefinition : OperatorDefinition
                     var colonPair  = (BinaryExpressionSyntax) nodes[1];
                     var pb = (PostBlockSyntax) colonPair.Left;
                     var identifier = ((TokenClusterSyntax)pb.Operand).TokenCluster;
-                    var typeArgs = TypeParameterList(pb.Block);
+                    var typeArgs = TypeParameterList(pb.Block,this);
                     var baseTypes = TypeList(colonPair.Right);
 
                     return TypeDeclaration

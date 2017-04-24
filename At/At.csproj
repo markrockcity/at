@@ -62,29 +62,48 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Binding\BinaryOperation.cs" />
-    <Compile Include="Binding\Declaration.cs" />
-    <Compile Include="Binding\Directive.cs" />
-    <Compile Include="Binding\MethodDeclaration.cs" />
-    <Compile Include="Binding\NamespaceDeclaration.cs" />
-    <Compile Include="Binding\VariableDeclaration.cs" />
-    <Compile Include="Binding\TypeDeclaration.cs" />
+    <Compile Include="Binding\Contexts\MethodDeclaration.cs" />
+    <Compile Include="Binding\Operations\Argument.cs" />
+    <Compile Include="Binding\Operations\BinaryOperation.cs" />
+    <Compile Include="Binding\BindingConstraint.cs" />
+    <Compile Include="Binding\Operations\Declaration.cs" />
+    <Compile Include="Binding\Operations\Directive.cs" />
+    <Compile Include="Binding\Operations\NamespaceDeclaration.cs" />
+    <Compile Include="Binding\Operations\SymbolReference.cs" />
+    <Compile Include="Binding\Operations\TypeArgument.cs" />
+    <Compile Include="Binding\Operations\VariableDeclaration.cs" />
+    <Compile Include="Binding\Operations\TypeDeclaration.cs" />
+    <Compile Include="Binding\TypeArgumentBinder.cs" />
     <Compile Include="Compilation\AtCompilation.cs" />
-    <Compile Include="Binding\LiteralExpression.cs" />
+    <Compile Include="Binding\Operations\Literal.cs" />
     <Compile Include="Binding\BindingTreeVisitor.cs" />
-    <Compile Include="Binding\Expression.cs" />
+    <Compile Include="Binding\Operations\Operation.cs" />
     <Compile Include="Binding\IBindingNode.cs" />
-    <Compile Include="Binding\ApplicationExpression.cs" />
-    <Compile Include="Compilation\AtCompileResult.cs" />
-    <Compile Include="Contexts\CompilationUnitContext.cs" />
-    <Compile Include="Contexts\CompilerContext.cs" />
-    <Compile Include="Contexts\Context.cs" />
+    <Compile Include="Compilation\BindResult.cs" />
+    <Compile Include="Compilation\EmitResult.cs" />
+    <Compile Include="Binding\Contexts\CompilationUnit.cs" />
+    <Compile Include="Binding\Contexts\CompilerContext.cs" />
+    <Compile Include="Binding\Contexts\Context.cs" />
+    <Compile Include="Binding\Operations\Invocation.cs" />
+    <Compile Include="Binding\Contexts\CallSite.cs" />
+    <Compile Include="Binding\Contexts\DeclarationContext.cs" />
+    <Compile Include="Binding\Contexts\MethodDefinition.cs" />
+    <Compile Include="Binding\Contexts\OperatorImplementation.cs" />
+    <Compile Include="Binding\Contexts\TypeDefinition.cs" />
+    <Compile Include="Parsing\ExpressionSource.cs" />
+    <Compile Include="Parsing\ExpressionTransformation.cs" />
+    <Compile Include="Symbols\NamespaceSymbol.cs" />
+    <Compile Include="Symbols\ParameterSymbol.cs" />
     <Compile Include="Symbols\OperatorSymbol.cs" />
+    <Compile Include="Symbols\MethodSymbol.cs" />
+    <Compile Include="Symbols\TypeParameterSymbol.cs" />
+    <Compile Include="Symbols\VariableSymbol.cs" />
+    <Compile Include="Syntax\ArgumentSyntax.cs" />
     <Compile Include="Syntax\AtSyntaxVisitor.cs" />
     <Compile Include="Compilation\AtCompiler.cs" />
-    <Compile Include="Contexts\CompilationContext.cs" />
-    <Compile Include="Contexts\Definition.cs" />
-    <Compile Include="Contexts\TypeDefinition.cs" />
+    <Compile Include="Binding\Contexts\CompilationContext.cs" />
+    <Compile Include="Binding\Contexts\Definition.cs" />
+    <Compile Include="Binding\Contexts\NamespaceDefinition.cs" />
     <Compile Include="CSharp\CSharpTarget.cs" />
     <Compile Include="SR.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -94,7 +113,6 @@
     <Compile Include="Symbols\ContextSymbol.cs" />
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Binding\Binder.cs" />
-    <Compile Include="Symbols\SymbolVisitor.cs" />
     <Compile Include="Diagnostics\DiagnosticsBag.cs" />
     <Compile Include="Symbols\KeywordSymbol.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
@@ -113,6 +131,7 @@
     <Compile Include="Parsing\ExpressionRule.cs" />
     <Compile Include="Parsing\Interfaces.cs" />
     <Compile Include="Parsing\OperatorDefinition.cs" />
+    <Compile Include="Syntax\InvocationExpressionSyntax.cs" />
     <Compile Include="Syntax\PostBlockSyntax.cs" />
     <Compile Include="Parsing\SyntaxDefinition.cs" />
     <Compile Include="Syntax\ErrorNode.cs" />
@@ -129,7 +148,6 @@
     <Compile Include="Syntax\SyntaxFactory.cs" />
     <Compile Include="Syntax\CompilationUnitSyntax.cs" />
     <Compile Include="Diagnostics\AtDiagnostic.cs" />
-    <Compile Include="Compilation\AtEmitResult.cs" />
     <Compile Include="Parsing\AtLexer.cs" />
     <Compile Include="Parsing\AtParser.cs" />
     <Compile Include="AtProgram.cs" />
@@ -142,6 +160,7 @@
     <Compile Include="Syntax\SeparatedSyntaxList.cs" />
     <Compile Include="Syntax\ListSyntax.cs" />
     <Compile Include="Syntax\ParameterSyntax.cs" />
+    <Compile Include="Syntax\TypeParameterSyntax.cs" />
     <Compile Include="Syntax\VariableDeclarationSyntax.cs" />
     <Compile Include="Syntax\TokenClusterSyntax.cs" />
     <Compile Include="Parsing\TokenRule.cs" />
@@ -167,13 +186,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CodeAnalysis, Version=1.3.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.3.2\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Microsoft.CodeAnalysis, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.2.0.0\lib\netstandard1.3\Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=1.3.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.3.2\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.2.0.0\lib\netstandard1.3\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -212,8 +229,7 @@
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Reflection.Metadata, Version=1.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Reflection.Metadata.1.4.1\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\System.Reflection.Metadata.1.4.2\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="System.Security.Cryptography.Algorithms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net46\System.Security.Cryptography.Algorithms.dll</HintPath>

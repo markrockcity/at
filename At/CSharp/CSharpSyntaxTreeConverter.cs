@@ -1,111 +1,112 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
+using At.Binding;
+using At.Contexts;
+using At.Symbols;
 using At.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-
+using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using atSyntax = At.Syntax;
+using atSymbols = At.Symbols;
 using cs = Microsoft.CodeAnalysis.CSharp;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using ms = Microsoft.CodeAnalysis;
-using At.Contexts;
-using At.Binding;
-using At.Symbols;
-using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace At.Targets.CSharp
 {
-internal class CSharpSyntaxTreeConverter
+    internal class CSharpSyntaxTreeConverter
 {
     internal const string defaultClassName = "_";
 
-    readonly atSyntax.CompilationUnitSyntax atSyntaxRoot;
     private cs.Syntax.ClassDeclarationSyntax defaultClass;
-    readonly At.Contexts.CompilationUnitContext ctx;
-    readonly Func<Symbol,csSyntax.ExpressionSyntax> map;
+    readonly ConverterContext ctx;
+    readonly Func<Symbol,CSharpSyntaxNode> map;
 
-    public CSharpSyntaxTreeConverter(AtSyntaxTree atSyntaxTree) : this(atSyntaxTree.GetRoot()) { }
-
-    public CSharpSyntaxTreeConverter(atSyntax.CompilationUnitSyntax atSyntaxRoot)
+    CSharpSyntaxTreeConverter()
     {
-       this.atSyntaxRoot = atSyntaxRoot;
        this.defaultClass = ClassDeclaration(defaultClassName).WithModifiers(TokenList(Token(PartialKeyword)));
     }
 
-    public CSharpSyntaxTreeConverter(At.Contexts.CompilationUnitContext ctx, Func<Symbol,csSyntax.ExpressionSyntax> map) : this((atSyntax.CompilationUnitSyntax) ctx.Syntax)
+    public CSharpSyntaxTreeConverter(At.Context ctx, Func<Symbol,CSharpSyntaxNode> map) : this()
+    {
+        var usings       = new List<UsingDirectiveSyntax>();
+        var members      = new List<MemberDeclarationSyntax>();
+        var statements   = new List<StatementSyntax>();
+
+        var cCtx = new ConverterContext(ctx, usings, members, statements);
+
+        this.ctx = cCtx;    
+        this.map = map;
+    }
+
+    protected CSharpSyntaxTreeConverter(ConverterContext ctx, Func<Symbol,CSharpSyntaxNode> map) 
     {
         this.ctx = ctx;    
         this.map = map;
     }
 
-    private class SourceContext : Context
+    protected class ConverterContext
     {
-        public SourceContext(Context parentCtx,DiagnosticsBag diagnostics,AtSyntaxNode syntaxNode) : base(parentCtx,diagnostics,syntaxNode)
+        public ConverterContext(Context ctx, 
+                                List<UsingDirectiveSyntax> usings,
+                                List<MemberDeclarationSyntax> members,
+                                List<StatementSyntax> statements)
         {
+            BindingContext = ctx;    
+            Usings = usings;
+            Members = members;
+            Statements = statements;
         }
 
-        protected override ImmutableArray<IBindingNode> MakeContents()
-        {
-            return Syntax.ChildNodes().Select(_=>new SourceContext(this,Diagnostics,_)).ToImmutableArray<IBindingNode>();
-        }
-
-        protected internal override void AddNode(IBindingNode node)
-        {
-            //ignore
-        }
+        public Context BindingContext {get;}
+        public List<UsingDirectiveSyntax> Usings {get;}
+        public List<MemberDeclarationSyntax> Members {get;}
+        public List<StatementSyntax> Statements {get;}
     }
 
     public CSharpSyntaxTree ConvertToCSharpTree()
     {
-        var csRoot = CsharpCompilationUnitSyntax(atSyntaxRoot, (Context) ctx ?? new SourceContext(null,null,atSyntaxRoot));        
+        var csRoot = CsharpCompilationUnitSyntax();        
         var csharpTree = CSharpSyntaxTree.Create(csRoot);
 
         return (CSharpSyntaxTree) csharpTree;
     }
 
-    private cs.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax(
-                                                   atSyntax.CompilationUnitSyntax atRoot,
-                                                   Context ctx) 
+    private cs.Syntax.CompilationUnitSyntax CsharpCompilationUnitSyntax() 
     {
+        var atRoot = (CompilationUnit) ctx.BindingContext;
+
+       
        //160316: this is mainly for making tests fail
-       var error = atRoot.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
+       var error = atRoot.Syntax.DescendantNodes().OfType<ErrorNode>().FirstOrDefault();
        if (error != null)
             throw new AtException(error.GetDiagnostics().FirstOrDefault()?.Message ?? error.Message);
        
-       var eCluster = atRoot.DescendantNodes().OfType<ExpressionClusterSyntax>().FirstOrDefault();
+       var eCluster = atRoot.Syntax.DescendantNodes().OfType<ExpressionClusterSyntax>().FirstOrDefault();
        if (eCluster != null)
             throw new AtException("Can't convert ExpressionClusterSyntax to C# : ❛"+eCluster+"❜");
-       
-       /*
-       var tCluster = atRoot.DescendantNodes().OfType<TokenClusterSyntax>().FirstOrDefault();
-       if (tCluster != null && ctx == null)
-            throw new AtException("Can't convert TokenClusterSyntax (without context) to C# : ❛"+tCluster+"❜");
-       */
-        
-       var csharpSyntax = CompilationUnit();
-       var usings       = new List<UsingDirectiveSyntax>();
-       var members      = new List<MemberDeclarationSyntax>();
-       var statements   = new List<StatementSyntax>();
+             
 
-       processNodes(ctx.Contents(), usings, members, statements);
+       var csharpSyntax = CompilationUnit();
+       processNodes();
 
        //class _ { <fields> static int Main() { <statements>; return 0; } }
-       defaultClass = defaultClass.AddMembers(members.OfType<FieldDeclarationSyntax>().ToArray())
-                                  .AddMembers(members.OfType<csSyntax.MethodDeclarationSyntax>().ToArray())
+       defaultClass = defaultClass.AddMembers(ctx.Members.OfType<FieldDeclarationSyntax>().ToArray())
+                                  .AddMembers(ctx.Members.OfType<csSyntax.MethodDeclarationSyntax>().ToArray())
                                   .AddMembers(MethodDeclaration(ParseTypeName("int"),"Main")
                                                 .AddModifiers(ParseToken("static"))
-                                                .AddBodyStatements(statements.ToArray())
+                                                .AddBodyStatements(ctx.Statements.ToArray())
                                                 
                                                 .AddBodyStatements
                                                 (
                                                     (
-                                                        from ns  in members.OfType<csSyntax.NamespaceDeclarationSyntax>()
+                                                        from ns  in ctx.Members.OfType<csSyntax.NamespaceDeclarationSyntax>()
                                                         from cls in ns.Members.OfType<csSyntax.ClassDeclarationSyntax>()
                                                         where cls.Identifier.Text == ns.Name.ToString()
                                                         select ExpressionStatement(
@@ -125,45 +126,49 @@ internal class CSharpSyntaxTreeConverter
                                                 //return 0
                                                 .AddBodyStatements(new StatementSyntax[]{ReturnStatement(LiteralExpression(NumericLiteralExpression,ParseToken("0")))}));
                                                          
-       csharpSyntax = csharpSyntax.AddUsings(usings.ToArray())
+       csharpSyntax = csharpSyntax.AddUsings(ctx.Usings.ToArray())
                                   .AddMembers(defaultClass)
-                                  .AddMembers(members.Where(_=>!(_ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
+                                  .AddMembers(ctx.Members.Where(_=>!(_ is null || _ is FieldDeclarationSyntax || _ is csSyntax.MethodDeclarationSyntax)).ToArray());
        return csharpSyntax;
     }
 
     //# processNodes()
-    void processNodes(IEnumerable<IBindingNode> nodes,List<UsingDirectiveSyntax> usings,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
+    void processNodes()
     {
-        foreach(var node in nodes)
+        foreach(var node in ctx.BindingContext.Contents())
         {
 
             //#directive
             if (node is Directive directive && directive.Syntax.Directive.Text==DirectiveSyntax.importDirective)
             {
                 var usingDir = cs.SyntaxFactory.UsingDirective(NameSyntax(directive.Syntax.Name));
-                usings.Add(usingDir);
+                ctx.Usings.Add(usingDir);
                 continue;
             }
 
             //@declaration
-            if (node is Declaration d)
+            var dc = node as DeclarationContext;
+            var d  = dc?.Declaration ?? node as IDeclaration; 
+            if (d != null)
             { 
-                var csMember = MemberDeclarationSyntax(d.Syntax, d.Symbol);
-                members.Add(csMember);
+                var csMember = MemberDeclarationSyntax(d);
+                ctx.Members.Add(csMember);
                 continue;
+            }            
+
+            //method call
+            if (node is CallSite callSite)
+            {            
+                var csExprStmt = StatementSyntax(callSite.Invocation, false);
+                ctx.Statements.Add(csExprStmt);
+                continue;            
             }
            
             //statement
-            if (node is Expression expr)
+            if (node is Operation expr)
             {
-                var csExprStmt = ExpressionStatementSyntax(expr);
-                statements.Add(csExprStmt);
-                continue;
-            }
-
-            if (node is SourceContext ctx)
-            {
-                processNode(ctx.Syntax,usings,members,statements);
+                var csExprStmt = StatementSyntax(expr, false);
+                ctx.Statements.Add(csExprStmt);
                 continue;
             }
 
@@ -171,56 +176,14 @@ internal class CSharpSyntaxTreeConverter
         }
     }
 
-    class SourceExpression : Expression
-    {
-        public SourceExpression(Context ctx, atSyntax.ExpressionSyntax syntaxNode) : base(ctx,syntaxNode)
-        {
-        }
-
-        public atSyntax.ExpressionSyntax Syntax => ExpressionSyntax;
-
-        public override void Accept(BindingTreeVisitor visitor)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Expression ReplaceSymbol(UndefinedSymbol undefinedSymbol,ISymbol newSymbol)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    void processNode(AtSyntaxNode node,List<UsingDirectiveSyntax> usings,List<MemberDeclarationSyntax> members,List<StatementSyntax> statements)
-    {
-        //#directive
-        var directive = node as atSyntax.DirectiveSyntax;
-        if (directive?.Directive.Text==DirectiveSyntax.importDirective)
-        {
-            var usingDir = cs.SyntaxFactory.UsingDirective(NameSyntax(directive.Name));
-            usings.Add(usingDir);
-        }
-           
-        //@declaration
-        else  if (node is DeclarationSyntax d)
-        {
-            var cSharpDecl = MemberDeclarationSyntax(d,null);
-            members.Add(cSharpDecl);
-        }
-
-        //! SHOULD ALWAYS BE LAST
-        //statement
-        else if (node is atSyntax.ExpressionSyntax expr)
-        {
-            var csExprStmt = ExpressionStatementSyntax(new SourceExpression(null,expr));
-            statements.Add(csExprStmt);
-        }  
-    }
-
-    csSyntax.ExpressionStatementSyntax ExpressionStatementSyntax(Expression expr)
+    csSyntax.StatementSyntax StatementSyntax(Operation expr, bool returnStmtOnLast = true)
     {
         var e = ExpressionSyntax(expr);
 
-        if (e is ParenthesizedExpressionSyntax)
+        if (returnStmtOnLast & expr.Next == null)
+            return ReturnStatement(e);
+
+        else if (e is ParenthesizedExpressionSyntax)
             e = InvocationExpression
                     (MemberAccessExpression
                         (SyntaxKind.SimpleMemberAccessExpression,
@@ -239,12 +202,11 @@ internal class CSharpSyntaxTreeConverter
     {
         switch(expr)
         {
-            case KeywordSymbol         ks : return map?.Invoke(ks) ?? throw new NotImplementedException(ks.ToString());
-            case Symbol                id : return IdentifierName(id.Name);
-            case LiteralExpression     le : return LiteralExpression(_kind(le.Value),_literal(le.Value));
-            case ApplicationExpression app: return InvocationExpression(ExpressionSyntax(app.Subject),ArgumentListSyntax(app.Arguments));
-            case SourceExpression      se : return ExpressionSyntax((atSyntax.ExpressionSyntax) se.Syntax);
-            case BinaryOperation       bo : return ParenthesizedExpression(BinaryExpression(_kind(bo.Operator),ExpressionSyntax(bo.Left),ExpressionSyntax(bo.Right)));
+            case SymbolReference id : return (id.Symbol is KeywordSymbol ks) ? (map?.Invoke(ks) as csSyntax.ExpressionSyntax ?? throw new NotImplementedException($"Keyword({ks.Name})"))  :  IdentifierName(id.Symbol.Name);
+            case Literal         le : return LiteralExpression(_kind(le.Value),_literal(le.Value));
+            case BinaryOperation bo : return ParenthesizedExpression(BinaryExpression(_kind(bo.Operator),ExpressionSyntax(bo.Left),ExpressionSyntax(bo.Right)));
+            case CallSite        cs : return invocation(cs.Invocation);
+            case Invocation      inv: return invocation(inv);
 
             default: throw new NotImplementedException($"{expr.GetType()}: {expr}");
         }        
@@ -258,64 +220,64 @@ internal class CSharpSyntaxTreeConverter
                                     : throw new NotImplementedException(o.GetType()+": "+o+" SyntaxKind");
 
         SyntaxToken _literal(object o) => o is String s ? Literal(s,s) 
-                                        : o is double d ? Literal(d)
+                                        : o is double d ? Literal((decimal) d)
                                         : throw new NotImplementedException(o.GetType()+" literal");   
 
     }
 
-    
-    csSyntax.ExpressionSyntax ExpressionSyntax(atSyntax.ExpressionSyntax expr)
+    csSyntax.InvocationExpressionSyntax invocation(Invocation inv)
     {
-        var id = expr as atSyntax.NameSyntax;
-        if (id != null) 
-            return cs.SyntaxFactory.IdentifierName(id.Identifier.Text);
+        var target = inv.Target is SymbolReference sr ? sr.Symbol : inv.Target;
 
-        var app = expr as atSyntax.ApplicationSyntax;
-        if (app != null)
-            return InvocationExpression(ExpressionSyntax(app.Subject),ArgumentListSyntax(app.Arguments.Select(_=>new SourceExpression(null,_))));
+        //emits method declaration as needed
+        if (target is MethodSymbol method && toEmitAtCallSite.Contains(method.Declaration))
+        {
+            var methodId = method.Declaration.Name;
 
-        throw new NotImplementedException($"{expr.GetType()}: {expr}");
+            var m = method.GetImplementation(inv.TypeArguments);
+            ctx.Members.Add(MethodDeclarationSyntax(method.Declaration, m));
+        }
+        
+        return InvocationExpression(ExpressionSyntax(inv.Target),ArgumentListSyntax(inv.Arguments));
     }
 
     csSyntax.ArgumentListSyntax ArgumentListSyntax(IEnumerable<IBindingNode> args)
     {
         return cs.SyntaxFactory.ArgumentList(
-                                    new ms.SeparatedSyntaxList<ArgumentSyntax>()
+                                    new ms.SeparatedSyntaxList<csSyntax.ArgumentSyntax>()
                                             .AddRange(args.Select(ArgumentSyntax)));
     }
 
-    csSyntax.ArgumentSyntax ArgumentSyntax(IBindingNode e)
+    csSyntax.ArgumentSyntax ArgumentSyntax(IBindingNode arg)
     {
-        return cs.SyntaxFactory.Argument(ExpressionSyntax(e));
+        return cs.SyntaxFactory.Argument(ExpressionSyntax(arg is Argument a ? a.Operation : arg));
     }
 
-    csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(DeclarationSyntax d, ContextSymbol symbol)
+    csSyntax.MemberDeclarationSyntax MemberDeclarationSyntax(IDeclaration d)
     {
-        var nsDecl = d as atSyntax.NamespaceDeclarationSyntax;
-        if (nsDecl != null)
+        Debug.Assert(d!=null);
+
+        if (d is NamespaceDeclaration nsDecl)
         {
-            var csharpNs = NamespaceDeclarationSyntax(nsDecl,symbol);
+            var csharpNs = NamespaceDeclarationSyntax(nsDecl);
             return csharpNs;
         }
 
-        var classDecl = d as atSyntax.TypeDeclarationSyntax;
-        if (classDecl != null)
-        { 
-            var csharpClass = ClassDeclarationSyntax(classDecl,symbol);
+        if (d is TypeDeclaration classDecl)
+        {
+            var csharpClass = ClassDeclarationSyntax(classDecl,classDecl.Definition);
             return csharpClass;
         }
 
-        var varDecl = d as atSyntax.VariableDeclarationSyntax;
-        if (varDecl != null)
+        if (d is VariableDeclaration varDecl)
         {
-            var csharpField = FieldDeclarationSyntax(varDecl);
+            var csharpField = FieldDeclarationSyntax(varDecl != null ? (atSyntax.VariableDeclarationSyntax)varDecl.Syntax : (atSyntax.VariableDeclarationSyntax)d.Syntax);
             return csharpField;
         }
 
-        var methodDecl = d as atSyntax.MethodDeclarationSyntax;
-        if (methodDecl != null)
+        if (d is MethodDeclaration methodDecl)
         {
-            var csharpMethod = MethodDeclarationSyntax(methodDecl);
+            var csharpMethod = MethodDeclarationSyntax(methodDecl ?? new MethodDeclaration(null,(atSyntax.MethodDeclarationSyntax)d.Syntax));
             return csharpMethod;
         }
 
@@ -327,29 +289,39 @@ internal class CSharpSyntaxTreeConverter
         return IdentifierName(atName.Text);
     }
 
-    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(atSyntax.TypeDeclarationSyntax classDecl, ContextSymbol symbol)
+    csSyntax.ClassDeclarationSyntax ClassDeclarationSyntax(TypeDeclaration classDecl, TypeDefinition classDef)
     {
         
-        var classId = classDecl.Identifier;
+        var classId = classDecl.Syntax.Identifier;
         var csId = csIdentifer(classId);
         var csClass = ClassDeclaration(csId).AddModifiers(
                              ParseToken("public"));
-        var csTypeParams = classDecl.TypeParameters.List.Select(_=>
+        var csTypeParams = classDecl.Syntax.TypeParameters.List.Select(_=>
                                 cs.SyntaxFactory.TypeParameter(_.Text));
 
         if (csTypeParams != null) 
             csClass = csClass.AddTypeParameterListParameters(csTypeParams.ToArray());
 
-        if (classDecl.BaseTypes != null) 
-            csClass = csClass.AddBaseListTypes(classDecl.BaseTypes.List.Select(_=>
+        if (classDecl.Syntax.BaseTypes != null) 
+            csClass = csClass.AddBaseListTypes(classDecl.Syntax.BaseTypes.List.Select(_=>
                             cs.SyntaxFactory.SimpleBaseType(
                                 cs.SyntaxFactory.ParseTypeName(_.Text))).ToArray());
 
-        if (classDecl.Members != null)
-            csClass = csClass.AddMembers(classDecl.Members.Select(_=>MemberDeclarationSyntax(_,symbol)).ToArray());
+        if (classDef?.HasContents ?? false)
+        {
+            var declarations = classDef.Contents().OfType<IDeclaration>();
+            var members = new List<csSyntax.MemberDeclarationSyntax>();
+
+            foreach(var d in declarations)
+            {
+                var m = MemberDeclarationSyntax(d);
+                members.Add(m);
+            }
+
+            csClass = csClass.AddMembers(members.ToArray());
+        }
 
         return csClass; 
-        
     }
 
 
@@ -358,41 +330,80 @@ internal class CSharpSyntaxTreeConverter
         
         var fieldId = varDecl.Identifier;
         var csId = csIdentifer(fieldId);        
-        var csVarDeclr = cs.SyntaxFactory.VariableDeclarator(csId);
-        var csVarDecl = cs.SyntaxFactory.VariableDeclaration(varDecl.Type?.Text != null ? cs.SyntaxFactory.ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(SyntaxKind.ObjectKeyword))) 
+        var csVarDeclr = VariableDeclarator(csId);
+        var csVarDecl = VariableDeclaration(varDecl.Type?.Text != null ? ParseTypeName(varDecl.Type.Text) : PredefinedType(Token(ObjectKeyword))) 
                             .AddVariables(csVarDeclr);
-        var csField = cs.SyntaxFactory.FieldDeclaration(csVarDecl)
-                                                .AddModifiers(cs.SyntaxFactory.ParseToken("public"),cs.SyntaxFactory.ParseToken("static"));
+        var csField = FieldDeclaration(csVarDecl)
+                                                .AddModifiers(ParseToken("public"),ParseToken("static"));
         
         return csField;
     }
 
-    csSyntax.MethodDeclarationSyntax MethodDeclarationSyntax(atSyntax.MethodDeclarationSyntax methodDecl)
+
+    List<MethodDeclaration> toEmitAtCallSite = new List<MethodDeclaration>();
+    csSyntax.MethodDeclarationSyntax MethodDeclarationSyntax(MethodDeclaration methodDecl, MethodDefinition def = null)
     {
+        TypeSyntax paramType(atSymbols.ParameterSymbol p) 
+            => (TypeSyntax) map?.Invoke(p.ParameterType) ?? TypeName(p.ParameterType);
+
+        var _def = def ?? methodDecl.Definition;
+        var _retType  = def?.ReturnType  ?? methodDecl.ReturnType;
+        var _params = def?.Parameters ?? methodDecl.Parameters;
+        var _tparams = def?.TypeParameters ?? methodDecl.TypeParameters;
+
+        var methodHasTypeParamaters = (_tparams.Length > 0);
+
+        if (methodHasTypeParamaters && (_def?.Constraints.OfType<OperatorConstraint>().Any() ?? false))
+        {
+            toEmitAtCallSite.Add(methodDecl);
+            return null;
+        }
         
-        var methodId = methodDecl.Identifier;
-        var returnType = methodDecl.ReturnType != null
-                            ? cs.SyntaxFactory.ParseTypeName(methodDecl.ReturnType.Text)
-                            : PredefinedType(Token(SyntaxKind.ObjectKeyword));
-        var csMethod = cs.SyntaxFactory.MethodDeclaration(returnType,csIdentifer(methodId))
-                        .AddModifiers(ParseToken("public"))
-                        .AddBodyStatements(ParseStatement("return null;"));
-                            
+        var methodId = methodDecl.Name;
+        var returnType = _retType != null
+                            ? (TypeSyntax) map?.Invoke(_retType) ?? TypeName(_retType)
+                            : PredefinedType(Token(ObjectKeyword));
+
+        var stmts = _def?.Contents().Select(_=>StatementSyntax((Operation)_)).ToArray();
+        var csMethod = MethodDeclaration(returnType,csIdentifer(((IHasIdentifier)methodDecl.Syntax).Identifier))
+                        .AddModifiers(ParseToken("public"),ParseToken("static"))
+                        .AddParameterListParameters(_params.Select(_=>Parameter(ParseToken(_.Name)).WithType(paramType(_))).ToArray())
+                        .AddBodyStatements(stmts!=null && stmts.Length > 0 ?  stmts : new[]{ParseStatement("return null;")});
+
+        if (methodHasTypeParamaters)
+        {
+            var typeParams = methodDecl.TypeParameters.Select(_=>TypeParameterSyntax(_));
+            csMethod = csMethod.AddTypeParameterListParameters(typeParams.ToArray());
+        }
 
         return csMethod;
     }
 
-    csSyntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(atSyntax.NamespaceDeclarationSyntax nsDecl, At.Symbols.ContextSymbol ns)
+    csSyntax.TypeParameterSyntax TypeParameterSyntax(atSymbols.TypeParameterSymbol typeParameter)
     {
-        
-        var nsId = nsDecl.Identifier;
+        return TypeParameter(typeParameter.Name);
+    }
+
+    csSyntax.TypeSyntax TypeName(atSymbols.TypeSymbol atType)
+    {
+        return atType == TypeSymbol.Unknown ? PredefinedType(Token(ObjectKeyword)) : ParseTypeName(atType.Name);
+    }
+
+     
+
+    csSyntax.NamespaceDeclarationSyntax NamespaceDeclarationSyntax(NamespaceDeclaration nsDecl)
+    {
+        var nsId = nsDecl.Syntax.Identifier;
         var csId = csIdentifer(nsId);
         var usings     = new List<UsingDirectiveSyntax>();         
         var members    = new List<MemberDeclarationSyntax>();
         var statements = new List<StatementSyntax>();
 
+
         //processNodes(nsDecl.Members, usings, members, statements);
-        processNodes(ns?.Context?.Contents() ?? nsDecl?.Members?.Select(_=>new SourceContext(null,null,_)).ToImmutableArray<IBindingNode>(), usings, members, statements);
+        var nsCtx = new ConverterContext(nsDecl.Definition,usings,members,statements);
+        var nsConverter = new CSharpSyntaxTreeConverter(nsCtx,map);
+        nsConverter.processNodes();
 
        //class _ { <fields> static int Main() { <statements>; return 0; } }
        var defaultClass = ClassDeclaration(nsId.Text).WithModifiers(TokenList(Token(PartialKeyword)))

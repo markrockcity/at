@@ -27,8 +27,10 @@ public sealed class CompilerContext : Context
     //"GlobalNamespace"
     public CompilationContext Compilation { get; }
     public override Context TopContext  => this;
-    protected override ImmutableArray<IBindingNode> MakeContents() => ImmutableArray.Create<IBindingNode>(Compilation);
 
+    public override bool HasContents => true; //CompilationContext
+
+    public override IEnumerable<IBindingNode> Contents()=> new IBindingNode[]{Compilation};
     protected internal override void AddNode(IBindingNode node)
     {
         Debug.Assert(node is CompilationContext && Compilation == null); //Context.ctor(parent) { parent.AddNode(this); }

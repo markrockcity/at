@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using At.Binding;
+using At.Symbols;
 
 namespace At
 {
+
 public sealed class UndefinedSymbol : Symbol
 {
     private Context ctx;
@@ -20,8 +22,10 @@ public sealed class UndefinedSymbol : Symbol
     }
 
     public override Symbol ParentSymbol => null;
-        
-    public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
+
+    public override TypeSymbol Type {get; protected internal set;}
+
+    public override TResult Accept<TResult>(BindingTreeVisitor<TResult> visitor)
     {
         return visitor.VisitUndefined(this);
     }

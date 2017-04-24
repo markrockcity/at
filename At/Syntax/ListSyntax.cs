@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,21 +12,19 @@ public class ListSyntax<T> : ContextSyntax where T : AtSyntaxNode
     private AtToken endDelimiter;
 
     internal ListSyntax(AtToken startDelimiter, SeparatedSyntaxList<T> list, AtToken endDelimiter, IEnumerable<AtDiagnostic> diagnostics) : 
-    base(new AtSyntaxNode[] {startDelimiter}.Concat(list).Concat(new[] {endDelimiter}),diagnostics)
-    {        
-        if (list==null)
-            throw new ArgumentNullException(nameof(list));
-    
+    base(new AtSyntaxNode[] {startDelimiter}.Concat(list._list).Concat(new[] {endDelimiter}),diagnostics)
+    {
         this.startDelimiter = startDelimiter;
         this.endDelimiter = endDelimiter;
-        List = list;
+        List = list ?? throw new ArgumentNullException(nameof(list));
     }
 
-        protected ListSyntax(IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics,bool isMissing = false) : base(nodes,diagnostics,isMissing)
-        {
-        }
+    protected ListSyntax(IEnumerable<AtSyntaxNode> nodes,IEnumerable<AtDiagnostic> diagnostics,bool isMissing = false) : base(nodes,diagnostics,isMissing)
+    {
+    }
 
-        public SeparatedSyntaxList<T> List {get;}
+    /// <summary>Includes list item delimiters</summary>
+    public SeparatedSyntaxList<T> List {get;}
 
     public override string FullText
     {

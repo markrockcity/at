@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using At.Syntax;
 using System.Linq;
+using System;
 
 namespace At.Tests
 {
@@ -85,7 +86,7 @@ public class ParserTests : AtTest
         assert_not_null(ae);
         assert_equals(2,()=>ae.Arguments.Count); //"A(B,C)"
     }
-
+                                      
     //CommaTest
     [TestMethod]
     public void CommaTest()
@@ -111,7 +112,43 @@ public class ParserTests : AtTest
         assert_type<RoundBlockSyntax>(()=>e3);
     }
 
-    //ImportTest
+
+    //InvocationExpressionTest
+    [TestMethod]
+    public void InvocationExpressionTest()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var e0 = parser.ParseExpression("f()");
+        assert_type<InvocationExpressionSyntax>(()=>e0);
+
+        var e1 = parser.ParseExpression("f(x)");
+        assert_type<InvocationExpressionSyntax>(()=>e1,()=>e1.PatternStrings().First());
+    }
+
+
+    //ParseFunctionTest "@add(a,b) { a + b } output add(5,6)"
+    [TestMethod]
+    public void ParseFunctionTest()
+    {
+        parser = AtParser.CreateDefaultParser();
+
+        var e0 = parser.ParseExpression(" @ x ( a , b ) {}");
+        Write(()=>e0);
+
+        var e1 = parser.ParseExpression("@add(a,b) { a + b } ");
+        Write(()=>e1);
+
+        var e2 = parser.ParseExpression("add(5,6) ");
+        Write(()=>e2);
+        assert_type<InvocationExpressionSyntax>(()=>e2);
+        assert_equals(2,((InvocationExpressionSyntax)e2).Arguments.List.Count,"# of arguments is wrong");
+
+        var e3 = parser.ParseExpression("@add(a,b) { a + b } output add(5,6)");
+        Write(()=>e3);        
+    }
+
+    //ParseHelloWorldTest
     [TestMethod]
     public void ParseHelloWorldTest()
     {
@@ -120,7 +157,7 @@ public class ParserTests : AtTest
         assert_type<ApplicationSyntax>(()=>e1);
     }
 
-    //ImportTest
+    //ImportDirectiveTest
     [TestMethod]
     public void ImportDirectiveTest()
     {
@@ -195,9 +232,9 @@ public class ParserTests : AtTest
 
         // : D<E,F>
         var e2 = e1.BaseTypes.List[0];
-        assert_equals(2,e2.TypeArguments?.List.Count);
-        assert_equals(()=>"E",()=>e2.TypeArguments.List[0].Text);
-        assert_equals(()=>"F",()=>e2.TypeArguments.List[1].Text);
+        assert_equals(2,e2.Arguments?.List.Count);
+        assert_equals(()=>"E",()=>e2.Arguments.List[0].Text);
+        assert_equals(()=>"F",()=>e2.Arguments.List[1].Text);
     }
 }
 }

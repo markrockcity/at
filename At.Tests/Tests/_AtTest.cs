@@ -1,16 +1,42 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using At.Binding;
+using At.Contexts;
+using At.Symbols;
 using Microsoft.CodeAnalysis;
+using atSyntax = At.Syntax;
 using cs = Microsoft.CodeAnalysis.CSharp;
 using csSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
-using atSyntax = At.Syntax;
-
 
 namespace At.Tests
 {
-public class AtTest : Test
+    public class AtTest : Test
 {
+    class TestBindingContext : Context
+    {
+        private AtTest test;
+
+        public TestBindingContext(AtTest test,Context parentCtx=null,DiagnosticsBag diagnostics=null,ContextSymbol symbol = null,AtSyntaxNode syntaxNode = null) : base(parentCtx,diagnostics,symbol,syntaxNode)
+        {
+            this.test = test;
+        }
+
+        public override bool HasContents => throw new NotImplementedException();
+
+        public override IEnumerable<IBindingNode> Contents()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected internal override void AddNode(IBindingNode node)
+        {
+            //base.AddNode(node);
+            test.Write($"TestBindingContext.AddNode({node})");
+        }
+    }
+
 
     //verify output (assembly)
     protected void verifyOutput(Assembly assembly, params string[] ids) 
@@ -83,6 +109,22 @@ public class AtTest : Test
             Write(()=>input);
             throw;
         }
+    }
+
+    protected CompilationUnit bind(AtSyntaxTree tree)
+    {
+        var root = tree.GetRoot();
+        var compilation = AtCompilation.Create(tree);
+        var testCtx = new TestBindingContext(this);
+        var compilationCtx = new CompilationContext(testCtx,compilation,null);
+        var binder = new Binding.Binder(compilationCtx);
+        var node = (CompilationUnit) binder.VisitCompilationUnit(root);
+        return node;
+    }
+
+    protected CompilationUnit parseAndBind(string input)
+    {
+        return bind(parseTree(input));
     }
 }
 }

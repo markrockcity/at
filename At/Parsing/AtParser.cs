@@ -22,6 +22,7 @@ public class AtParser : IDisposable
     public AtLexer Lexer {get;}
     public OperatorDefinitionList Operators {get;}   = new OperatorDefinitionList();
     public ExpressionRuleList ExpressionRules {get;} = new ExpressionRuleList();
+    public ExpressionTransformationList Transformations {get;} = new ExpressionTransformationList();
 
     //ParseCompilationUnit(input)
     public CompilationUnitSyntax ParseCompilationUnit(IEnumerable<char> input)
@@ -86,6 +87,8 @@ public class AtParser : IDisposable
 
         
         parser.Operators.Add(9,OperatorDefinition.RoundBlock);
+
+        parser.Transformations.Add(ExpressionTransformation.InvocationExpression);
        
         return parser;
     }
@@ -147,9 +150,9 @@ public class AtParser : IDisposable
         var tokens = new Scanner<AtToken>(Lexer.Lex(input));
         var diagnostics = new List<AtDiagnostic>();
 
-        tokens.MoveNext(); //move to first token
-        Debug.Assert(tokens.Position==0);
-        var expr = expression(tokens,diagnostics,initialPrescedence,-1,null);
+        var isEmpty = !tokens.MoveNext(); //move to first token
+        Debug.Assert(isEmpty || tokens.Position==0);
+        var expr = isEmpty ? new EmptyExpressionSyntax(null,null) : expression(tokens,diagnostics,initialPrescedence,-1,null,false);
         return expr;
     }
 
@@ -160,7 +163,7 @@ public class AtParser : IDisposable
             tokens.MoveNext();
 
         while (!tokens.End)
-            yield return expression(tokens,diagnostics,prescendence,-1,null);      
+            yield return expression(tokens,diagnostics,prescendence,-1,null,false);      
     }
 
     //error()
@@ -174,7 +177,7 @@ public class AtParser : IDisposable
 
 
     //expression()
-    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition, TokenKind? endDelimiterKind)
+    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition, TokenKind? endDelimiterKind, bool startOperator)
     {           
         Func<string> _trace = ()=>
         {
@@ -211,6 +214,7 @@ public class AtParser : IDisposable
         if (startOp != null)
         {
             start = tokens.Consume();
+            startOperator = true;
             if (tokens.Current.Kind == endDelimiterKind)
                 return startOp.CreateExpression(start);
         }
@@ -221,7 +225,7 @@ public class AtParser : IDisposable
         if (prefixOp != null)
         {
             var prefixOpToken = tokens.Consume();
-            var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp),tokens.Position,endDelimiterKind);
+            var e = expression(tokens,diagnostics,Operators.Prescedence(prefixOp),tokens.Position,endDelimiterKind,startOperator);
             operand = prefixOp.CreateExpression(prefixOpToken, e);
         }        
         else 
@@ -230,7 +234,7 @@ public class AtParser : IDisposable
             var circumfixOps = Operators.Where(_=>_.OperatorPosition==OperatorPosition.Circumfix);
             var circumfixOp =  circumfixOps.FirstOrDefault(predicate);
             if (circumfixOp != null)
-                operand = parseCircumfixOp(circumfixOp, tokens, diagnostics);
+                operand = parseCircumfixOp(circumfixOp, tokens, diagnostics,null, startOperator);
             
             //...
             else
@@ -238,7 +242,7 @@ public class AtParser : IDisposable
                 //checks passed-in position from recursive call to prevent stack overflow
                 if  (lastPosition != tokens.Position) 
                 {
-                    operand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind);
+                    operand = expression(tokens,diagnostics,startOp != null ? Operators.Prescedence(startOp) : prescedence,  tokens.Position, endDelimiterKind, startOperator);
                     //Debug.WriteLine($"229: operand = ({operand.GetType().Name}) {operand.Text}");
 
                     var _opdef = operand.ExpressionSource as IOperatorDefinition;
@@ -282,7 +286,7 @@ public class AtParser : IDisposable
                     //TODO: ?? CHECK FOR SYNTAX ERRORS...
                     if(op == null)
                     {
-                        var e = expression(tokens,diagnostics, prescedence,  tokens.Position, endDelimiterKind);
+                        var e = expression(tokens,diagnostics, prescedence,  tokens.Position, endDelimiterKind,start!=null);
                         operand = applicationExpression(operand,e);
                     }
                 }
@@ -300,7 +304,7 @@ public class AtParser : IDisposable
         var postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
         while (postCircumfixOp != null) //compund postcircumfix expressions
         {
-            operand = parseCircumfixOp(postCircumfixOp,tokens,diagnostics,operand);
+            operand = parseCircumfixOp(postCircumfixOp,tokens,diagnostics,operand, startOperator);
             //Debug.WriteLine($"275: operand = ({operand.GetType().Name}) {operand.Text}");
 
             postCircumfixOp = postCircumfixOps.FirstOrDefault(predicate);
@@ -327,7 +331,7 @@ public class AtParser : IDisposable
                  break;
                
                var opToken = tokens.Consume();
-               var rightOperand = expression(tokens,diagnostics,Operators.Prescedence(binaryOp),tokens.Position,endDelimiterKind);
+               var rightOperand = expression(tokens,diagnostics,Operators.Prescedence(binaryOp),tokens.Position,endDelimiterKind,start!=null);
                operand = binaryOp.CreateExpression(operand, opToken, rightOperand);
             }
         }
@@ -343,10 +347,27 @@ public class AtParser : IDisposable
         var retval = operand;
 
         if (endOp != null)
-            retval = endOp.CreateExpression(new AtSyntaxNode[]{operand, tokens.Consume()});
-        
+            retval = endOp.CreateExpression(new AtSyntaxNode[] { operand, tokens.Consume() });
+
         else if (start != null)
-            retval = startOp.CreateExpression(start,operand);
+        {
+            retval = startOp.CreateExpression(start, operand);
+            return retval; //skip transformation
+        }
+
+
+        //expression transformation
+        if (!startOperator)
+        {
+            var exprTx = getTransform(retval);
+            if (exprTx != null)
+            {
+                var retval2 = exprTx.TransformExpression(retval);
+
+                if (retval2 != null && retval2.Text.Length > 0)
+                    return retval2;
+            }
+        }
 
         return retval;
     }
@@ -359,7 +380,7 @@ public class AtParser : IDisposable
                 : Apply(subj,obj);
     }
 
-    ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Scanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand = null)
+    ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Scanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand,bool startOp)
     {
         var startDelimiter = tokens.Consume();
         var _endDelimiterKind = (circumfixOp as ICircumfixOperatorDefinition)?.EndDelimiterKind ?? circumfixOp.TokenKind;
@@ -369,7 +390,7 @@ public class AtParser : IDisposable
         list.Add(startDelimiter);
         while(!tokens.End && tokens.Current.Kind != _endDelimiterKind)
         {
-            var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind);
+            var e = expression(tokens,diagnostics,0,tokens.Position,_endDelimiterKind,startOp);
             if (e != null)
                 list.Add(e);
         } 
@@ -381,6 +402,11 @@ public class AtParser : IDisposable
 
         var retval = circumfixOp.CreateExpression(list.ToArray());
         return retval;
+    }
+
+    IExpressionTransformation getTransform(ExpressionSyntax e)
+    {
+        return Transformations.Matches(e).FirstOrDefault(); 
     }
 
     IExpressionRule getRule(Scanner<AtToken> tokens)

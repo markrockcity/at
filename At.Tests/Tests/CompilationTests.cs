@@ -1,16 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using At.Binding;
+using At.Contexts;
 using At.Targets.CSharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace At.Tests
 {
-[TestClass]
+    [TestClass]
 public  class CompilationTests : AtTest
 {
     //Compile-String-To-Assembly Test
@@ -78,6 +78,27 @@ public  class CompilationTests : AtTest
         assert_not_null(()=>output);
         assert_equals("Hello World!\r\n",()=>getConsoleOutput(output));
     }
+
+    [TestMethod] 
+    public void CompileFunctionTest()
+    {
+        var input = "@add(a,b) { a + b } output add(5,6)";
+
+        var tree = AtSyntaxTree.ParseText(input);
+        var compilation = AtCompilation.Create(tree);
+        var r = AtCompiler.Bind(compilation,new DiagnosticsBag(),new System.Threading.CancellationToken());
+        var ctx1 = r.Context.Contents().OfType<CompilationUnit>().Single();
+        var dc = ctx1.Contents().OfType<DeclarationContext>().Single();
+
+        assert_equals(2, ()=>((MethodDeclaration)dc.Declaration).Parameters.Length, "Method parameters don't match");
+
+        Write(()=>dc.Definition.Contents());
+
+        var output = compileToAssembly(input);
+        assert_not_null(()=>output);
+        assert_equals("11\r\n",()=>getConsoleOutput(output));
+    }
+
 
     private Assembly compileToAssembly(string input)
     {

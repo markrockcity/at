@@ -7,7 +7,7 @@ using At.Syntax;
 namespace At
 {
 //MethodBodyCompiler
-public sealed class AtCompiler : BindingTreeVisitor
+public sealed class AtCompiler 
 {
 
     private @AtCompiler(AtCompilation compilation,DiagnosticsBag diagnostics,CancellationToken cancellationToken)
@@ -17,83 +17,40 @@ public sealed class AtCompiler : BindingTreeVisitor
         Context = new CompilerContext(this,compilation,diagnostics,cancellationToken);
     }
     
-    /*
-
-    public override void VisitContext(IContextSymbol symbol)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        compileContext(symbol);
-    } 
-    */   
-
     public CompilerContext Context { get; }
 
-    internal static AtCompileResult Compile(
-                                        AtCompilation     compilation,
-                                        DiagnosticsBag    diagnostics,
-                                        CancellationToken cancellationToken)
+    public override string ToString() => nameof(AtCompiler);
+
+    internal static BindResult Bind(
+                                AtCompilation     compilation,
+                                DiagnosticsBag    diagnostics,
+                                CancellationToken cancellationToken)
     {
         var compiler = new AtCompiler(compilation,diagnostics,cancellationToken);
 
         foreach(var syntaxTree in compilation.SyntaxTrees)
-            compiler.compileContext(compiler.Context.Compilation, syntaxTree.GetRoot());
+            compiler.bindCompilationUnit(compiler.Context.Compilation, syntaxTree.GetRoot());
 
         foreach(var kv in compiler.Context.Compilation.getUndefinedSymbols())
-            compiler.Context.Diagnostics.Add(AtDiagnostic.Create(DiagnosticIds.UndefinedSymbol,((IBindingNode)kv.Value).Syntax,DiagnosticSeverity.Error,string.Format(SR.UndefinedSymbolF,kv.Key.Name)));        
+            compiler.Context.Diagnostics.Add(AtDiagnostic.Create(DiagnosticIds.UndefinedSymbol,((IBindingNode)kv.op).Syntax,DiagnosticSeverity.Error,string.Format(SR.UndefinedSymbolF,kv.symbol.Name)));        
 
-        return new AtCompileResult(compiler.Context.Compilation);
-    }
-
-    protected internal override void VisitApply(ApplicationExpression e)
-    {
-        e.Context.AddNode(e);
-    }
-
-    protected internal override void VisitBinary(BinaryOperation binaryOperation)
-    {
-        binaryOperation.Context.AddNode(binaryOperation);
-    }
-
-    protected internal override void VisitDirective(Directive directive)
-    {
-        directive.Context.AddNode(directive);
-    }
-
-    protected internal override void VisitSymbol(Symbol symbol)
-    {
-       Context.Compilation.AddNode(symbol);
-    }
-
-    protected internal override void VisitTypeDeclaration(TypeDeclaration typeDeclaration)
-    {
-       typeDeclaration.Context.AddNode(typeDeclaration);
-    }
-
-    protected internal override void VisitVariableDeclaration(VariableDeclaration variableDeclaration)
-    {
-        variableDeclaration.Context.AddNode(variableDeclaration);
-    }
-
-    protected internal override void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
-    {
-        methodDeclaration.Context.AddNode(methodDeclaration);
-    }
-
-    protected internal override void VisitNamespaceDeclaration(NamespaceDeclaration namespaceDeclaration)
-    {
-        namespaceDeclaration.Context.AddNode(namespaceDeclaration);
+        return new BindResult(compiler.Context.Compilation);
     }
 
     //CompileNamespace()
-    private void compileContext(Context parentContext, ContextSyntax syntaxNode)
+    private  CompilationUnit bindCompilationUnit(Context parentContext, CompilationUnitSyntax syntaxNode)
     {
         var binder = new Binder(parentContext);
-        var ctx = (Context) binder.VisitContext(syntaxNode);
+        var ctx = (CompilationUnit) binder.VisitContext(syntaxNode);
+        return ctx;
+        
+        //whole context is assumed to be bound at this point and ready to be emmited to target
                 
+        /*
         foreach(var item in ctx.Contents())
         { 
             item.Accept(this);            
-        }
+        }*/
     }
 }
 }

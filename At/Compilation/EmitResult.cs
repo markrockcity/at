@@ -13,7 +13,7 @@ public class AtEmitResult
     {
         this.success     = success;
         Diagnostics = diagnostics;
-        ConvertedSources = convertedSources.ToList().AsReadOnly();
+        ConvertedSources = convertedSources?.ToList().AsReadOnly();
     }
 
     public bool Success

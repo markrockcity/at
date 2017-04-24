@@ -11,24 +11,39 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using cs = Microsoft.CodeAnalysis.CSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using System.Diagnostics;
+using At.Symbols;
 
 namespace At.Targets.CSharp
 {
-    static class CSharpTarget
+   static class CSharpTarget
 {
-    public static AtEmitResult Emit(AtCompileResult compileResult,Stream peStream,CancellationToken cancellationToken)
+    public static AtEmitResult Emit(BindResult compileResult,Stream peStream,CancellationToken cancellationToken)
     {
-        var csTrees       = ConvertToCSharpSyntaxTrees(compileResult, defaultMap);
-        var csCompilation = CSharpCompilation.Create(  
-                                compileResult.Compilation.assemblyName,
-                                csTrees,
-                                references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)},
-                                options: null);
-        var csResult = csCompilation.Emit(peStream, cancellationToken: cancellationToken);
-        return createAtEmitResult(csResult, csTrees,cancellationToken);
+        var csTrees = ConvertToCSharpSyntaxTrees(compileResult, defaultMap);
+
+        try
+        {
+            var csCompilation = CSharpCompilation.Create(  
+                                    compileResult.Compilation.assemblyName,
+                                    csTrees,
+                                    references: new[] {MetadataReference.CreateFromFile(typeof(object).Assembly.Location)},
+                                    options: null);
+            var csResult = csCompilation.Emit(peStream, cancellationToken: cancellationToken);
+            return createAtEmitResult(csResult, csTrees,cancellationToken);
+        }
+        catch(Exception)
+        {
+            if (csTrees != null && csTrees.Any())
+            {
+                Debug.WriteLine(csTrees.First().GetRoot().NormalizeWhitespace().ToFullString());
+            }
+        
+            throw;
+        }
     }
     
-    public static AtEmitResult Emit(AtCompileResult compileResult, CancellationToken cancellationToken)
+    public static AtEmitResult Emit(BindResult compileResult, CancellationToken cancellationToken)
     {
         var cSharpTrees = ConvertToCSharpSyntaxTrees(compileResult, defaultMap);
  
@@ -42,9 +57,9 @@ namespace At.Targets.CSharp
     }
 
 
-    public static IEnumerable<CSharpSyntaxTree> ConvertToCSharpSyntaxTrees(AtCompileResult compileResult, Func<Symbol,ExpressionSyntax> map)
+    public static IEnumerable<CSharpSyntaxTree> ConvertToCSharpSyntaxTrees(BindResult compileResult, Func<Symbol,CSharpSyntaxNode> map)
     {
-        foreach(CompilationUnitContext ctx in compileResult.Context.Contents())
+        foreach(CompilationUnit ctx in compileResult.Context.Contents())
         { 
            var converter = new CSharpSyntaxTreeConverter(ctx,map);        
            yield return converter.ConvertToCSharpTree();
@@ -58,15 +73,19 @@ namespace At.Targets.CSharp
                                  ,syntaxTrees.Select(_=>_.GetRoot().NormalizeWhitespace().ToFullString()));
     }
     
-    static ExpressionSyntax defaultMap(Symbol s)
+    static CSharpSyntaxNode defaultMap(Symbol s)
     {
-        return   s is KeywordSymbol k && k.Name == "output" ? MemberAccessExpression(
-                                                                SyntaxKind.SimpleMemberAccessExpression,
-                                                                MemberAccessExpression(
-                                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                                    IdentifierName("System"),
-                                                                    IdentifierName("Console")),
-                                                                IdentifierName("WriteLine"))
+        return   s is KeywordSymbol k && k.Name == "output" 
+                    ? (CSharpSyntaxNode) MemberAccessExpression
+                                            (SyntaxKind.SimpleMemberAccessExpression,
+                                             MemberAccessExpression(
+                                                SyntaxKind.SimpleMemberAccessExpression,
+                                                IdentifierName("System"),
+                                                IdentifierName("Console")),
+                                             IdentifierName("WriteLine"))
+
+               : s==TypeSymbol.Number ? ParseTypeName("decimal")
+
                : null;
     }
 }

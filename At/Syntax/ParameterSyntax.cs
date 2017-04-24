@@ -4,24 +4,15 @@ using System.Collections.Generic;
 namespace At.Syntax
 {
 // Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterSyntax
-public class ParameterSyntax : AtSyntaxNode
+public class ParameterSyntax : VariableDeclarationSyntax
 {
     AtSyntaxNode identifier;
 
-
-    internal ParameterSyntax(AtToken identifier, IEnumerable<AtDiagnostic> diagnostics) : base(new[] {identifier},diagnostics)
+    internal ParameterSyntax(AtToken identifier, NameSyntax parameterTypeName, IExpressionSource exprSrc,  IEnumerable<AtDiagnostic> diagnostics) : base(null,identifier,parameterTypeName,new[] {identifier},exprSrc,diagnostics)
     {
         this.identifier = identifier;
     }
 
-    /// <summary>Gets the identifier.</summary>
-    public AtSyntaxNode Identifier
-    {
-        get
-        {
-            return this.identifier;
-        }
-    }
 
     public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
     {

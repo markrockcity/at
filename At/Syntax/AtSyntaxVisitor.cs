@@ -17,14 +17,21 @@ namespace At
 /// </typeparam>
 public abstract class AtSyntaxVisitor<TResult>
 {
-    protected internal virtual TResult Visit(AtSyntaxNode node)
+    public virtual TResult Visit(AtSyntaxNode node)
     {
         if (node != null)
         {
             return node.Accept(this);
         }
     
-        return default(TResult);
+        return DefaultVisit(node);
+    }
+
+    /// <remarks>Arguments can either be <c ref='At.Syntax.ArgumentSyntax'>ArgumentSyntax</cref> nodes
+    /// (from InvocationSyntax) or  naked ExpressionSyntax nodes (from application expressions)</remarks>
+    protected internal virtual TResult VisitArgument(AtSyntaxNode argumentSyntax)
+    {
+        return DefaultVisit(argumentSyntax);
     }
 
     protected internal virtual TResult VisitNamespaceDeclaration(NamespaceDeclarationSyntax namespaceDeclarationSyntax)
@@ -61,6 +68,11 @@ public abstract class AtSyntaxVisitor<TResult>
     {
         Debug.Write($"{GetType()}.DefaultVisit({node.GetType()})");
         return default(TResult);
+    }
+
+    protected internal virtual TResult VisitInvoke(InvocationExpressionSyntax invocationExpressionSyntax)
+    {
+       return DefaultVisit(invocationExpressionSyntax);
     }
 
     protected internal virtual TResult VisitBinary(BinaryExpressionSyntax binaryExpressionSyntax)

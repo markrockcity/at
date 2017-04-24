@@ -12,6 +12,9 @@ namespace At.Tests
     [TestClass]
 public class SyntaxTreeConverterTests : AtTest
 {
+
+
+    /*
     //Syntax Tree Converter Test
     [TestMethod] 
     public void MiscSyntaxTreeConverterTest()
@@ -44,7 +47,7 @@ public class SyntaxTreeConverterTests : AtTest
         var genType = csClass.BaseList.Types[0].Type as csSyntax.GenericNameSyntax;
         assert_not_null(()=>genType);
         assert_equals(2,()=>genType.Arity);
-    }
+    }*/
 
 
 }

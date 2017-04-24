@@ -8,7 +8,7 @@ namespace At.Syntax
 {
 public class SeparatedSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNode
 {
-    readonly AtSyntaxList<AtSyntaxNode> _list;
+    internal readonly AtSyntaxList<AtSyntaxNode> _list;
 
     internal SeparatedSyntaxList(AtSyntaxNode owner, IEnumerable<AtSyntaxNode> nodes)
     {
@@ -34,7 +34,8 @@ public class SeparatedSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtS
 
     public IEnumerator<TNode> GetEnumerator()
     {
-        return _list.OfType<TNode>().GetEnumerator();
+        for(int i=0; i < Count; ++i)
+            yield return (TNode) this[i];
     }
 
     IEnumerator IEnumerable.GetEnumerator()

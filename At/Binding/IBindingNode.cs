@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace At.Binding
 {
+//IOperation
 public interface IBindingNode
 {
     AtSyntaxNode Syntax {get;}
-    void Accept(BindingTreeVisitor visitor);
+    TResult Accept<TResult>(BindingTreeVisitor<TResult> visitor);
 }
 }

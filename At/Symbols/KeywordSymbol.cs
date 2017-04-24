@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using At.Binding;
+﻿using At.Binding;
+using At.Symbols;
 
 namespace At
 {
-public sealed class KeywordSymbol : Symbol
+    public sealed class KeywordSymbol : Symbol
 {
     private Context ctx;
 
@@ -17,8 +13,10 @@ public sealed class KeywordSymbol : Symbol
     }
 
     public override Symbol ParentSymbol => null;
-        
-    public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
+
+    public override TypeSymbol Type {get; protected internal set;}
+
+    public override TResult Accept<TResult>(BindingTreeVisitor<TResult> visitor)
     {
         return visitor.VisitKeyword(this);
     }

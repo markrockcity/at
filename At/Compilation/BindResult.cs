@@ -8,12 +8,12 @@ using At.Contexts;
 
 namespace At
 {
-/// <summary>Represents the result of a compilation</summary>
-public class AtCompileResult
+/// <summary>Represents the result of a binding</summary>
+public class BindResult
 {
     //readonly Lazy<ImmutableArray<AtSyntaxTree>> _lazy_syntaxTrees;
 
-    public AtCompileResult(CompilationContext context)
+    public BindResult(CompilationContext context)
     {
         //_lazy_syntaxTrees = new Lazy<ImmutableArray<AtSyntaxTree>>(makeSyntaxTrees);
         Compilation = context.Compilation;

@@ -136,5 +136,15 @@ public class SyntaxPatternTests : AtTest
         var ex1 =(TokenClusterSyntax) d1["x"];
         assert_not_null(()=>ex1);
     }
+
+    [TestMethod]
+    public void EmptyPatternStringTest()
+    {
+        using (var p = AtParser.CreateSyntaxPatternParser())
+        {    
+            var e = p.ParseExpression("");
+            Write(()=>e);
+        }  
+    }
 }
 }

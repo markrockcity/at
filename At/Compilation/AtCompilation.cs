@@ -51,10 +51,10 @@ public sealed class AtCompilation
     public AtEmitResult Emit(CancellationToken cancellationToken = default(CancellationToken))
     {
         checkForExpressionClusters();
-        var compileResult = Compile(cancellationToken);
-        return compileResult.Success
-                    ? Targets.CSharp.CSharpTarget.Emit(compileResult,cancellationToken)
-                    : new AtEmitResult(false,compileResult.Diagnostics,null);
+        var bindResult = Bind(cancellationToken);
+        return bindResult.Success
+                    ? Targets.CSharp.CSharpTarget.Emit(bindResult,cancellationToken)
+                    : new AtEmitResult(false,bindResult.Diagnostics,null);
     }
 
     public AtEmitResult Emit(Stream peStream, CancellationToken cancellationToken = default(CancellationToken)) 
@@ -70,16 +70,16 @@ public sealed class AtCompilation
         }
 
         checkForExpressionClusters();
-        var result = Compile(cancellationToken);
+        var result = Bind(cancellationToken);
         return result.Success 
                     ? Targets.CSharp.CSharpTarget.Emit(result,peStream,cancellationToken)
                     : new AtEmitResult(false,result.Diagnostics,null);
     }
 
-    public AtCompileResult Compile(CancellationToken cancellationToken)
+    public BindResult Bind(CancellationToken cancellationToken = default(CancellationToken))
     {
         var diagnostics = new DiagnosticsBag();
-        return AtCompiler.Compile(this,diagnostics,cancellationToken);
+        return AtCompiler.Bind(this,diagnostics,cancellationToken);
     }
 
     private void checkForExpressionClusters()
