@@ -51,9 +51,8 @@
       <HintPath>..\packages\System.AppContext.4.3.0\lib\net46\System.AppContext.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.4.0-preview1-25305-02\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Console, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -165,6 +164,10 @@
     <ProjectReference Include="..\At\at.csproj">
       <Project>{52c0a647-013f-477b-9b10-fd0c28c089ce}</Project>
       <Name>at</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Limpl\Limpl.dll\Limpl.csproj">
+      <Project>{98d38482-79ec-46a7-8931-afded665ae74}</Project>
+      <Name>Limpl</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
