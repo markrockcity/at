@@ -219,7 +219,7 @@ namespace At.Targets.CSharp
                                     : o.GetType() == typeof(double) ? SyntaxKind.NumericLiteralExpression
                                     : throw new NotImplementedException(o.GetType()+": "+o+" SyntaxKind");
 
-        SyntaxToken _literal(object o) => o is String s ? Literal(s.Substring(1,s.Length-2),s.Substring(1,s.Length-2)) 
+        SyntaxToken _literal(object o) => o is String s ? Literal(s,s.Substring(1,s.Length-2)) 
                                         : o is double d ? Literal((decimal) d)
                                         : throw new NotImplementedException(o.GetType()+" literal");   
 
