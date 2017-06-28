@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using At.Contexts;
+using At.Symbols;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
-using cs = Microsoft.CodeAnalysis.CSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using System.Diagnostics;
-using At.Symbols;
 
 namespace At.Targets.CSharp
 {
-   static class CSharpTarget
+    static class CSharpTarget
 {
     public static AtEmitResult Emit(BindResult compileResult,Stream peStream,CancellationToken cancellationToken)
     {

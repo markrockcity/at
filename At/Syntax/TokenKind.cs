@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Limpl;
 
 namespace At
 {
-    public struct TokenKind : IEquatable<TokenKind>
+    public struct TokenKind : IEquatable<TokenKind>, Limpl.ITokenKind
 {
     internal int value;
 
@@ -72,6 +73,8 @@ namespace At
     public string Name => (names.Value.ContainsKey(value))
                                 ? names.Value[value]
                                 : $"#{value}";
+
+    int ITokenKind.Value => value;
 
     public bool Equals(TokenKind tk) => (tk.value == value);
     public override bool Equals(object obj) => obj is TokenKind && Equals((TokenKind)obj);

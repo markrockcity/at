@@ -13,7 +13,7 @@ public class AtParser : IDisposable
 {
     const int initialPrescedence  = 0;
 
-    public AtParser() : this(AtLexer.CreateDefaultLexer()) {}
+    public AtParser() : this(AtLexer.DefaultLexer) {}
     public AtParser(AtLexer lexer)
     {
         this.Lexer = lexer;
@@ -27,7 +27,7 @@ public class AtParser : IDisposable
     //ParseCompilationUnit(input)
     public CompilationUnitSyntax ParseCompilationUnit(IEnumerable<char> input)
     {
-        var tokens = new Scanner<AtToken>(Lexer.Lex(input));
+        var tokens = new Limpl.Scanner<AtToken>(Lexer.Lex(input));
         var diagnostics = new List<AtDiagnostic>();
         var expressions = this.expressions(tokens,diagnostics,initialPrescedence);
         var compilationUnitSyntax = SyntaxFactory.CompilationUnit(expressions.ToList(),diagnostics);
@@ -40,7 +40,7 @@ public class AtParser : IDisposable
 
     public static AtParser CreateDefaultParser(AtLexer lexer = null)
     {
-        var parser = new AtParser(lexer ?? AtLexer.CreateDefaultLexer());
+        var parser = new AtParser(lexer ?? AtLexer.DefaultLexer);
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.NumericLiteral);
@@ -126,8 +126,7 @@ public class AtParser : IDisposable
 
     public static AtParser CreateSyntaxPatternParser(AtLexer lexer = null)
     {
-        var parser = new SyntaxPatternParser(lexer ?? AtLexer.CreateDefaultLexer());
-        parser.Lexer.TokenRules.Remove(TokenRule.Colon);
+        var parser = new SyntaxPatternParser(lexer ?? new AtLexer(AtLexer.DefaultLexer.TokenRules.Remove(TokenRule.Colon),AtLexer.DefaultLexer.TriviaRules));
 
         parser.ExpressionRules.Add(ExpressionRule.TokenClusterSyntax);
         parser.ExpressionRules.Add(ExpressionRule.StringLiteral);
@@ -147,7 +146,7 @@ public class AtParser : IDisposable
     //ParseExpression(input)
     public ExpressionSyntax ParseExpression(IEnumerable<char> input)
     {
-        var tokens = new Scanner<AtToken>(Lexer.Lex(input));
+        var tokens = new Limpl.Scanner<AtToken>(Lexer.Lex(input));
         var diagnostics = new List<AtDiagnostic>();
 
         var isEmpty = !tokens.MoveNext(); //move to first token
@@ -157,7 +156,7 @@ public class AtParser : IDisposable
     }
 
     //expressions()
-    IEnumerable<ExpressionSyntax> expressions(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics,int prescendence)
+    IEnumerable<ExpressionSyntax> expressions(Limpl.IScanner<AtToken> tokens,  List<AtDiagnostic> diagnostics,int prescendence)
     {
         if (tokens.Position < 0) 
             tokens.MoveNext();
@@ -177,7 +176,7 @@ public class AtParser : IDisposable
 
 
     //expression()
-    ExpressionSyntax expression(Scanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition, TokenKind? endDelimiterKind, bool startOperator)
+    ExpressionSyntax expression(Limpl.IScanner<AtToken> tokens,  List<AtDiagnostic> diagnostics, int prescedence, int lastPosition, TokenKind? endDelimiterKind, bool startOperator)
     {           
         Func<string> _trace = ()=>
         {
@@ -380,7 +379,7 @@ public class AtParser : IDisposable
                 : Apply(subj,obj);
     }
 
-    ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Scanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand,bool startOp)
+    ExpressionSyntax parseCircumfixOp(IOperatorDefinition circumfixOp, Limpl.IScanner<AtToken> tokens, List<AtDiagnostic> diagnostics, AtSyntaxNode postCircumfixOperand,bool startOp)
     {
         var startDelimiter = tokens.Consume();
         var _endDelimiterKind = (circumfixOp as ICircumfixOperatorDefinition)?.EndDelimiterKind ?? circumfixOp.TokenKind;
@@ -409,7 +408,7 @@ public class AtParser : IDisposable
         return Transformations.Matches(e).FirstOrDefault(); 
     }
 
-    IExpressionRule getRule(Scanner<AtToken> tokens)
+    IExpressionRule getRule(Limpl.IScanner<AtToken> tokens)
     {
         int k = -1;
         var anyMatch = false;
@@ -435,7 +434,7 @@ public class AtParser : IDisposable
         return null;    
     }
 
-    ExpressionClusterSyntax expressionCluster(IEnumerable<AtToken> tokens1, Scanner<AtToken> tokens2, IExpressionSource expSrc, List<AtDiagnostic> diagnostics)
+    ExpressionClusterSyntax expressionCluster(IEnumerable<AtToken> tokens1, Limpl.IScanner<AtToken> tokens2, IExpressionSource expSrc, List<AtDiagnostic> diagnostics)
     {
         var nodes = new List<AtSyntaxNode>(tokens1);
         while (!tokens2?.End ?? false)

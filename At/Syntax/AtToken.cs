@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Limpl;
 
 namespace At
 {
 //SyntaxToken 
-public class AtToken : AtSyntaxNode
+public class AtToken : AtSyntaxNode, Limpl.IToken
 {
     TokenKind _kind;
 
@@ -14,17 +15,17 @@ public class AtToken : AtSyntaxNode
         TokenKind kind,
         int       position,
         string    text=null, 
-        ITokenSource tokenSrc = null,
-        AtSyntaxList<AtSyntaxTrivia> leadingTrivia = null,
-        AtSyntaxList<AtSyntaxTrivia> trailingTrivia = null,
+        Limpl.ITokenSource<AtToken> tokenSrc = null,
+        Limpl.SyntaxList<AtSyntaxTrivia> leadingTrivia = null,
+        Limpl.SyntaxList<AtSyntaxTrivia> trailingTrivia = null,
         IEnumerable<AtDiagnostic> diagnostics = null,
         object value = null)
 
         : base(new AtSyntaxNode[0],diagnostics){
 
         _kind           = kind;
-        LeadingTrivia   = leadingTrivia  ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
-        TrailingTrivia  = trailingTrivia ?? AtSyntaxList<AtSyntaxTrivia>.Empty;
+        LeadingTrivia   = leadingTrivia  ?? new Limpl.SyntaxList<AtSyntaxTrivia>(this,new AtSyntaxTrivia[0],(ref AtSyntaxTrivia n, Limpl.ISyntaxNode p) => n.Parent = p);
+        TrailingTrivia  = trailingTrivia ?? new Limpl.SyntaxList<AtSyntaxTrivia>(this,new AtSyntaxTrivia[0],(ref AtSyntaxTrivia n, Limpl.ISyntaxNode p) => n.Parent = p);
         Text            = text;
         TokenSource     = tokenSrc;
         Position        = position;
@@ -40,7 +41,7 @@ public class AtToken : AtSyntaxNode
     public int       RawKind => _kind.value;
 
     /// <summary>The token source used by the lexer to extract this token.</summary>
-    public ITokenSource TokenSource {get;}
+    public Limpl.ITokenSource<AtToken> TokenSource {get;}
 
     public override string FullText =>
         string.Concat(string.Concat(LeadingTrivia.Select(_=>_.FullText)),
@@ -48,10 +49,15 @@ public class AtToken : AtSyntaxNode
                         string.Concat(TrailingTrivia.Select(_=>_.FullText)));
 
     
-    public AtSyntaxList<AtSyntaxTrivia> LeadingTrivia {get;internal set;}
-    public AtSyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
+    public Limpl.SyntaxList<AtSyntaxTrivia> LeadingTrivia {get;internal set;}
+    public Limpl.SyntaxList<AtSyntaxTrivia> TrailingTrivia {get;internal set;}
     public object Value { get; }
 
+    ITokenKind IToken.Kind => Kind;
+    IReadOnlyList<ISyntaxTrivia> IToken.LeadingTrivia => LeadingTrivia;
+    IReadOnlyList<ISyntaxTrivia> IToken.TrailingTrivia => TrailingTrivia;
+    bool ISyntaxNode.IsTrivia => this is AtSyntaxTrivia;
+    ISyntaxNode ISyntaxNode.Parent => base.Parent;
 
     public override bool MatchesPattern(SyntaxPattern pattern, IDictionary<string,AtSyntaxNode> d = null)
     {
@@ -68,7 +74,7 @@ public class AtToken : AtSyntaxNode
             
         :   Kind==TokenKind.StartOfFile 
                 ? "<StartOfFile>" 
-            
+
         :   $"{Kind.Name}({Text})";
 
     public override IEnumerable<string> PatternStrings()
@@ -78,10 +84,9 @@ public class AtToken : AtSyntaxNode
         yield return "Node";
     }
 
-        public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
-        {
-            throw new NotImplementedException();
-        }
-
+    public override TResult Accept<TResult>(AtSyntaxVisitor<TResult> visitor)
+    {
+        return visitor.VisitToken(this);
     }
+}
 }

@@ -14,7 +14,7 @@ public class ParserTests : AtTest
     protected override void Setup()
     {
         base.Setup();
-        parser = new AtParser(AtLexer.CreateDefaultLexer());
+        parser = new AtParser(AtLexer.DefaultLexer);
     }
 
     //Parser Test 1

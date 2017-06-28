@@ -11,7 +11,7 @@ public interface ISyntaxDefinition
 {
     /// <summary>Returns true if the syntax definition matches the input up to 
     /// the given k-lookahead.</summary>
-    bool MatchesUpTo(IScanner<AtToken> tokens, int k);
-    AtSyntaxNode CreateSyntaxNode(Scanner<AtToken> tokens);
+    bool MatchesUpTo(Limpl.IScanner<AtToken> tokens, int k);
+    AtSyntaxNode CreateSyntaxNode(Limpl.IScanner<AtToken> tokens);
 }
 }

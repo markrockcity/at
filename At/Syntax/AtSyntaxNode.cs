@@ -7,7 +7,7 @@ using At.Syntax;
 namespace At
 {
 //SyntaxNode + CSharpSyntaxNode + GreenNode
-public abstract class AtSyntaxNode
+public abstract class AtSyntaxNode : Limpl.ISyntaxNode
 {
     internal readonly AtSyntaxList<AtSyntaxNode> nodes;
     readonly ImmutableArray<AtDiagnostic> diagnostics;
@@ -23,7 +23,7 @@ public abstract class AtSyntaxNode
         IsMissing = isMissing;
     }
 
-    public AtSyntaxNode   Parent {get; internal set;}
+    public Limpl.ISyntaxNode Parent {get; internal set;}
     public virtual bool   IsTrivia => false;
     public virtual bool   IsToken  => false;
     public virtual int    Position => nodes[0].Position;
@@ -58,10 +58,12 @@ public abstract class AtSyntaxNode
 
             return _PatternName;
         }
-    } internal string _PatternName;
+    }
+
+    internal string _PatternName;
 
     public AtToken AsToken() => this as AtToken;
-    public virtual AtSyntaxNode Clone() => (AtSyntaxNode) MemberwiseClone();
+    public virtual Limpl.ISyntaxNode Clone() => (AtSyntaxNode) MemberwiseClone();
     public override string ToString() => FullText;
     public IEnumerable<AtDiagnostic> GetDiagnostics() => diagnostics;
     public IReadOnlyList<AtSyntaxNode> ChildNodes(bool includeTokens = false) => nodes.Where(_=>includeTokens || !_.IsToken).ToImmutableList(); 
@@ -176,5 +178,6 @@ public abstract class AtSyntaxNode
                 yield return descendant;
         }
     }
+        
 }
 }

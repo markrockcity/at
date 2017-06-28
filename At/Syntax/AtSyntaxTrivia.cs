@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace At
 {
-public class AtSyntaxTrivia : AtToken
+public class AtSyntaxTrivia : AtToken, Limpl.ISyntaxTrivia
 {
     internal AtSyntaxTrivia
     (
         TokenKind kind, 
         int       position,
         string    text=null, 
-        ITokenSource tokenSrc = null,
+        Limpl.ITokenRule<AtToken> tokenSrc = null,
         IEnumerable<AtDiagnostic> diagnostics = null) 
 
         : base(kind,position,text,tokenSrc: tokenSrc,diagnostics: diagnostics) {

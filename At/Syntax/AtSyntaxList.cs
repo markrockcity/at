@@ -7,57 +7,10 @@ using At.Syntax;
 
 namespace At
 {
-public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNode
+public class AtSyntaxList<TNode> : Limpl.SyntaxList<TNode>, IReadOnlyList<TNode> where TNode : AtSyntaxNode
 {
-    readonly AtSyntaxNode owner;
-    ImmutableList<TNode> nodes = ImmutableList<TNode>.Empty;
-
-    internal AtSyntaxList(AtSyntaxNode owner, IEnumerable<TNode> nodes)
+    internal AtSyntaxList(AtSyntaxNode owner, IEnumerable<TNode> nodes) : base(owner, nodes, (ref TNode n, Limpl.ISyntaxNode p) => n.Parent = p)
     {
-        this.owner = owner;
-
-        if (nodes == null)
-            return;
-        
-        var nodeList = new List<TNode>();
-        foreach(var node in nodes)
-        {
-            if (node == null)
-                continue;
-
-            // - this might give a false negative where the parent wasn't changed
-            //   but the child nodes have changed (e.g., in another thread)... maybe?
-            if (node.Parent != null)
-            {                
-               var _node = (TNode) node.Clone();
-               _node.Parent = owner;
-               nodeList.Add(_node);
-            }
-            else
-            {
-               node.Parent = owner;
-               nodeList.Add(node);
-            }
-        }
-
-        Debug.Assert(nodeList.TrueForAll(_=>_.Parent==owner));
-        this.nodes = this.nodes.AddRange(nodeList);
-    }
-
-    public TNode this[int index]
-    {
-        get
-        {
-            return nodes[index];
-        }
-    }
-
-    public int Count
-    {
-        get
-        {
-            return nodes.Count;
-        }
     }
 
     public static AtSyntaxList<TNode> Empty
@@ -70,19 +23,6 @@ public class AtSyntaxList<TNode> : IReadOnlyList<TNode> where TNode : AtSyntaxNo
         }
     } static AtSyntaxList<TNode> _Empty = null;
 
-    public IEnumerator<TNode> GetEnumerator()
-    {
-        return nodes.GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return nodes.GetEnumerator();
-    }
-
-    internal void append(AtToken endToken)
-    {
-        nodes = nodes.Add((TNode)(object)endToken);
-    }
+    internal void append(Limpl.IToken token) => Append(token);
 }
 }

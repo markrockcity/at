@@ -346,7 +346,7 @@ public class SyntaxFactory
 
     public static AtToken ParseToken(string text, bool markAsMissing = false)
     {
-        using (var lexer = AtLexer.CreateDefaultLexer())
+        using (var lexer = AtLexer.DefaultLexer)
         {
             var token = lexer.Lex(text).FirstOrDefault();
 

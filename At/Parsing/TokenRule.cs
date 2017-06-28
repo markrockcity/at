@@ -1,44 +1,20 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Collections;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
-using static At.TokenKind;
-using At;
-using System.Text.RegularExpressions;
+
+using Scanner = Limpl.Scanner<char>;
+using IScanner = Limpl.IReadOnlyScanner<char>;
+using ITokenRule = Limpl.ITokenRule<At.AtToken>;
+using Limpl;
 
 namespace At
 {
-
-public interface ITokenSource
+public class TokenRule : Limpl.ITokenRule<AtToken>, Limpl.ITriviaRule<AtSyntaxTrivia>
 {
-    AtToken CreateToken(IEnumerable<char> chars);
-}
-
-public interface ITokenRule : ITokenSource
-{
-    //TokenKind TokenKind  {get;}
-
-    /// <summary>Returns true if the token definition matches the input up to 
-    /// the given k-lookahead.</summary>
-    bool MatchesUpTo(IScanner<char> chars, int k);
-    AtToken Lex(Scanner<char> chars);
-    bool IsAllowedInTokenCluster {get;}
-}
-
-/*
-
-public interface ITokenDefinition : ITokenSource
-{
-    string Pattern {get;} //regex
-}
-*/
-
-public class TokenRule : ITokenRule
-{
-    Func<IScanner<char>,int,bool> matchesUpTo;
-    Func<TokenRule,Scanner<char>,AtToken> lex;    
+    Func<Limpl.IReadOnlyScanner<char>,int,bool> matchesUpTo;
+    Func<TokenRule,Limpl.IScanner<char>,AtToken> lex;    
 
     public readonly static TokenRule AtSymbol = SingleCharacterToken(TokenKind.AtSymbol,'@');       
     public readonly static TokenRule SemiColon = SingleCharacterToken(TokenKind.SemiColon,';');       
@@ -86,18 +62,18 @@ public class TokenRule : ITokenRule
         }
     );
 
-    public readonly static ITokenRule StringLiteral = new StringLiteralDefinition('\"','\'');
-    public readonly static ITokenRule NumericLiteral = new NumericLiteralDefinition();
+    public readonly static Limpl.ITokenRule<AtToken> StringLiteral = new StringLiteralRule('\"','\'');
+    public readonly static Limpl.ITokenRule<AtToken> NumericLiteral = new NumericLiteralRule();
 
     //TODO: convert to 3 different token-defs
-    public readonly static ITokenRule Dots = new DotsDefinition();
+    public readonly static Limpl.ITokenRule<AtToken> Dots = new DotsDefinition();
     
     /// <summary>Initializes a TokenRule object</summary>
     /// <param name="tokenKind"></param>
     /// <param name="matchesUpTo">A delegate that accepts an IScanner&lt;char> and a character position and returns a boolean saying whether the token definition matches all characters up to the given look-ahead position.</param>
     /// <param name="lex">A delegate that accepts a TokenRule (this object) and a Scanner&lt;char>, returning an AtToken.</param>
     /// <param name="allowedInCluster">If true, defined token may be part of a TokenCluster before being lexed.</param>
-    public TokenRule(TokenKind tokenKind, Func<IScanner<char>,int,bool> matchesUpTo, Func<TokenRule,Scanner<char>,AtToken> lex, bool allowedInCluster = false) 
+    public TokenRule(TokenKind tokenKind, Func<Limpl.IReadOnlyScanner<char>,int,bool> matchesUpTo, Func<Limpl.ITokenRule<AtToken>,Limpl.IScanner<char>,AtToken> lex, bool allowedInCluster = false) 
     {  
         this.matchesUpTo = matchesUpTo;
         this.lex = lex;
@@ -105,139 +81,33 @@ public class TokenRule : ITokenRule
         this.IsAllowedInTokenCluster = allowedInCluster;
     }
 
-    private class NumericLiteralDefinition : ITokenRule
+    private class NumericLiteralRule : Limpl.NumericLiteralRule<AtToken>
     {
-        bool alreadyHasDecimalPoint = false;
-        
-        public bool IsAllowedInTokenCluster => true;
-
-        public AtToken Lex(Scanner<char> chars)
+        public override AtToken CreateToken(string s,double value, int position)
         {
-            Debug.Assert(char.IsDigit(chars.Current));
-            alreadyHasDecimalPoint = false;
-            var position = chars.Position+1;
-            var sb = new StringBuilder();
-                
-            while (!chars.End && (char.IsDigit(chars.Current) || !alreadyHasDecimalPoint && chars.Current=='.' && char.IsDigit(chars.Next)))
-            {            
-                if (chars.Current=='.')
-                    alreadyHasDecimalPoint = true;         
-
-                sb.Append(chars.Consume());
-            }
-
-            var text  = sb.ToString();
-            var value = alreadyHasDecimalPoint ? double.Parse(text) : int.Parse(text);
-            return new AtToken(TokenKind.NumericLiteral,position,text,value:value);            
+            return new AtToken(TokenKind.NumericLiteral,position,s,this,value:value);
         }
-
-        public bool MatchesUpTo(IScanner<char> chars,int k)
-        {
-            if (k==0)
-                alreadyHasDecimalPoint = false; //reset
-            
-            var c = chars.LookAhead(k);
-            var isDigit = char.IsDigit(c);
-
-            if (isDigit)
-                return true;
-
-            var isDecimalPoint = (c=='.');
-
-            if (k==0 || !isDecimalPoint || alreadyHasDecimalPoint)
-                return false;
-
-            Debug.Assert(isDecimalPoint);
-            alreadyHasDecimalPoint = true;
-            return char.IsDigit(chars.LookAhead(k+1));
-        }
-
-        AtToken ITokenSource.CreateToken(IEnumerable<char> chars) => Lex(new Scanner<char>(chars));
     }
 
-    private class StringLiteralDefinition : ITokenRule
+    private class StringLiteralRule : Limpl.StringLiteralRule<AtToken>
     {
-        readonly char[] delimiters;    
-
-        char delimiter = (char) 0;
-        bool escaping = false;
-        bool closed = false;
-        bool matchesSoFar = false;
-
-        public StringLiteralDefinition(params char[] delimiters) 
-        { 
-            this.delimiters = delimiters; 
-        }
+        public StringLiteralRule(params char[] delimiters) : base(delimiters)
+        {
         
-        public bool IsAllowedInTokenCluster => false;
-
-        public AtToken Lex(Scanner<char> chars)
-        {
-            Debug.Assert(chars.Current==delimiter);
-            chars.Consume();
-
-            var p  = chars.Position+1;
-            var sb = new StringBuilder();
-
-            while (!chars.End && chars.Current != delimiter)
-            {
-                if (chars.Current=='\\' && (chars.LookAhead(1)==delimiter||chars.LookAhead(1)=='\\'))
-                    sb.Append(chars.Consume()).Append(chars.Consume()); // \" or \\
-                else
-                    sb.Append(chars.Consume());
-            }
-
-            Debug.Assert(chars.Current==delimiter);
-            chars.Consume();
-
-            var text = sb.ToString();
-            return new AtToken(TokenKind.StringLiteral,p,delimiter+text+delimiter,value:text); 
         }
-
-        public bool MatchesUpTo(IScanner<char> chars, int i)
+    
+        public override AtToken CreateToken(string s, int position)
         {
-            if (i==0)
-            {
-                closed   = false;
-                escaping = false;
-                
-                if (delimiters.Contains(chars.Current))
-                {
-                    delimiter = chars.Current;
-                    matchesSoFar = true;
-                }
-                else
-                {
-                    delimiter = (char) 0;
-                    matchesSoFar = false;
-                }
-
-                return matchesSoFar;                 
-            }
-
-            var c = chars.LookAhead(i);
-
-            if (matchesSoFar && !closed && c!='\0')
-            {
-                if (c==delimiter && !escaping)
-                    closed = true;
-
-                escaping = (!escaping && c=='\\');
-  
-                return true;
-            }
-
-            return false;
+            return new AtToken(TokenKind.StringLiteral,position,s,this,value:s);
         }
-
-        AtToken ITokenSource.CreateToken(IEnumerable<char> chars) => Lex(new Scanner<char>(chars));
     }
 
-    private class DotsDefinition : ITokenRule
+    private class DotsDefinition : Limpl.ITokenRule<AtToken>
     {
         public bool IsAllowedInTokenCluster => true;
+        bool Limpl.ITokenRule<AtToken>.IsAllowedInOtherToken => true;
 
-        public AtToken Lex(Scanner<char> chars)
+        public AtToken Lex(Limpl.IScanner<char> chars)
         {
             Debug.Assert(chars.Current=='.');
             var p = chars.Position+1;
@@ -260,122 +130,31 @@ public class TokenRule : ITokenRule
             }       
         }
 
-        public bool MatchesUpTo(IScanner<char> chars,int k) => (k>=0 && k<=2 && chars.LookAhead(k)=='.');
-        AtToken ITokenSource.CreateToken(IEnumerable<char> chars) => Lex(new Scanner<char>(chars));
+        public bool MatchesUpTo(Limpl.IReadOnlyScanner<char> chars,int k) => (k>=0 && k<=2 && chars.LookAhead(k)=='.');
+        public AtToken CreateToken(IEnumerable<char> chars) => Lex(new Scanner(chars));
+
+            
     }
 
     public bool IsAllowedInTokenCluster {get;}
     public TokenKind TokenKind  {get;}
-    public bool MatchesUpTo(IScanner<char> chars,int k)=>matchesUpTo(chars,k);
-    public AtToken Lex(Scanner<char> input) => lex(this,input);
+
+    bool ITokenRule.IsAllowedInOtherToken => IsAllowedInTokenCluster;
+
+    public bool MatchesUpTo(IScanner chars,int k)=>matchesUpTo(chars,k);
+    public AtToken Lex(Limpl.IScanner<char> input) => lex(this,input);
     public static TokenRule SingleCharacterToken(TokenKind kind,char c, bool allowedInCluster=false) 
         => new TokenRule(kind,(s,k)=>k==0&&s.Current==c,(rule,s)=>new AtToken(kind,s.Position,c.ToString(),tokenSrc: rule),allowedInCluster);       
-    AtToken ITokenSource.CreateToken(IEnumerable<char> chars) => Lex(new Scanner<char>(chars));
-}
+    public AtToken CreateToken(IEnumerable<char> chars) => Lex(new Scanner(chars));
 
-public class TokenRuleList : TokenSourceList<ITokenRule>
-{
-
-    public TokenRuleList() { }
-
-    private TokenRuleList(IEnumerable<ITokenRule> matches)
+    AtSyntaxTrivia ITriviaRule<AtSyntaxTrivia>.Lex(IScanner<char> chars)
     {
-        foreach(var m in matches)
-            InnerList.Add(m);
-    }
+       return (AtSyntaxTrivia) Lex(chars);
+    } 
 
-    public TokenRuleList Matches(IScanner<char> chars, int k)
+    AtSyntaxTrivia ITriviaSource<AtSyntaxTrivia>.CreateTrivia(IEnumerable<char> chars)
     {
-        return new TokenRuleList(InnerList.Where(_=>_.MatchesUpTo(chars,k)));
-    }
-
-    public TokenRule Add(string tokenText, TokenKind? kind = null)
-    { 
-       throw new NotImplementedException();
-    }
-
-    public TokenRule AddPattern(string pattern, TokenKind? kind = null)
-    { 
-       throw new NotImplementedException();
-    }
-
-    //                        (iscanner, positionFromStart) => maxPositionChecked
-    public TokenRule Add(Func<IScanner<char>,int,int> f, Func<Scanner<char>,AtToken> lex) 
-    { 
-       throw new NotImplementedException();
-    }
-
-}
-
-public class TokenSourceList<T> : IList<T> where T : ITokenSource
-{
-    protected List<T> InnerList {get;} = new List<T>();
-
-    public T this[int index]
-    {
-        get
-        {
-            return InnerList[index];
-        }
-
-        set
-        {
-            InnerList[index] = value;
-        }
-    }
-
-    public int  Count => InnerList.Count;
-    public bool IsReadOnly => false;
-
-
-    public void Add(T item)
-    {
-        InnerList.Add(item);
-    }
-
-    public void Clear()
-    {
-       InnerList.Clear();
-    }
-
-    public bool Contains(T item)
-    {
-        return InnerList.Contains(item);
-    }
-
-    public void CopyTo(T[] array,int arrayIndex)
-    {
-        InnerList.CopyTo(array,arrayIndex);
-    }
-
-    public IEnumerator<T> GetEnumerator()
-    {
-        return InnerList.GetEnumerator();
-    }
-
-    public int IndexOf(T item)
-    {
-        return InnerList.IndexOf(item);
-    }
-
-    public void Insert(int index,T item)
-    {
-        InnerList.Insert(index,item);
-    }
-
-    public bool Remove(T item)
-    {
-       return InnerList.Remove(item);
-    }
-
-    public void RemoveAt(int index)
-    {
-        InnerList.RemoveAt(index);
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return InnerList.GetEnumerator();
+       return (AtSyntaxTrivia) Lex(new Limpl.Scanner<char>(chars));
     }
 }
 }

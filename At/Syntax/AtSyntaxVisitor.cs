@@ -93,6 +93,11 @@ public abstract class AtSyntaxVisitor<TResult>
         return DefaultVisit(syntaxNode);
     }
 
+    protected  internal virtual TResult VisitToken(AtToken atToken)
+    {
+        return DefaultVisit(atToken);
+    }
+
     protected internal virtual TResult VisitTokenCluster(TokenClusterSyntax tokenClusterSyntax)
     {
         return DefaultVisit(tokenClusterSyntax);

@@ -5,182 +5,129 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static At.TokenRule;
+using ITokenRule = Limpl.ITokenRule<At.AtToken>;
+using ITriviaRule = Limpl.ITriviaRule<At.AtSyntaxTrivia>;
 
 namespace At
 {
-public class AtLexer : IDisposable
+public class AtLexer : Limpl.Lexer<AtToken,AtSyntaxTrivia>, IDisposable
 {
-    public TokenRuleList TokenRules  {get;} = new TokenRuleList();
-    public TokenRuleList TriviaRules {get;} = new TokenRuleList();
-
-    public static AtLexer CreateDefaultLexer()
+    public AtLexer(IEnumerable<ITokenRule> tokenRules = null,IEnumerable<ITriviaRule> triviaRules = null,Limpl.Scanner<char> scanner = null) : base(tokenRules,triviaRules,scanner)
     {
-        var lexer = new AtLexer();
-
-        lexer.TriviaRules.Add(Space);  
-        lexer.TriviaRules.Add(EndOfLine);
-        lexer.TriviaRules.Add(StartOfFile);
-        lexer.TriviaRules.Add(EndOfFile);
-
-        lexer.TokenRules.Add(SemiColon);
-        lexer.TokenRules.Add(LessThan);
-        lexer.TokenRules.Add(TokenRule.AtSymbol);
-        lexer.TokenRules.Add(GreaterThan);        
-        lexer.TokenRules.Add(Dots);
-        lexer.TokenRules.Add(Colon);
-        lexer.TokenRules.Add(OpenBrace);
-        lexer.TokenRules.Add(OpenParenthesis);
-        lexer.TokenRules.Add(OpenBracket);
-        lexer.TokenRules.Add(CloseBrace);
-        lexer.TokenRules.Add(CloseParenthesis);
-        lexer.TokenRules.Add(CloseBracket);
-        lexer.TokenRules.Add(Comma);
-        lexer.TokenRules.Add(StringLiteral); 
-        lexer.TokenRules.Add(NumericLiteral);
-        lexer.TokenRules.Add(Plus);
-        lexer.TokenRules.Add(Asterisk);
-
-        return lexer;
     }
 
-    public IEnumerable<AtToken> Lex(IEnumerable<char> input)
-    {   
-        var chars = new Scanner<char>(input);
-        var leadingTrivia = new List<AtSyntaxTrivia>();
-        var trailingTrivia = new List<AtSyntaxTrivia>();
+    public static AtLexer DefaultLexer = new AtLexer(
+                                                tokenRules: new[]
+                                                {
+                                                    SemiColon,
+                                                    LessThan,
+                                                    TokenRule.AtSymbol,
+                                                    GreaterThan,        
+                                                    Dots,
+                                                    Colon,
+                                                    OpenBrace,
+                                                    OpenParenthesis,
+                                                    OpenBracket,
+                                                    CloseBrace,
+                                                    CloseParenthesis,
+                                                    CloseBracket,
+                                                    Comma,
+                                                    StringLiteral, 
+                                                    NumericLiteral,
+                                                    Plus,
+                                                    Asterisk,
+                                                },
 
-        //<StartOfFile>? 
-        AtSyntaxTrivia sof = null;
+                                                triviaRules: new[]
+                                                {
+                                                    Space,  
+                                                    EndOfLine,
+                                                    TokenRule.StartOfFile,
+                                                    TokenRule.EndOfFile,
+                                                });
+
+    public AtLexer WithTokenRule(ITokenRule tokenRule)
+      => new AtLexer(TokenRules.Add(tokenRule),TriviaRules);
+
+    public AtLexer WithTokenRules(params ITokenRule[] tokenRules)
+      => new AtLexer(TokenRules.Concat(tokenRules),TriviaRules);
+
+    public AtLexer WithTriviaRule(ITriviaRule rule)
+      => new AtLexer(TokenRules,TriviaRules.Add(rule));
+
+
+    protected override void OnStartOfFile(out AtToken sof)
+    {
+        base.OnStartOfFile(out sof);
+
         if (TokenRules.Contains(TokenRule.StartOfFile))
-            yield return (sof = new AtSyntaxTrivia(TokenKind.StartOfFile,0));
+            sof = new AtSyntaxTrivia(TokenKind.StartOfFile,0);
+    }
 
-        AtToken _token = null;
-        while (!chars.End || _token != null)
-        {        
-            var c = chars.Current;
-            var trivia = (_token==null) ? leadingTrivia : trailingTrivia;
+    protected override void OnEndOfFileTrivia(out AtSyntaxTrivia eof)
+    {
+        base.OnEndOfFileTrivia(out eof);
 
-            if (c == '\0') //NUL is before beginning and after end
-            {
-                if (chars.Position<0 && TriviaRules.Contains(TokenRule.StartOfFile))
-                    leadingTrivia.Add(sof ?? new AtSyntaxTrivia(TokenKind.StartOfFile,0));                               
+         if (Scanner.End && TriviaRules.Contains(TokenRule.EndOfFile))
+            eof = new AtSyntaxTrivia(TokenKind.EndOfFile,Scanner.Position+1);
+    }
 
-                if (chars.End)
-                    goto end;
-                else
-                    chars.MoveNext();
-            }
-
-            //trivia (non-tokens)
-            var triviaDef = getRule(TriviaRules,chars);
-            if (triviaDef != null)
-            {
-                var p = chars.Position;
-                var _triv = (AtSyntaxTrivia) triviaDef.Lex(chars);
-                trivia.Add(_triv);
-                if (p == chars.Position && _triv.Text?.Length > 0)
-                    chars.MoveNext();
-                continue;
-            }
-            
-            //tokens
-            if (_token == null )
-            {
-                var tokenRule = getRule(TokenRules,chars);    
-
-                if (tokenRule != null)
-                {
-                    var p = chars.Position;
-                    _token = tokenRule.Lex(chars);
-                    if (p == chars.Position && _token.Text.Length > 0)
-                        chars.MoveNext();
-                    continue;
-                }
-            }
-
-            if (_token == null)
-            {
-                _token = tokenCluster(chars);
-                continue;    
-            }                            
-
-            end:
-            {
-                if (chars.End && TriviaRules.Contains(TokenRule.EndOfFile))
-                    trailingTrivia.Add(new AtSyntaxTrivia(TokenKind.EndOfFile,chars.Position+1));
-            
-                if (leadingTrivia.Count > 0)
-                    _token.LeadingTrivia = new AtSyntaxList<AtSyntaxTrivia>(_token,leadingTrivia);
-                
-                if (trailingTrivia.Count > 0)
-                    _token.TrailingTrivia = new AtSyntaxList<AtSyntaxTrivia>(_token,trailingTrivia);
-                
-                if (_token != null)
-                    yield return _token;
-            
-                _token = null;
-                leadingTrivia.Clear();
-                trailingTrivia.Clear();            
-            }
-        }  
+    protected override void OnEndOfFileToken(out AtToken eof)
+    {
+        base.OnEndOfFileToken(out eof);
 
         if (TokenRules.Contains(TokenRule.EndOfFile))
-            yield return new AtSyntaxTrivia(TokenKind.EndOfFile,chars.Position+1);
+            eof = new AtSyntaxTrivia(TokenKind.EndOfFile,Scanner.Position+1);
+    }
+
+    protected override AtToken LexFallbackToken(Limpl.IScanner<char> chars)
+    {
+        return tokenCluster(chars);
+    }
+
+    protected override void SetParent(ref AtSyntaxTrivia trivia,Limpl.ISyntaxNode parent)
+    {
+        trivia.Parent = parent;
+    }
+
+    protected override void SetLeadingTrivia(ref AtToken token,Limpl.SyntaxList<AtSyntaxTrivia> leadingTrivia)
+    {
+        token.LeadingTrivia = leadingTrivia;
+    }
+
+    protected override void SetTrailingTrivia(ref AtToken token,Limpl.SyntaxList<AtSyntaxTrivia> trailingTrivia)
+    {
+        token.TrailingTrivia = trailingTrivia;
     }
 
 
     // **token cluster**
-    AtToken tokenCluster(Scanner<char> chars)
+    AtToken tokenCluster(Limpl.IScanner<char> chars)
     {
         return token(TokenKind.TokenCluster,chars,null,c=>isPartOfTokenCluster(c,chars));
     }
 
-    bool isPartOfTokenCluster(char c,Scanner<char> chars)
+    bool isPartOfTokenCluster(char c,Limpl.IScanner<char> chars)
     {
         return !isTrivia(c,chars) && isAllowedInTokenCluster(c,chars);
     }
 
-    bool isAllowedInTokenCluster(char c,Scanner<char> chars)
+    bool isAllowedInTokenCluster(char c,Limpl.IScanner<char> chars)
     {
-        return getRule(TokenRules,chars)?.IsAllowedInTokenCluster ?? true;
+        return GetTokenRule(chars)?.IsAllowedInOtherToken ?? true;
     }
 
     //is trivia (non-tokens)
-    bool isTrivia(char c, Scanner<char> chars)
+    bool isTrivia(char c, Limpl.IScanner<char> chars)
     {
-        return getRule(TriviaRules,chars) != null;
-    }
-
-    ITokenRule getRule(TokenRuleList rules, Scanner<char> chars)
-    {
-        int k = -1;
-        var anyMatch = false;
-        TokenRuleList lastMatches = rules, matches;
-
-        if (rules.Count > 0)
-        {
-            k = -1;
-            while((matches = lastMatches.Matches(chars,++k)).Count>0)
-            {
-                lastMatches = matches;
-                anyMatch = true;
-
-                if (chars.End)
-                    break;
-            }
-
-            if (anyMatch && lastMatches?.Count > 0)
-                return lastMatches[0];
-        }    
-
-        return null;
+        return GetTriviaRule(chars) != null;
     }
 
     internal static  AtToken token 
     (
         TokenKind kind, 
-        Scanner<char> buffer, 
-        ITokenRule tokendef,
+        Limpl.IScanner<char> buffer, 
+        Limpl.ITokenRule<AtToken> tokendef,
         Func<char,bool> predicate=null) {
         
         return token<AtToken>(kind,buffer,tokendef,predicate);
@@ -188,8 +135,8 @@ public class AtLexer : IDisposable
     internal static  T token<T>
     (
         TokenKind kind, 
-        Scanner<char> buffer, 
-        ITokenRule tokendef,
+        Limpl.IScanner<char> buffer, 
+        Limpl.ITokenRule<AtToken> tokendef,
         Func<char,bool> predicate=null)
         
         where T : AtToken {
@@ -212,5 +159,6 @@ public class AtLexer : IDisposable
     }
 
     void IDisposable.Dispose(){}
+
 }
 }
